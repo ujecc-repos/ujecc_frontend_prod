@@ -51,7 +51,7 @@ export const donationApi = authApi.injectEndpoints({
 
     getDonationById: builder.query<Donation, string>({
       query: (id) => `/donations/${id}`,
-      providesTags: (result, error, id) => [{ type: 'Donation', id }],
+      providesTags: ["Donation"],
     }),
 
     updateDonation: builder.mutation<Donation, UpdateDonationRequest>({
@@ -60,7 +60,7 @@ export const donationApi = authApi.injectEndpoints({
         method: 'PUT',
         body: patch,
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: 'Donation', id }],
+      invalidatesTags: ["Donation"],
     }),
 
     deleteDonation: builder.mutation<{ message: string }, string>({

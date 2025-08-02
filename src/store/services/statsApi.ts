@@ -67,13 +67,7 @@ export const statsApi = authApi.injectEndpoints({
     
     getChurchStats: builder.query<ChurchStats, string>({
       query: (churchId) => `/stats/church/${churchId}`,
-      providesTags: (result, error, churchId) => [
-        { type: 'Expense', id: `church-${churchId}` },
-        { type: 'Tithe', id: `church-${churchId}` },
-        { type: 'Donation', id: `church-${churchId}` },
-        { type: 'Offering', id: `church-${churchId}` },
-        { type: 'Moisson', id: `church-${churchId}` }
-      ],
+      providesTags: ['Expense', 'Tithe', 'Donation', 'Offering', 'Moisson'],
     }),
     
     getPeriodStats: builder.query<PeriodStats, { startDate?: string; endDate?: string }>({

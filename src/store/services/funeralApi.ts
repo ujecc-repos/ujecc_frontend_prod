@@ -61,7 +61,7 @@ export const funeralApi = authApi.injectEndpoints({
 
     getFuneralById: builder.query<Funeral, string>({
       query: (id) => `/funerals/${id}`,
-      providesTags: (result, error, id) => [{ type: 'Funeral', id }],
+      providesTags: ["Funeral"],
     }),
 
     updateFuneral: builder.mutation<Funeral, UpdateFuneralRequest>({
@@ -70,7 +70,7 @@ export const funeralApi = authApi.injectEndpoints({
         method: 'PUT',
         body: patch,
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: 'Funeral', id }],
+      invalidatesTags: ["Funeral"],
     }),
 
     deleteFuneral: builder.mutation<{ message: string }, string>({

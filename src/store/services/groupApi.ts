@@ -77,7 +77,7 @@ export const groupApi = authApi.injectEndpoints({
 
     getGroupById: builder.query<Group, string>({
       query: (id) => `/groups/${id}`,
-      providesTags: (result, error, id) => [{ type: 'Group', id }],
+      providesTags: ["Group"],
     }),
 
     getGroupsByChurch: builder.query<Group[], string>({
@@ -102,14 +102,7 @@ export const groupApi = authApi.injectEndpoints({
           body: isFormData ? groupData : { ...(groupData as UpdateGroupRequest), id: undefined },
         };
       },
-      invalidatesTags: (result, error, groupData) => {
-        // Extract id from groupData for tag invalidation
-        const id = groupData instanceof FormData 
-          ? groupData.get('id') as string 
-          : (groupData as UpdateGroupRequest).id;
-        
-        return [{ type: 'Group', id }, 'Group'];
-      }
+      invalidatesTags: ["Group"]
     }),
 
     deleteGroup: builder.mutation<void, string>({
@@ -134,7 +127,7 @@ export const groupApi = authApi.injectEndpoints({
         url: `/groups/${groupId}/users/${userId}`,
         method: 'DELETE',
       }),
-      invalidatesTags: (result, error, { groupId }) => [{ type: 'Group', id: groupId }],
+      invalidatesTags: ["Group"],
     }),
 
     transferUserBetweenGroups: builder.mutation<{message: string, targetGroup: Group}, TransferUserRequest>({

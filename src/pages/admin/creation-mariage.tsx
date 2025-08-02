@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { XMarkIcon, ArrowLeftIcon, DocumentIcon, UserIcon, CalendarIcon, MapPinIcon, HeartIcon, UserGroupIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, ArrowLeftIcon, DocumentIcon, UserIcon, HeartIcon } from '@heroicons/react/24/outline';
 import { useGetUserByTokenQuery } from '../../store/services/authApi';
 import { useCreateMarriageMutation } from '../../store/services/mariageApi';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { ToastContainer, toast } from 'react-toastify';
+import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import moment from 'moment';
 import { Dialog } from '@headlessui/react';
@@ -22,15 +22,6 @@ interface FormSection {
     required?: boolean;
     accept?: string;
   }[];
-}
-
-interface FormField {
-  name: string;
-  label: string;
-  type: 'text' | 'date' | 'file';
-  placeholder: string;
-  required: boolean;
-  accept?: string;
 }
 
 export default function CreationMariage() {

@@ -80,6 +80,7 @@ interface AddUserToChurchFormData {
 const GestionPage: React.FC = () => {
   // State for active tab
   const [activeTab, setActiveTab] = useState<string>('church');
+  console.log(activeTab)
   
   // Fake data for locations
   const departements: Departement[] = [

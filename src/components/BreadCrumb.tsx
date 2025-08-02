@@ -27,7 +27,7 @@ const Breadcrumb = () => {
       >
         Dassnet
       </Link>
-      {breadcrumbs.map((breadcrumb, index) => (
+      {breadcrumbs.map((breadcrumb) => (
         <div key={breadcrumb.href} className="flex items-center">
           <ChevronRightIcon className="h-4 w-4 text-gray-400 mx-1" aria-hidden="true" />
           {breadcrumb.current ? (

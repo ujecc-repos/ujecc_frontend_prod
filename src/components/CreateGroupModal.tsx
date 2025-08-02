@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { XMarkIcon, PhotoIcon, CalendarIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, PhotoIcon } from '@heroicons/react/24/outline';
 import Select from 'react-select';
 import DatePicker from 'react-datepicker';
 import { useGetMinistriesByChurchQuery } from '../store/services/ministryApi';

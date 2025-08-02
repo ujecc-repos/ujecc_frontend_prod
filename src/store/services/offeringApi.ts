@@ -53,7 +53,7 @@ export const offeringApi = authApi.injectEndpoints({
 
     getOfferingById: builder.query<Offering, string>({
       query: (id) => `/offerings/${id}`,
-      providesTags: (result, error, id) => [{ type: 'Offering', id }],
+      providesTags: ["Offering"],
     }),
 
     updateOffering: builder.mutation<Offering, UpdateOfferingRequest>({
@@ -62,7 +62,7 @@ export const offeringApi = authApi.injectEndpoints({
         method: 'PUT',
         body: patch,
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: 'Offering', id }],
+      invalidatesTags: ["Offering"],
     }),
 
     deleteOffering: builder.mutation<{ message: string }, string>({

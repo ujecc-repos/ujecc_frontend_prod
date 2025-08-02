@@ -2,8 +2,6 @@ import React, { useState, useMemo, useEffect } from 'react';
 import {
   XMarkIcon,
   PhotoIcon,
-  EyeIcon,
-  EyeSlashIcon,
   CalendarIcon
 } from '@heroicons/react/24/outline';
 import Calendar from 'react-calendar';

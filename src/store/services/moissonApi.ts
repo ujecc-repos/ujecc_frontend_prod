@@ -53,7 +53,7 @@ export const moissonApi = authApi.injectEndpoints({
 
     getMoissonById: builder.query<Moisson, string>({
       query: (id) => `/moissons/${id}`,
-      providesTags: (result, error, id) => [{ type: 'Moisson', id }],
+      providesTags: ["Moisson"],
     }),
 
     updateMoisson: builder.mutation<Moisson, UpdateMoissonRequest>({
@@ -62,7 +62,7 @@ export const moissonApi = authApi.injectEndpoints({
         method: 'PUT',
         body: patch,
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: 'Moisson', id }],
+      invalidatesTags: ["Moisson"],
     }),
 
     deleteMoisson: builder.mutation<{ message: string }, string>({

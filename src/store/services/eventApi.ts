@@ -56,7 +56,7 @@ export const eventApi = authApi.injectEndpoints({
 
     getEventById: builder.query<Event, string>({
       query: (id) => `/events/${id}`,
-      providesTags: (result, error, id) => [{ type: 'Event', id }],
+      providesTags: ["Event"],
     }),
 
     updateEvent: builder.mutation<Event, UpdateEventRequest>({

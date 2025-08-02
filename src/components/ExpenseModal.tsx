@@ -24,6 +24,7 @@ interface CreateExpenseRequest {
 
 const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSubmit, churchId, categories: propCategories, title: modalTitle = 'Ajouter une dépense' }) => {
   // Form fields
+  console.log(propCategories)
   const [expenseTitle, setExpenseTitle] = useState('');
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);

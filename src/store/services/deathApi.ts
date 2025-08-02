@@ -57,7 +57,7 @@ export const deathApi = authApi.injectEndpoints({
 
     getDeathById: builder.query<Death, string>({
       query: (id) => `/deaths/${id}`,
-      providesTags: (result, error, id) => [{ type: 'Death', id }],
+      providesTags: ["Death"],
     }),
 
     updateDeath: builder.mutation<Death, UpdateDeathRequest>({
@@ -66,7 +66,7 @@ export const deathApi = authApi.injectEndpoints({
         method: 'PUT',
         body: patch,
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: 'Death', id }],
+      invalidatesTags: ["Death"],
     }),
 
     deleteDeath: builder.mutation<{ message: string }, string>({

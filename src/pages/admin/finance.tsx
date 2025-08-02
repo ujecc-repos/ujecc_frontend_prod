@@ -9,7 +9,7 @@ import {
 import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
-import { Document, Packer, Paragraph, Table, TableCell, TableRow, TextRun, WidthType, AlignmentType, HeadingLevel } from 'docx';
+import { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, AlignmentType, HeadingLevel } from 'docx';
 import FinanceModal from '../../components/modals/FinanceModal';
 
 // Import API hooks
@@ -54,7 +54,7 @@ interface FilterModalProps {
 }
 
 // Export Modal Component
-const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport, data, activeTab }) => {
+const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport, activeTab }) => {
   if (!isOpen) return null;
 
   return (
@@ -383,6 +383,7 @@ const Finance: React.FC = () => {
       // Add table rows
       let y = 45;
       data.forEach((item, index) => {
+        console.log(index)
         if (y > 270) { // Add new page if needed
           doc.addPage();
           y = 20;

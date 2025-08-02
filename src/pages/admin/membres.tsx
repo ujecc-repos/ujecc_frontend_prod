@@ -21,7 +21,7 @@ import { Menu, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
-import { Document, Packer, Paragraph, Table, TableCell, TableRow, TextRun, WidthType, AlignmentType, HeadingLevel } from 'docx';
+import { Document, Packer, Paragraph, Table, TableCell, TableRow, TextRun, WidthType, AlignmentType } from 'docx';
 import { saveAs } from 'file-saver';
 import Calendar from 'react-calendar';
 import Select from 'react-select';

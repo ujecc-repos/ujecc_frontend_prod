@@ -51,7 +51,7 @@ export const titheApi = authApi.injectEndpoints({
 
     getTitheById: builder.query<Tithe, string>({
       query: (id) => `/tithings/${id}`,
-      providesTags: (result, error, id) => [{ type: 'Tithe', id }],
+      providesTags: ["Tithe"],
     }),
 
     updateTithe: builder.mutation<Tithe, UpdateTitheRequest>({
@@ -60,7 +60,7 @@ export const titheApi = authApi.injectEndpoints({
         method: 'PUT',
         body: patch,
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: 'Tithe', id }],
+      invalidatesTags: ["Tithe"],
     }),
 
     deleteTithe: builder.mutation<{ message: string }, string>({

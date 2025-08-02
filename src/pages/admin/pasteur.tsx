@@ -1,5 +1,5 @@
-import React, { useState, useEffect, Fragment } from 'react'
-import { useNavigate } from 'react-router-dom'
+import  { useState,  Fragment } from 'react'
+// import { useNavigate } from 'react-router-dom'
 import { 
   PlusIcon, 
   MagnifyingGlassIcon, 
@@ -34,7 +34,7 @@ interface Pasteur {
 }
 
 export default function Pasteur() {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const { data: currentUser } = useGetUserByTokenQuery();
   
   // États pour la recherche et les filtres

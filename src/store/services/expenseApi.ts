@@ -85,13 +85,13 @@ export const expenseApi = authApi.injectEndpoints({
 
     getExpenseById: builder.query<Expense, string>({
       query: (id) => `/expenses/${id}`,
-      providesTags: (result, error, id) => [{ type: 'Expense', id }],
+      providesTags: ["Expense"],
     }),
 
     // Get expenses by church with type filter (current or global)
     getExpensesByChurch: builder.query<ExpensesByChurchResponse, { churchId: string; type: 'CURRENT' | 'GLOBAL' }>({
       query: ({ churchId, type }) => `/expenses/church/${churchId}?type=${type}`,
-      providesTags: (result, error, { churchId }) => [{ type: 'Expense', id: `church-${churchId}` }],
+      providesTags: ["Expense"],
     }),
 
     // Get monthly expense summary for charts
@@ -100,7 +100,7 @@ export const expenseApi = authApi.injectEndpoints({
         const queryParams = year ? `?year=${year}` : '';
         return `/expenses/church/${churchId}/monthly-summary${queryParams}`;
       },
-      providesTags: (result, error, { churchId }) => [{ type: 'Expense', id: `monthly-${churchId}` }],
+      providesTags: ["Expense"],
     }),
 
     // Get quarterly expense summary for charts
@@ -109,7 +109,7 @@ export const expenseApi = authApi.injectEndpoints({
         const queryParams = year ? `?year=${year}` : '';
         return `/expenses/church/${churchId}/quarterly-summary${queryParams}`;
       },
-      providesTags: (result, error, { churchId }) => [{ type: 'Expense', id: `quarterly-${churchId}` }],
+      providesTags: ["Expense"],
     }),
 
     // Get expenses by category
@@ -118,7 +118,7 @@ export const expenseApi = authApi.injectEndpoints({
         const queryParams = period ? `?period=${period}` : '';
         return `/expenses/church/${churchId}/by-category${queryParams}`;
       },
-      providesTags: (result, error, { churchId }) => [{ type: 'Expense', id: `category-${churchId}` }],
+      providesTags: ["Expense"],
     }),
 
     updateExpense: builder.mutation<Expense, UpdateExpenseRequest>({
@@ -127,7 +127,7 @@ export const expenseApi = authApi.injectEndpoints({
         method: 'PUT',
         body: patch,
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: 'Expense', id }],
+      invalidatesTags: ["Expense"],
     }),
 
     deleteExpense: builder.mutation<{ message: string }, string>({

@@ -9,22 +9,6 @@ import Select from 'react-select';
 import { useGetGroupsByChurchQuery, useGetGroupByIdQuery } from '../store/services/groupApi';
 import { useGetUsersByChurchQuery, useGetUserByTokenQuery } from '../store/services/authApi';
 
-interface User {
-  id: string;
-  firstname: string;
-  lastname: string;
-  email?: string;
-  picture?: string;
-  role?: string;
-}
-
-interface Group {
-  id: string;
-  name: string;
-  description?: string;
-  users?: User[];
-}
-
 interface GroupTransferFormData {
   userId: string;
   sourceGroupId: string;

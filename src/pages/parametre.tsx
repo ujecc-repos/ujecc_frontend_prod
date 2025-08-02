@@ -3,7 +3,7 @@ import { useGetUserByTokenQuery } from '../store/services/authApi';
 import { useGetChurchByIdQuery, useUpdateChurchMutation } from '../store/services/churchApi';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { FaChurch, FaMapMarkerAlt, FaPhone, FaEnvelope, FaMusic, FaFacebook, FaInstagram, FaWhatsapp, FaSave, FaEdit, FaTimes, FaArrowLeft } from 'react-icons/fa';
+import { FaChurch, FaMapMarkerAlt, FaPhone, FaEnvelope, FaMusic, FaFacebook, FaInstagram, FaWhatsapp, FaSave, FaEdit, FaTimes } from 'react-icons/fa';
 
 type FormDataType = {
   name: string;

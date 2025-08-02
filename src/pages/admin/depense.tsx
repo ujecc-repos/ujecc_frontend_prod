@@ -136,6 +136,7 @@ const Depense = () => {
 
   const handleAddExpense = (expenseData: any) => {
     // Add expense logic here
+    console.log(expenseData)
     setIsExpenseModalOpen(false);
     refetchExpenses();
   };

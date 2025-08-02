@@ -125,8 +125,6 @@ const DashboardLayout = ({ userRole }: {userRole: UserRole}) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [notificationCount] = useState(3);
-  const [activeTab, setActiveTab] = useState(1)
-  const [chatVisible, setChatVisible] = useState(false)
   const [logOut] = useGetLogoutMutation()
   // const { user, logout } = useAuth();
   const user = { name: 'User', email: 'user@example.com' }; // Temporary mock user

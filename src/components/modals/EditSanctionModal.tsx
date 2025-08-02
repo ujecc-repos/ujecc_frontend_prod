@@ -29,7 +29,9 @@ export default function EditSanctionModal({ isOpen, onClose, onSubmit, isLoading
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [status, setStatus] = useState('');
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [_errors, setErrors] = useState<Record<string, string>>({});
+
+  console.log(name, description, startDate, endDate)
 
   useEffect(() => {
     if (sanction) {

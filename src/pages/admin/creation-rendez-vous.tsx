@@ -10,7 +10,6 @@ import {
   CheckIcon,
   XMarkIcon,
   CalendarIcon,
-  ClockIcon,
   UserGroupIcon,
   DocumentTextIcon,
 } from '@heroicons/react/24/outline';

@@ -3,8 +3,6 @@ import { XMarkIcon } from '@heroicons/react/24/outline';
 import Select from 'react-select';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { useGetMinistriesByChurchQuery } from '../store/services/ministryApi';
-import { useGetUserByTokenQuery } from '../store/services/authApi';
 
 interface Group {
   id: string;
@@ -62,13 +60,6 @@ const EditGroupModal: React.FC<EditGroupModalProps> = ({ isOpen, onClose, onSubm
     meetingFrequency: '',
     profileImage: null
   });
-
-  // Fetch ministries for the dropdown
-  const { data: userData } = useGetUserByTokenQuery();
-  const { data: ministries = [] } = useGetMinistriesByChurchQuery(
-    userData?.church?.id ? `${userData.church.id}` : '',
-    { skip: !userData?.church?.id }
-  );
 
   // Options for dropdowns
   const frequencyOptions = [

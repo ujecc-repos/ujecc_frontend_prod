@@ -1,4 +1,4 @@
-import React, { useState, Fragment } from 'react';
+import { useState, Fragment } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   MagnifyingGlassIcon,
@@ -6,7 +6,6 @@ import {
   EllipsisVerticalIcon,
   PencilIcon,
   TrashIcon,
-  UserPlusIcon,
   EyeIcon,
   ArrowPathIcon,
   DocumentArrowDownIcon,

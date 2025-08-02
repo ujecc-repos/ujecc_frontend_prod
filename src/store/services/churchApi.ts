@@ -40,10 +40,6 @@ interface UpdateChurchRequest {
   [key: string]: any;
 }
 
-interface AddUserToChurchRequest {
-  userId: string;
-}
-
 interface AddUserToChurchResponse {
   message: string;
   user: {

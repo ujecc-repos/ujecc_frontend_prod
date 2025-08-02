@@ -53,7 +53,7 @@ export const sundayClassApi = authApi.injectEndpoints({
 
     getSundayClassById: builder.query<SundayClass, string>({
       query: (id) => `/sunday-classes/${id}`,
-      providesTags: (result, error, id) => [{ type: 'SundayClass', id }],
+      providesTags: ["SundayClass"],
     }),
 
     updateSundayClass: builder.mutation<SundayClass, UpdateSundayClassRequest>({

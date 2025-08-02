@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useLoginMutation } from '../store/services/authApi';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { loginSchema, type LoginFormData } from '../validations/auth';
 import { useAuth } from '../Auth/auth';
 import Ecclesys from "../assets/Ecclesys 1.png"
@@ -193,24 +193,6 @@ export default function Login() {
                 </div>
               )}
             </button>
-
-            {/* Divider */}
-            <div className="relative my-8">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Ou</span>
-              </div>
-            </div>
-
-            {/* Signup Link */}
-            <div className="text-center">
-              <span className="text-gray-600">Nouveau Église ? </span>
-              <Link to="/enregistrer" className="font-semibold text-teal-500 hover:text-teal-600">
-                Créer Maintenant !
-              </Link>
-            </div>
           </form>
         </div>
       </div>

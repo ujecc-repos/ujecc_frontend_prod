@@ -1,13 +1,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   MagnifyingGlassIcon,
-  FunnelIcon,
   ArrowDownTrayIcon,
   PlusIcon,
   EllipsisVerticalIcon,
   PencilIcon,
   TrashIcon,
-  UserIcon,
   HeartIcon,
   CalendarIcon,
   MapPinIcon,
@@ -22,7 +20,7 @@ import { useGetUserByTokenQuery } from '../../store/services/authApi';
 import { useGetMarriagesByChurchQuery, useDeleteMarriageMutation, useUpdateMarriageMutation } from '../../store/services/mariageApi';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
-import { Document, Packer, Paragraph, Table, TableCell, TableRow, TextRun, WidthType, AlignmentType, HeadingLevel } from 'docx';
+import { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, AlignmentType, HeadingLevel } from 'docx';
 import { saveAs } from 'file-saver';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';

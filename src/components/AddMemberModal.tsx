@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { useAddUserToGroupMutation } from '../store/services/groupApi';
 import { useGetUsersByChurchQuery} from '../store/services/authApi';

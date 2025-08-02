@@ -1,19 +1,16 @@
-import React, { useState, useEffect, Fragment } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+// import { useNavigate } from 'react-router-dom'
 import { 
   PlusIcon, 
   MagnifyingGlassIcon, 
   FunnelIcon, 
   ArrowPathIcon,
-  EllipsisVerticalIcon,
-  PencilIcon,
-  TrashIcon,
   PhoneIcon,
   EnvelopeIcon,
   MapPinIcon,
   UserIcon
 } from '@heroicons/react/24/outline'
-import { Menu, Transition, Dialog } from '@headlessui/react'
+import { Dialog } from '@headlessui/react'
 import { useGetPasteursByPresidentQuery } from '../../store/services/mission'
 import { useGetUserByTokenQuery } from '../../store/services/authApi'
 
@@ -29,7 +26,7 @@ interface Pasteur {
 }
 
 export default function PasteurPage() {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const { data: currentUser } = useGetUserByTokenQuery();
   const presidentName = currentUser ? `${currentUser.firstname}${currentUser.lastname}` : '';
   const { data: pasteurs, isLoading, isError, refetch } = useGetPasteursByPresidentQuery(presidentName, {

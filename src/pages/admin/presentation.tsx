@@ -13,7 +13,7 @@ import {
 } from '@heroicons/react/24/outline';
 // Import API hooks
 import { useGetUserByTokenQuery } from '../../store/services/authApi';
-import { useGetPresentationsByChurchQuery, useUpdatePresentationMutation } from '../../store/services/presentationApi';
+import { useGetPresentationsByChurchQuery } from '../../store/services/presentationApi';
 
 // Types
 interface Presentation {

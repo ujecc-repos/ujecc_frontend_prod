@@ -134,7 +134,7 @@ export default function StatisticsForSuperAdmin() {
   const { data: marriagesData, isLoading: isMarriagesLoading } = useGetMarriagesQuery();
   const { data: pasteursData, isLoading: isPasteursLoading } = useGetPasteursQuery();
   const {data: globalStatsData, isLoading: isGlobalStatsLoading} = useGetGlobalStatsQuery({});
-  const {data: churchesData, isLoading: isChurchesLoading} = useGetChurchesQuery();
+  const {data: churchesData} = useGetChurchesQuery();
 
 
   // Check if any data is still loading

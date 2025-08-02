@@ -83,6 +83,7 @@ export const authApi = createApi({
     // baseUrl: 'http://localhost:4000/api', // Adresse IP du serveur backend
     baseUrl: 'https://api.ujecc.org',
     prepareHeaders: async (headers, { getState }) => {
+      console.log(getState)
 
         try {
             const token = await localStorage.getItem('token');
@@ -134,7 +135,7 @@ export const authApi = createApi({
     }),
 
     getLogout: builder.mutation<{ message: string }, void>({
-      query: (id) => ({
+      query: () => ({
         url: `/users/logout`,
         method: 'PUT',
       }),
@@ -154,12 +155,12 @@ export const authApi = createApi({
 
     getUserById: builder.query<User, string>({
       query: (id) => `/users/${id}`,
-      providesTags: (result, error, id) => [{ type: 'User', id }],
+      providesTags: ["User"],
     }),
 
     getUserByToken: builder.query<User, void>({
       query: () => `/users/userbytoken/token`,
-      providesTags: (result, error) => [{ type: 'User'}],
+      providesTags: ["User"],
     }),
 
     updateUser: builder.mutation<User, UpdateUserRequest | FormData>({      query: (userData) => {
@@ -172,9 +173,9 @@ export const authApi = createApi({
           : (userData as UpdateUserRequest).id;
         
         // Remove id from body if it's not FormData
-        const body = isFormData 
-          ? userData 
-          : { ...(userData as UpdateUserRequest), id: undefined };
+        // const body = isFormData 
+        //   ? userData 
+        //   : { ...(userData as UpdateUserRequest), id: undefined };
         
         return {
           url: `/users/${id}`,

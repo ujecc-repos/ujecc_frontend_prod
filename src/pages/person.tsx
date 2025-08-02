@@ -6,14 +6,10 @@ import {
   EnvelopeIcon,
   PhoneIcon,
   MapPinIcon,
-  BriefcaseIcon,
-  CalendarIcon,
-  HeartIcon,
-  IdentificationIcon,
   HomeIcon,
   GlobeAltIcon
 } from '@heroicons/react/24/outline';
-import { useGetUserByIdQuery, type User } from '../store/services/authApi';
+import { useGetUserByIdQuery } from '../store/services/authApi';
 
 const PersonDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();

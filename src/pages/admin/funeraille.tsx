@@ -48,9 +48,9 @@ export default function Funeraille() {
 
   // API hooks
   const { data: userData } = useGetUserByTokenQuery();
-  const { data: funerals = [], isLoading: isLoadingFunerals, refetch: refetchFunerals } = 
+  const { data: funerals = [], isLoading: isLoadingFunerals } = 
     useGetFuneralsByChurchQuery(userData?.church?.id || '', { skip: !userData?.church?.id });
-  const [deleteFuneral, { isLoading: isDeleting }] = useDeleteFuneralMutation();
+  const [deleteFuneral] = useDeleteFuneralMutation();
 
   // Filter funerals based on search query
   const filteredFunerals = useMemo(() => {

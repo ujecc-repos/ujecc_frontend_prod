@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+// import { useNavigate } from 'react-router-dom';
 import {
   MagnifyingGlassIcon,
   CalendarIcon,
@@ -44,7 +44,6 @@ interface BirthdayUser {
 }
 
 const Anniversaire: React.FC = () => {
-  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   
@@ -190,7 +189,7 @@ const Anniversaire: React.FC = () => {
 
   // Render birthday card
   const BirthdayCard = ({ user }: { user: BirthdayUser }) => {
-    const birthDate = parseDate(user.birthDate);
+    // const birthDate = parseDate(user.birthDate);
     const formattedBirthDate = formatDate(user.birthDate);
     
     return (

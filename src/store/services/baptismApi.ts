@@ -23,26 +23,6 @@ interface Baptism {
   updatedAt?: string;
 }
 
-
-interface CreateBaptismRequest {
-  fullName: string;
-  birthDate: string;
-  baptismDate: string;
-  baptismLocation: string;
-  officiantName: string;
-  baptismClassDate: string;
-  churchId: string;
-  withness: string;
-  placeOfBirth: string;
-  testimony: string;
-  conversionDate: string;
-  previousChurch: string;
-  status?: 'pending' | 'completed';
-  isCatechumene?: boolean;
-  catechumeneStartDate?: string;
-  catechumeneEndDate?: string;
-}
-
 interface UpdateBaptismRequest {
   id: string;
   [key: string]: any;
@@ -67,7 +47,7 @@ export const baptismApi = authApi.injectEndpoints({
 
     getBaptismById: builder.query<Baptism, string>({
       query: (id) => `/baptisms/${id}`,
-      providesTags: (result, error, id) => [{ type: 'Baptism', id }],
+      providesTags: ["Baptism"],
     }),
 
     updateBaptism: builder.mutation<Baptism, UpdateBaptismRequest>({
@@ -76,7 +56,7 @@ export const baptismApi = authApi.injectEndpoints({
         method: 'PUT',
         body: patch,
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: 'Baptism', id }],
+      invalidatesTags: ["Baptism"],
     }),
 
     deleteBaptism: builder.mutation<{ message: string }, string>({

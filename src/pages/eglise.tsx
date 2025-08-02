@@ -177,6 +177,7 @@ const ChurchCard: React.FC<ChurchCardProps> = ({ church, onEdit, onDelete, onVie
 export default function EgliseScreen() {
   const navigate = useNavigate();
   const { data: userData, isLoading: isUserDataLoading } = useGetUserByTokenQuery();
+  console.log(userData)
   
   // États
   const [searchQuery, setSearchQuery] = useState('');
@@ -184,6 +185,7 @@ export default function EgliseScreen() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(5);
   const [isLoading, setIsLoading] = useState(true);
+  console.log(searchQuery, filterVisible)
   
   // Dans un cas réel, nous utiliserions ces hooks pour récupérer les données
   // const { data: missionData, isLoading: isMissionLoading } = useGetMissionByPresidentQuery();

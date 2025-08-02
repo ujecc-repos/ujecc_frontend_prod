@@ -44,7 +44,7 @@ export const ministryApi = authApi.injectEndpoints({
         console.log('Ministry by ID response:', response);
         return response as Ministry;
       },
-      providesTags: (result, error, id) => [{ type: 'Ministry', id }],
+      providesTags: ["Ministry"],
     }),
 
     updateMinistry: builder.mutation<Ministry, UpdateMinistryRequest>({
@@ -53,7 +53,7 @@ export const ministryApi = authApi.injectEndpoints({
         method: 'PUT',
         body: patch,
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: 'Ministry', id }],
+      invalidatesTags: ["Ministry"],
     }),
 
     deleteMinistry: builder.mutation<{ message: string }, string>({

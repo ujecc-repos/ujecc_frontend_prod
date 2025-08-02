@@ -1,11 +1,9 @@
 import { useNavigate } from 'react-router-dom';
 import { Dialog, Transition, Menu } from '@headlessui/react';
-import { XMarkIcon, MagnifyingGlassIcon, PlusIcon, ClockIcon, CalendarIcon, UserIcon, MapPinIcon, DocumentTextIcon, EyeIcon, TrashIcon, EllipsisVerticalIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
-import { useGetAppointmentsByChurchQuery, useCreateAppointmentMutation, useDeleteAppointmentMutation } from '../../store/services/appointmentApi';
-import { useGetUsersByChurchQuery, useGetUserByTokenQuery } from '../../store/services/authApi';
+import { XMarkIcon, MagnifyingGlassIcon, PlusIcon, ClockIcon, CalendarIcon, UserIcon, DocumentTextIcon, EyeIcon, TrashIcon, EllipsisVerticalIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { useGetAppointmentsByChurchQuery, useDeleteAppointmentMutation } from '../../store/services/appointmentApi';
+import { useGetUserByTokenQuery } from '../../store/services/authApi';
 import { Fragment, useState } from 'react';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
 
 // Types
 interface Appointment {
@@ -29,27 +27,6 @@ interface User {
   lastname: string;
   email: string;
   profileImage?: string;
-}
-
-interface CreateAppointmentFormData {
-  name: string;
-  visibility: string;
-  description: string;
-  date: string;
-  time: string;
-  duration: string;
-  notes: string;
-  userIds: string[];
-  churchId?: string;
-}
-
-// Create Appointment Modal Component
-interface CreateAppointmentModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (data: CreateAppointmentFormData) => void;
-  users: User[];
-  churchId: string;
 }
 
 // const CreateAppointmentModal: React.FC<CreateAppointmentModalProps> = ({ isOpen, onClose, onSubmit, users, churchId }) => {
@@ -555,12 +532,12 @@ const RendezVous: React.FC = () => {
 
   const { data: appointmentsData, isLoading: isLoadingAppointments, refetch: refetchAppointments } = 
     useGetAppointmentsByChurchQuery(churchId, { skip: !churchId });
-  const { data: usersData, isLoading: isLoadingUsers } = useGetUsersByChurchQuery(churchId, { skip: !churchId });
-  const [createAppointment, { isLoading: isCreating }] = useCreateAppointmentMutation();
-  const [deleteAppointment, { isLoading: isDeleting }] = useDeleteAppointmentMutation();
+  // const { data: usersData,  } = useGetUsersByChurchQuery(churchId, { skip: !churchId });
+  // const [createAppointment, { isLoading: isCreating }] = useCreateAppointmentMutation();
+  const [deleteAppointment] = useDeleteAppointmentMutation();
 
   const appointments = appointmentsData || [];
-  const users = usersData || [];
+  // const users = usersData || [];
 
   // Filter appointments based on search query and upcoming filter
   const filteredAppointments = appointments.filter(appointment => {
@@ -718,6 +695,7 @@ const RendezVous: React.FC = () => {
                                 {appointment.assignedUsers?.slice(0, 3).map((user, index) => (
                                   <div key={index} className="inline-block h-8 w-8 rounded-full ring-2 ring-white bg-gray-200 flex items-center justify-center">
                                     <UserIcon className="h-5 w-5 text-gray-500" />
+                                    <span>{user.firstname} {user.lastname}</span>
                                   </div>
                                 ))}
                                 {appointment.assignedUsers && appointment.assignedUsers.length > 3 && (

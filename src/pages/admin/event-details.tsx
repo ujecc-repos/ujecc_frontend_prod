@@ -1,7 +1,6 @@
-import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGetEventByIdQuery } from '../../store/services/eventApi';
-import { ArrowLeftIcon, CalendarDaysIcon, MapPinIcon, ClockIcon, UserGroupIcon,  XCircleIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, CalendarDaysIcon, MapPinIcon, ClockIcon, XCircleIcon } from '@heroicons/react/24/outline';
 
 export default function EventDetails() {
   const { id } = useParams<{ id: string }>();
@@ -9,20 +8,20 @@ export default function EventDetails() {
   const { data: event, isLoading, error } = useGetEventByIdQuery(id || '');
 
   // Get status class and label
-  const getStatusInfo = (status?: string) => {
-    switch (status) {
-      case 'upcoming':
-        return { class: 'bg-blue-100 text-blue-800', label: 'À venir' };
-      case 'ongoing':
-        return { class: 'bg-green-100 text-green-800', label: 'En cours' };
-      case 'completed':
-        return { class: 'bg-gray-100 text-gray-800', label: 'Terminé' };
-      case 'cancelled':
-        return { class: 'bg-red-100 text-red-800', label: 'Annulé' };
-      default:
-        return { class: 'bg-gray-100 text-gray-800', label: 'Inconnu' };
-    }
-  };
+  // const getStatusInfo = (status?: string) => {
+  //   switch (status) {
+  //     case 'upcoming':
+  //       return { class: 'bg-blue-100 text-blue-800', label: 'À venir' };
+  //     case 'ongoing':
+  //       return { class: 'bg-green-100 text-green-800', label: 'En cours' };
+  //     case 'completed':
+  //       return { class: 'bg-gray-100 text-gray-800', label: 'Terminé' };
+  //     case 'cancelled':
+  //       return { class: 'bg-red-100 text-red-800', label: 'Annulé' };
+  //     default:
+  //       return { class: 'bg-gray-100 text-gray-800', label: 'Inconnu' };
+  //   }
+  // };
 
   if (isLoading) {
     return (
@@ -48,8 +47,6 @@ export default function EventDetails() {
       </div>
     );
   }
-
-  const statusInfo = getStatusInfo(event.status);
 
   return (
     <div className="">

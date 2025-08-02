@@ -1,9 +1,7 @@
 import { createBrowserRouter } from "react-router-dom";
 import App from "../App";
-import Enregistrer from "../pages/Enregistrer";
 import Dashboard from "../pages/dashboard";
 import ProtectedRoute from "./protectedRoute";
-import Statistics from "../pages/admin/Statistics";
 import Membres from "../pages/admin/membres";
 import PersonDetail from "../pages/person";
 import Groupe from "../pages/admin/groupe";
@@ -34,8 +32,6 @@ import MissionPage from "../pages/super-admin/mission";
 import GestionPage from "../pages/super-admin/gestions";
 import UserProfile from "../pages/profile";
 import ChangePassword from "../pages/change-password";
-import StatisticsForSuperAdmin from "../pages/admin/statisticsforSuperadmin";
-import { StatistiqueForDirecteur } from "../pages/director/statistiqueForDirecteur";
 import MainPage from "../pages/mainPage";
 import PasteurPage from "../pages/director/pasteurs";
 
@@ -44,10 +40,6 @@ const router = createBrowserRouter([
     {
         path: "/",
         element: <App />
-    },
-    {
-        path: "/enregistrer",
-        element: <Enregistrer />
     },
     {
         element: <ProtectedRoute />,

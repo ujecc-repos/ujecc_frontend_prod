@@ -56,7 +56,7 @@ export const committeeApi = authApi.injectEndpoints({
         console.log('Committee by ID response:', response);
         return response as Committee;
       },
-      providesTags: (result, error, id) => [{ type: 'Committee', id }],
+      providesTags: ["Committee"],
     }),
 
     updateCommittee: builder.mutation<Committee, UpdateCommitteeRequest>({
@@ -65,7 +65,7 @@ export const committeeApi = authApi.injectEndpoints({
         method: 'PUT',
         body: patch,
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: 'Committee', id }],
+      invalidatesTags: ["Committee"],
     }),
 
     deleteCommittee: builder.mutation<{ message: string }, string>({
