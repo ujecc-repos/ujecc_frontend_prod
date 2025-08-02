@@ -137,7 +137,7 @@ const DashboardLayout = ({ userRole }: {userRole: UserRole}) => {
     localStorage.removeItem("user")
     localStorage.removeItem("token")
     logOut();
-    navigate('/connecter');
+    navigate('/');
   };
 
   return (
