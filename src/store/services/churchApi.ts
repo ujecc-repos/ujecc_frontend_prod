@@ -26,6 +26,8 @@ interface CreateChurchRequest {
   departement: string;
   commune: string;
   sectionCommunale: string;
+  longitude?: string;
+  latitude?: string;
   [key: string]: any;
 }
 

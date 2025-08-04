@@ -1,0 +1,51 @@
+export const Nippes: { [commune: string]: string[] } = {
+  "Anse-à-Veau": [
+    "Grande Rivière",
+    "Baconois",
+    "Baquet",
+    "Cocoyers",
+    "Sault du Baril",
+    "Arnaud",
+    "Bouzi",
+  ],
+  "Baradères": [
+    "Grand Boucan",
+    "La Plaine",
+    "Gérin",
+    "Tête d'Eau",
+    "Fond Tortue",
+    "Rivière Salée",
+  ],
+  "Cavaillon": [
+    "Mare Henri",
+    "Laroque",
+  ],
+  "L'Asile": [
+    "Tournade",
+    "Morisseau",
+    "L'Asile",
+    "Changeux",
+  ],
+  "Miragoane": [
+    "Chalon",
+    "Belle Rivière",
+    "Pemerle",
+    "Paillant",
+    "Fonds des Nègres",
+    "Dessources",
+  ],
+  "Petit Trou de Nippes": [
+    "Tiby",
+    "Raymond",
+    "Liève",
+    "Vassale",
+    "Anse à Pins",
+    "Plaissance",
+  ],
+  "Petite Rivière de Nippes": [
+    "Fonds de Lianes",
+    "Cholette",
+    "Silègue",
+    "Bezin",
+  ],
+};

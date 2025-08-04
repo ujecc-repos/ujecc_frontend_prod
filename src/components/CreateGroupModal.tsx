@@ -321,36 +321,35 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ isOpen, onClose, on
             {activeTab === 'meeting' && (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Meeting Time */}
+                  {/* Meeting Day */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Heure de réunion</label>
-                    <div className="date-picker-container">
-                      <DatePicker
-                        selected={formData.meetingTime}
-                        onChange={(time) => setFormData(prev => ({ ...prev, meetingTime: time }))}
-                        showTimeSelect
-                        showTimeSelectOnly
-                        timeIntervals={15}
-                        timeCaption="Heure"
-                        dateFormat="HH:mm"
-                        placeholderText="Sélectionner l'heure"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Meeting Location */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Lieu de réunion</label>
-                    <input
-                      type="text"
-                      value={formData.meetingLocation}
-                      onChange={(e) => setFormData(prev => ({ ...prev, meetingLocation: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      placeholder="ex: Salle de fellowship, Église principale"
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Jour de réunion</label>
+                    <Select
+                      value={dayOptions.find(option => option.value === formData.meetingDay) || null}
+                      onChange={(selectedOption) => setFormData(prev => ({ ...prev, meetingDay: selectedOption?.value || '' }))}
+                      options={dayOptions}
+                      placeholder="Sélectionner le jour"
+                      isClearable
+                      isSearchable
+                      className="react-select-container"
+                      classNamePrefix="react-select"
+                      styles={{
+                        control: (provided) => ({
+                          ...provided,
+                          borderColor: '#d1d5db',
+                          '&:hover': {
+                            borderColor: '#d1d5db'
+                          },
+                          '&:focus-within': {
+                            borderColor: '#14b8a6',
+                            boxShadow: '0 0 0 1px #14b8a6'
+                          }
+                        })
+                      }}
                     />
                   </div>
 
+                  
                   {/* Meeting Frequency */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Fréquence des réunions</label>
@@ -379,33 +378,36 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ isOpen, onClose, on
                     />
                   </div>
 
-                  {/* Meeting Day */}
+                  {/* Meeting Time */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Jour de réunion</label>
-                    <Select
-                      value={dayOptions.find(option => option.value === formData.meetingDay) || null}
-                      onChange={(selectedOption) => setFormData(prev => ({ ...prev, meetingDay: selectedOption?.value || '' }))}
-                      options={dayOptions}
-                      placeholder="Sélectionner le jour"
-                      isClearable
-                      isSearchable
-                      className="react-select-container"
-                      classNamePrefix="react-select"
-                      styles={{
-                        control: (provided) => ({
-                          ...provided,
-                          borderColor: '#d1d5db',
-                          '&:hover': {
-                            borderColor: '#d1d5db'
-                          },
-                          '&:focus-within': {
-                            borderColor: '#14b8a6',
-                            boxShadow: '0 0 0 1px #14b8a6'
-                          }
-                        })
-                      }}
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Heure de réunion</label>
+                    <div className="date-picker-container">
+                      <DatePicker
+                        selected={formData.meetingTime}
+                        onChange={(time) => setFormData(prev => ({ ...prev, meetingTime: time }))}
+                        showTimeSelect
+                        showTimeSelectOnly
+                        timeIntervals={15}
+                        timeCaption="Heure"
+                        dateFormat="HH:mm"
+                        placeholderText="Sélectionner l'heure"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      />
+                    </div>
+                  </div>
+                 
+                 {/* Meeting Location */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Lieu de réunion</label>
+                    <input
+                      type="text"
+                      value={formData.meetingLocation}
+                      onChange={(e) => setFormData(prev => ({ ...prev, meetingLocation: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      placeholder="ex: Salle de fellowship, Église principale"
                     />
                   </div>
+    
                 </div>
               </div>
             )}

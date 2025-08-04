@@ -14,8 +14,7 @@ export default function CreationPresentation() {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
-  const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
   
   const [createPresentation, { isLoading }] = useCreatePresentationMutation();
   const { data: userToken } = useGetUserByTokenQuery();
@@ -37,43 +36,44 @@ export default function CreationPresentation() {
 
   // Validation des champs
   const validateStep = (step: number) => {
-    const errors: string[] = [];
+    const newErrors: Record<string, string> = {};
 
     if (step === 0) {
-      if (!formData.childName) errors.push('Le nom de l\'enfant est obligatoire');
-      if (!formData.dateOfBirth) errors.push('La date de naissance est obligatoire');
-      if (!formData.placeOfBirth) errors.push('Le lieu de naissance est obligatoire');
+      if (!formData.childName) newErrors.childName = 'Le nom de l\'enfant est obligatoire';
+      if (!formData.dateOfBirth) newErrors.dateOfBirth = 'La date de naissance est obligatoire';
+      if (!formData.placeOfBirth) newErrors.placeOfBirth = 'Le lieu de naissance est obligatoire';
       if (!formData.birthCertificate) {
-        errors.push('Le certificat de naissance est obligatoire');
+        newErrors.birthCertificate = 'Le certificat de naissance est obligatoire';
       } else {
         // Validation du type de fichier (PDF uniquement)
         if (formData.birthCertificate.type !== 'application/pdf') {
-          errors.push('Le certificat de naissance doit être au format PDF');
+          newErrors.birthCertificate = 'Le certificat de naissance doit être au format PDF';
         }
         
         // Validation de la taille du fichier (max 5MB)
         const maxSize = 5 * 1024 * 1024; // 5MB
         if (formData.birthCertificate.size > maxSize) {
-          errors.push('Le certificat de naissance ne doit pas dépasser 5MB');
+          newErrors.birthCertificate = 'Le certificat de naissance ne doit pas dépasser 5MB';
         }
       }
     } else if (step === 1) {
-      if (!formData.fatherName) errors.push('Le nom du père est obligatoire');
-      if (!formData.motherName) errors.push('Le nom de la mère est obligatoire');
-      if (!formData.address) errors.push('L\'adresse est obligatoire');
-      if (!formData.phone) errors.push('Le numéro de téléphone est obligatoire');
+      if (!formData.fatherName) newErrors.fatherName = 'Le nom du père est obligatoire';
+      if (!formData.motherName) newErrors.motherName = 'Le nom de la mère est obligatoire';
+      if (!formData.address) newErrors.address = 'L\'adresse est obligatoire';
+      if (!formData.phone) newErrors.phone = 'Le numéro de téléphone est obligatoire';
       // Validation du format du téléphone
       if (formData.phone && !/^\+?[0-9]{8,15}$/.test(formData.phone)) {
-        errors.push('Format de téléphone invalide');
+        newErrors.phone = 'Format de téléphone invalide';
       }
     } else if (step === 2) {
-      if (!formData.presentationDate) errors.push('La date de présentation est obligatoire');
-      if (!formData.officiantName) errors.push('Le nom de l\'officiant est obligatoire');
-      if (!formData.witness) errors.push('Le témoin est obligatoire');
-      if (!formData.description) errors.push('La description est obligatoire');
+      if (!formData.presentationDate) newErrors.presentationDate = 'La date de présentation est obligatoire';
+      if (!formData.officiantName) newErrors.officiantName = 'Le nom de l\'officiant est obligatoire';
+      if (!formData.witness) newErrors.witness = 'Le témoin est obligatoire';
+      if (!formData.description) newErrors.description = 'La description est obligatoire';
     }
 
-    return errors;
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleInputChange = (name: string, value: any) => {
@@ -81,23 +81,60 @@ export default function CreationPresentation() {
       ...prev,
       [name]: value
     }));
+    
+    // Clear error for this field when input changes
+    if (errors[name]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, name: string) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
+      
+      // Validate file type and size
+      if (file.type !== 'application/pdf') {
+        const newErrors = { ...errors };
+        newErrors[name] = 'Le fichier doit être au format PDF';
+        setErrors(newErrors);
+        e.target.value = ''; // Reset input
+        return;
+      }
+      
+      // Validate file size (max 5MB)
+      const maxSize = 5 * 1024 * 1024;
+      if (file.size > maxSize) {
+        const newErrors = { ...errors };
+        newErrors[name] = 'Le fichier ne doit pas dépasser 5MB';
+        setErrors(newErrors);
+        e.target.value = ''; // Reset input
+        return;
+      }
+      
+      // File is valid, update form data and clear any errors
       setFormData(prev => ({
         ...prev,
         [name]: file
       }));
+      
+      // Clear error for this field
+      if (errors[name]) {
+        setErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors[name];
+          return newErrors;
+        });
+      }
     }
   };
 
   const handleNext = () => {
-    const errors = validateStep(currentStep);
-    if (errors.length > 0) {
-      setErrorMessage(errors.join('\n'));
-      setIsErrorModalOpen(true);
+    const isValid = validateStep(currentStep);
+    if (!isValid) {
       return;
     }
     setCurrentStep(prev => prev + 1);
@@ -110,10 +147,8 @@ export default function CreationPresentation() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const errors = validateStep(currentStep);
-    if (errors.length > 0) {
-      setErrorMessage(errors.join('\n'));
-      setIsErrorModalOpen(true);
+    const isValid = validateStep(currentStep);
+    if (!isValid) {
       return;
     }
 
@@ -146,8 +181,9 @@ export default function CreationPresentation() {
       toast.success('Présentation enregistrée avec succès');
     } catch (error) {
       console.error('Erreur lors de la création de la présentation:', error);
-      setErrorMessage('Une erreur est survenue lors de l\'enregistrement de la présentation');
-      setIsErrorModalOpen(true);
+      const newErrors = { ...errors };
+      newErrors.server = 'Une erreur est survenue lors de l\'enregistrement de la présentation';
+      setErrors(newErrors);
       toast.error('Erreur lors de l\'enregistrement de la présentation');
     }
   };
@@ -312,26 +348,36 @@ export default function CreationPresentation() {
                 </label>
                 
                 {field.type === 'text' || field.type === 'tel' ? (
-                  <input
-                    type={field.type}
-                    placeholder={field.placeholder}
-                    value={formData[field.name as keyof typeof formData] as string}
-                    onChange={(e) => handleInputChange(field.name, e.target.value)}
-                    className="border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  />
+                  <div className="flex flex-col w-full">
+                    <input
+                      type={field.type}
+                      placeholder={field.placeholder}
+                      value={formData[field.name as keyof typeof formData] as string}
+                      onChange={(e) => handleInputChange(field.name, e.target.value)}
+                      className={`border ${errors[field.name] ? 'border-red-500' : 'border-gray-300'} rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-teal-500`}
+                    />
+                    {errors[field.name] && (
+                      <p className="text-red-500 text-sm mt-1">{errors[field.name]}</p>
+                    )}
+                  </div>
                 ) : field.type === 'date' ? (
-                  <DatePicker
-                    selected={formData[field.name as keyof typeof formData] as Date}
-                    onChange={(date) => handleInputChange(field.name, date)}
-                    placeholderText={field.placeholder}
-                    dateFormat="dd/MM/yyyy"
-                    className="border border-gray-300 rounded-md p-2 w-full focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  />
+                  <div className="flex flex-col w-full">
+                    <DatePicker
+                      selected={formData[field.name as keyof typeof formData] as Date}
+                      onChange={(date) => handleInputChange(field.name, date)}
+                      placeholderText={field.placeholder}
+                      dateFormat="dd/MM/yyyy"
+                      className={`border ${errors[field.name] ? 'border-red-500' : 'border-gray-300'} rounded-md p-2 w-full focus:outline-none focus:ring-2 focus:ring-teal-500`}
+                    />
+                    {errors[field.name] && (
+                      <p className="text-red-500 text-sm mt-1">{errors[field.name]}</p>
+                    )}
+                  </div>
                 ) : field.type === 'file' ? (
                   <div className="flex flex-col">
                     <div className="flex items-center justify-center w-full">
                       <label
-                        className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100"
+                        className={`flex flex-col items-center justify-center w-full h-32 border-2 ${errors[field.name] ? 'border-red-500' : 'border-gray-300'} border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100`}
                       >
                         <div className="flex flex-col items-center justify-center pt-5 pb-6">
                           <DocumentIcon className="w-10 h-10 mb-3 text-gray-400" />
@@ -362,15 +408,23 @@ export default function CreationPresentation() {
                         </button>
                       </div>
                     )}
+                    {errors[field.name] && (
+                      <p className="text-red-500 text-sm mt-1">{errors[field.name]}</p>
+                    )}
                   </div>
                 ) : field.type === 'textarea' ? (
-                  <textarea
-                    placeholder={field.placeholder}
-                    value={formData[field.name as keyof typeof formData] as string}
-                    onChange={(e) => handleInputChange(field.name, e.target.value)}
-                    rows={4}
-                    className="border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  />
+                  <div className="flex flex-col w-full">
+                    <textarea
+                      placeholder={field.placeholder}
+                      value={formData[field.name as keyof typeof formData] as string}
+                      onChange={(e) => handleInputChange(field.name, e.target.value)}
+                      rows={4}
+                      className={`border ${errors[field.name] ? 'border-red-500' : 'border-gray-300'} rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-teal-500`}
+                    />
+                    {errors[field.name] && (
+                      <p className="text-red-500 text-sm mt-1">{errors[field.name]}</p>
+                    )}
+                  </div>
                 ) : null}
               </div>
             ))}
@@ -451,7 +505,7 @@ export default function CreationPresentation() {
                 <button
                   onClick={() => {
                     setIsSuccessModalOpen(false);
-                    navigate('/admin/presentation');
+                    navigate('/tableau-de-bord/admin/presentation');
                   }}
                   className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-colors"
                 >
@@ -488,52 +542,12 @@ export default function CreationPresentation() {
         </div>
       </Dialog>
       
-      {/* Modal d'erreur */}
-      <Dialog
-        open={isErrorModalOpen}
-        onClose={() => setIsErrorModalOpen(false)}
-        className="fixed inset-0 z-10 overflow-y-auto"
-      >
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="fixed inset-0 bg-black opacity-30" />
-          
-          <div className="relative bg-white rounded-lg max-w-md mx-auto p-6 shadow-xl">
-            <div className="flex flex-col items-center">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-                <svg
-                  className="w-8 h-8 text-red-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M6 18L18 6M6 6l12 12"
-                  ></path>
-                </svg>
-              </div>
-              
-              <Dialog.Title className="text-xl font-semibold text-gray-900 mb-2">
-                Erreur
-              </Dialog.Title>
-              
-              <div className="text-gray-600 text-center mb-6 whitespace-pre-line">
-                {errorMessage}
-              </div>
-              
-              <button
-                onClick={() => setIsErrorModalOpen(false)}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-              >
-                Fermer
-              </button>
-            </div>
-          </div>
+      {/* Server error display */}
+      {errors.server && (
+        <div className="mt-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+          {errors.server}
         </div>
-      </Dialog>
+      )}
     </div>
   );
 }

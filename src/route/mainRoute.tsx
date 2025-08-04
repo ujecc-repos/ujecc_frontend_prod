@@ -1,5 +1,4 @@
 import { createBrowserRouter } from "react-router-dom";
-import App from "../App";
 import Dashboard from "../pages/dashboard";
 import ProtectedRoute from "./protectedRoute";
 import Membres from "../pages/admin/membres";
@@ -34,12 +33,13 @@ import UserProfile from "../pages/profile";
 import ChangePassword from "../pages/change-password";
 import MainPage from "../pages/mainPage";
 import PasteurPage from "../pages/director/pasteurs";
+import App from "../App";
 
 
 const router = createBrowserRouter([
     {
         path: "/",
-        element: <App />
+        element: <App/>
     },
     {
         element: <ProtectedRoute />,

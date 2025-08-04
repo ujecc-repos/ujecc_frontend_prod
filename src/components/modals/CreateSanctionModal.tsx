@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Dialog } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
+import Select from 'react-select';
+import { useGetUserByTokenQuery, useGetUsersByChurchQuery } from '../../store/services/authApi';
 
 interface CreateSanctionModalProps {
   isOpen: boolean;
@@ -9,13 +11,33 @@ interface CreateSanctionModalProps {
   isLoading: boolean;
 }
 
+interface UserOption {
+  value: string;
+  label: string;
+  user: any;
+}
+
 export default function CreateSanctionModal({ isOpen, onClose, onSubmit, isLoading }: CreateSanctionModalProps) {
-  const [name, setName] = useState('');
+  const [selectedUser, setSelectedUser] = useState<UserOption | null>(null);
   const [description, setDescription] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [status, setStatus] = useState('active');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  // Récupérer l'ID de l'église de l'utilisateur connecté
+  const { data: userData } = useGetUserByTokenQuery();
+  const churchId = userData?.church?.id;
+  
+  // Récupérer tous les utilisateurs de l'église
+  const { data: users = [] } = useGetUsersByChurchQuery(churchId || '', { skip: !churchId });
+  
+  // Transformer les utilisateurs en options pour react-select
+  const userOptions: UserOption[] = users.map(user => ({
+    value: user.id,
+    label: `${user.firstname} ${user.lastname}`,
+    user: user
+  }));
 
   const handleClose = () => {
     resetForm();
@@ -23,7 +45,7 @@ export default function CreateSanctionModal({ isOpen, onClose, onSubmit, isLoadi
   };
 
   const resetForm = () => {
-    setName('');
+    setSelectedUser(null);
     setDescription('');
     setStartDate('');
     setEndDate('');
@@ -34,8 +56,8 @@ export default function CreateSanctionModal({ isOpen, onClose, onSubmit, isLoadi
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!name.trim()) {
-      newErrors.name = 'Le nom est requis';
+    if (!selectedUser) {
+      newErrors.name = 'Veuillez sélectionner un membre';
     }
 
     if (!description.trim()) {
@@ -62,7 +84,8 @@ export default function CreateSanctionModal({ isOpen, onClose, onSubmit, isLoadi
     }
 
     const sanctionData = {
-      name,
+      name: selectedUser?.label || '',
+      // userId: selectedUser?.value,
       description,
       startDate,
       endDate,
@@ -95,14 +118,16 @@ export default function CreateSanctionModal({ isOpen, onClose, onSubmit, isLoadi
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                Nom *
+                Membre *
               </label>
-              <input
-                type="text"
+              <Select
                 id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className={`mt-1  w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 py-2 px-2 focus:ring-indigo-500 sm:text-sm ${errors.name ? 'border-red-500' : ''}`}
+                value={selectedUser}
+                onChange={(option) => setSelectedUser(option as UserOption)}
+                options={userOptions}
+                className={`mt-1 ${errors.name ? 'border-red-500' : ''}`}
+                placeholder="Sélectionner un membre"
+                isClearable
               />
               {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
             </div>

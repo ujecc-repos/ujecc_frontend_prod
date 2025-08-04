@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { XMarkIcon, ArrowLeftIcon, DocumentIcon, UserIcon, HeartIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, DocumentIcon, UserIcon, HeartIcon } from '@heroicons/react/24/outline';
 import { useGetUserByTokenQuery } from '../../store/services/authApi';
 import { useCreateMarriageMutation } from '../../store/services/mariageApi';
 import DatePicker from 'react-datepicker';
@@ -28,13 +28,15 @@ export default function CreationMariage() {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
-  const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  
+  // État pour gérer les erreurs de validation pour chaque champ
+  const [errors, setErrors] = useState<Record<string, string>>({});
   
   // Récupération des données utilisateur et de l'église
   const { data: userData } = useGetUserByTokenQuery();
   const churchId = userData?.church?.id || '';
+
   
   // Mutation pour créer un mariage
   const [createMarriage] = useCreateMarriageMutation();
@@ -70,17 +72,28 @@ export default function CreationMariage() {
       
       // Vérifier le type de fichier (PDF uniquement)
       if (file.type !== 'application/pdf') {
-        setErrorMessage('Seuls les fichiers PDF sont acceptés.');
-        setIsErrorModalOpen(true);
+        setErrors(prev => ({
+          ...prev,
+          [fieldName]: 'Seuls les fichiers PDF sont acceptés.'
+        }));
         return;
       }
       
       // Vérifier la taille du fichier (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        setErrorMessage('La taille du fichier ne doit pas dépasser 5MB.');
-        setIsErrorModalOpen(true);
+        setErrors(prev => ({
+          ...prev,
+          [fieldName]: 'La taille du fichier ne doit pas dépasser 5MB.'
+        }));
         return;
       }
+      
+      // Effacer l'erreur si le fichier est valide
+      setErrors(prev => {
+        const newErrors = {...prev};
+        delete newErrors[fieldName];
+        return newErrors;
+      });
       
       handleInputChange(fieldName, file);
     }
@@ -88,154 +101,131 @@ export default function CreationMariage() {
 
   // Fonction pour valider le formulaire
   const validateForm = () => {
+    // Réinitialiser les erreurs
+    setErrors({});
+    let newErrors: Record<string, string> = {};
+    let isValid = true;
+    
     // Validation générale
     if (currentStep === 0) {
       // Validation des informations de la mariée
       if (!formData.brideFullname) {
-        setErrorMessage('Le nom complet de la mariée est requis.');
-        setIsErrorModalOpen(true);
-        return false;
-      }
-      
-      if (formData.brideFullname.length < 2) {
-        setErrorMessage('Le nom complet de la mariée doit contenir au moins 2 caractères.');
-        setIsErrorModalOpen(true);
-        return false;
+        newErrors.brideFullname = 'Le nom complet de la mariée est requis.';
+        isValid = false;
+      } else if (formData.brideFullname.length < 2) {
+        newErrors.brideFullname = 'Le nom complet de la mariée doit contenir au moins 2 caractères.';
+        isValid = false;
       }
       
       if (!formData.brideBirthDate) {
-        setErrorMessage('La date de naissance de la mariée est requise.');
-        setIsErrorModalOpen(true);
-        return false;
-      }
-      
-      // Vérification de l'âge (minimum 18 ans)
-      const today = new Date();
-      const birthDate = new Date(formData.brideBirthDate);
-      let age = today.getFullYear() - birthDate.getFullYear();
-      const monthDiff = today.getMonth() - birthDate.getMonth();
-      
-      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
-      }
-      
-      if (age < 18) {
-        setErrorMessage('La mariée doit avoir au moins 18 ans.');
-        setIsErrorModalOpen(true);
-        return false;
+        newErrors.brideBirthDate = 'La date de naissance de la mariée est requise.';
+        isValid = false;
+      } else {
+        // Vérification de l'âge (minimum 18 ans)
+        const today = new Date();
+        const birthDate = new Date(formData.brideBirthDate);
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+          age--;
+        }
+        
+        if (age < 18) {
+          newErrors.brideBirthDate = 'La mariée doit avoir au moins 18 ans.';
+          isValid = false;
+        }
       }
       
       if (!formData.brideCertificate) {
-        setErrorMessage('Le document d\'identité de la mariée est requis.');
-        setIsErrorModalOpen(true);
-        return false;
+        newErrors.brideCertificate = 'Le document d\'identité de la mariée est requis.';
+        isValid = false;
       }
     } else if (currentStep === 1) {
       // Validation des informations du marié
       if (!formData.groomFullname) {
-        setErrorMessage('Le nom complet du marié est requis.');
-        setIsErrorModalOpen(true);
-        return false;
-      }
-      
-      if (formData.groomFullname.length < 2) {
-        setErrorMessage('Le nom du marié doit contenir au moins 2 caractères.');
-        setIsErrorModalOpen(true);
-        return false;
+        newErrors.groomFullname = 'Le nom complet du marié est requis.';
+        isValid = false;
+      } else if (formData.groomFullname.length < 2) {
+        newErrors.groomFullname = 'Le nom du marié doit contenir au moins 2 caractères.';
+        isValid = false;
       }
       
       if (!formData.goomBirthDate) {
-        setErrorMessage('La date de naissance du marié est requise.');
-        setIsErrorModalOpen(true);
-        return false;
-      }
-      
-      // Vérification de l'âge (minimum 18 ans)
-      const today = new Date();
-      const groomAge = today.getFullYear() - new Date(formData.goomBirthDate).getFullYear();
-      const birthMonth = new Date(formData.goomBirthDate).getMonth();
-      const currentMonth = today.getMonth();
-      
-      if (groomAge < 18 || (groomAge === 18 && birthMonth > currentMonth)) {
-        setErrorMessage('Le marié doit avoir au moins 18 ans.');
-        setIsErrorModalOpen(true);
-        return false;
+        newErrors.goomBirthDate = 'La date de naissance du marié est requise.';
+        isValid = false;
+      } else {
+        // Vérification de l'âge (minimum 18 ans)
+        const today = new Date();
+        const groomAge = today.getFullYear() - new Date(formData.goomBirthDate).getFullYear();
+        const birthMonth = new Date(formData.goomBirthDate).getMonth();
+        const currentMonth = today.getMonth();
+        
+        if (groomAge < 18 || (groomAge === 18 && birthMonth > currentMonth)) {
+          newErrors.goomBirthDate = 'Le marié doit avoir au moins 18 ans.';
+          isValid = false;
+        }
       }
       
       if (!formData.grooomCertificate) {
-        setErrorMessage('Le document d\'identité du marié est requis.');
-        setIsErrorModalOpen(true);
-        return false;
+        newErrors.grooomCertificate = 'Le document d\'identité du marié est requis.';
+        isValid = false;
       }
     } else if (currentStep === 2) {
       // Validation des informations du mariage
-      if (!formData.weddingDate) {
-        setErrorMessage('La date du mariage est requise.');
-        setIsErrorModalOpen(true);
-        return false;
-      }
       
       if (!formData.weddingLocation) {
-        setErrorMessage('Le lieu du mariage est requis.');
-        setIsErrorModalOpen(true);
-        return false;
+        newErrors.weddingLocation = 'Le lieu du mariage est requis.';
+        isValid = false;
       }
-      
-      if (formData.weddingLocation.length < 2) {
-        setErrorMessage('Le lieu du mariage doit contenir au moins 2 caractères.');
-        setIsErrorModalOpen(true);
-        return false;
-      }
-      
+
       if (!formData.officiantName) {
-        setErrorMessage('Le nom de l\'officiant est requis.');
-        setIsErrorModalOpen(true);
-        return false;
-      }
-      
-      if (formData.officiantName.length < 2) {
-        setErrorMessage('Le nom de l\'officiant doit contenir au moins 2 caractères.');
-        setIsErrorModalOpen(true);
-        return false;
+        newErrors.officiantName = 'Le nom de l\'officiant est requis.';
+        isValid = false;
       }
       
       if (!formData.civilStateOfficer) {
-        setErrorMessage('Le nom de l\'officier d\'état civil est requis.');
-        setIsErrorModalOpen(true);
-        return false;
-      }
-      
-      if (formData.civilStateOfficer.length < 2) {
-        setErrorMessage('Le nom de l\'officier d\'état civil doit contenir au moins 2 caractères.');
-        setIsErrorModalOpen(true);
-        return false;
+        newErrors.civilStateOfficer = 'Le nom de l\'officier d\'état civil est requis.';
+        isValid = false;
+      } else if (formData.civilStateOfficer.length < 2) {
+        newErrors.civilStateOfficer = 'Le nom de l\'officier d\'état civil doit contenir au moins 2 caractères.';
+        isValid = false;
       }
       
       if (!formData.witnessSignature) {
-        setErrorMessage('La signature du témoin est requise.');
-        setIsErrorModalOpen(true);
-        return false;
+        newErrors.witnessSignature = 'La signature du témoin est requise.';
+        isValid = false;
+      } else if (formData.witnessSignature.length < 2) {
+        newErrors.witnessSignature = 'La signature du témoin doit contenir au moins 2 caractères.';
+        isValid = false;
       }
       
-      if (formData.witnessSignature.length < 2) {
-        setErrorMessage('La signature du témoin doit contenir au moins 2 caractères.');
-        setIsErrorModalOpen(true);
-        return false;
+      if (!formData.weddingDate) {
+        newErrors.weddingDate = 'La date du mariage est requise.';
+        isValid = false;
       }
     }
     
-    return true;
+    // Mettre à jour l'état des erreurs
+    setErrors(newErrors);
+    
+    return isValid;
   };
 
   // Fonction pour passer à l'étape suivante
   const handleNext = () => {
+    // Valider le formulaire avant de passer à l'étape suivante
     if (validateForm()) {
+      // Réinitialiser les erreurs avant de passer à l'étape suivante
+      setErrors({});
       setCurrentStep(currentStep + 1);
     }
   };
 
   // Fonction pour revenir à l'étape précédente
   const handlePrevious = () => {
+    // Réinitialiser les erreurs avant de revenir à l'étape précédente
+    setErrors({});
     setCurrentStep(currentStep - 1);
   };
 
@@ -243,6 +233,7 @@ export default function CreationMariage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Valider le formulaire avant soumission
     if (!validateForm()) {
       return;
     }
@@ -287,22 +278,27 @@ export default function CreationMariage() {
       console.error('Erreur lors de la création du mariage:', error);
       
       // Gestion des différents types d'erreurs
+      let errorMsg = '';
       if (error?.data?.message) {
-        setErrorMessage(error.data.message);
+        errorMsg = error.data.message;
       } else if (error?.status === 400) {
         console.log("error : ", error)
-        setErrorMessage('Données invalides. Veuillez vérifier vos informations.');
+        errorMsg = 'Données invalides. Veuillez vérifier vos informations.';
       } else if (error?.status === 422) {
-        setErrorMessage('Format de données incorrect. Veuillez vérifier vos informations.');
+        errorMsg = 'Format de données incorrect. Veuillez vérifier vos informations.';
       } else if (error?.status >= 500) {
-        setErrorMessage('Erreur du serveur. Veuillez réessayer plus tard.');
+        errorMsg = 'Erreur du serveur. Veuillez réessayer plus tard.';
       } else if (error?.name === 'NetworkError' || !error?.status) {
-        setErrorMessage('Problème de connexion. Vérifiez votre connexion internet.');
+        errorMsg = 'Problème de connexion. Vérifiez votre connexion internet.';
       } else {
-        setErrorMessage('Une erreur inattendue s\'est produite. Veuillez réessayer.');
+        errorMsg = 'Une erreur inattendue s\'est produite. Veuillez réessayer.';
       }
       
-      setIsErrorModalOpen(true);
+      // Afficher l'erreur générale dans l'état errors
+      setErrors({ general: errorMsg });
+      // Afficher l'erreur en haut du formulaire
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
     } finally {
       setIsLoading(false);
     }
@@ -461,6 +457,13 @@ export default function CreationMariage() {
 
       {/* Formulaire */}
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Message d'erreur général */}
+        {errors.general && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+            <p className="text-sm">{errors.general}</p>
+          </div>
+        )}
+        
         {/* Contenu du formulaire basé sur l'étape actuelle */}
         <div className="bg-gray-50 p-6 rounded-lg">
           <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
@@ -476,52 +479,67 @@ export default function CreationMariage() {
                 </label>
                 
                 {field.type === 'text' && (
-                  <input
-                    type="text"
-                    id={field.name}
-                    value={formData[field.name as keyof typeof formData] as string || ''}
-                    onChange={(e) => handleInputChange(field.name, e.target.value)}
-                    placeholder={field.placeholder}
-                    className="block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500"
-                  />
+                  <>
+                    <input
+                      type="text"
+                      id={field.name}
+                      value={formData[field.name as keyof typeof formData] as string || ''}
+                      onChange={(e) => handleInputChange(field.name, e.target.value)}
+                      placeholder={field.placeholder}
+                      className={`block w-full px-4 py-2 border ${errors[field.name] ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500`}
+                    />
+                    {errors[field.name] && (
+                      <p className="mt-1 text-sm text-red-500">{errors[field.name]}</p>
+                    )}
+                  </>
                 )}
                 
                 {field.type === 'date' && (
-                  <div className="date-picker-container">
-                    <DatePicker
-                      selected={formData[field.name as keyof typeof formData] as Date | null}
-                      onChange={(date) => handleInputChange(field.name, date)}
-                      dateFormat="dd/MM/yyyy"
-                      placeholderText={field.placeholder}
-                      className="block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500"
-                      showYearDropdown
-                      dropdownMode="select"
-                    />
-                  </div>
+                  <>
+                    <div className="date-picker-container">
+                      <DatePicker
+                        selected={formData[field.name as keyof typeof formData] as Date | null}
+                        onChange={(date) => handleInputChange(field.name, date)}
+                        dateFormat="dd/MM/yyyy"
+                        placeholderText={field.placeholder}
+                        className={`block w-full px-4 py-2 border ${errors[field.name] ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500`}
+                        showYearDropdown
+                        dropdownMode="select"
+                      />
+                    </div>
+                    {errors[field.name] && (
+                      <p className="mt-1 text-sm text-red-500">{errors[field.name]}</p>
+                    )}
+                  </>
                 )}
                 
                 {field.type === 'file' && (
-                  <div className="flex items-center space-x-2">
-                    <label
-                      htmlFor={field.name}
-                      className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 cursor-pointer"
-                    >
-                      <DocumentIcon className="h-5 w-5 mr-2 text-gray-400" />
-                      Choisir un fichier
-                    </label>
-                    <input
-                      type="file"
-                      id={field.name}
-                      accept={field.accept}
-                      onChange={(e) => handleFileChange(e, field.name)}
-                      className="sr-only"
-                    />
-                    <span className="text-sm text-gray-500">
-                      {formData[field.name as keyof typeof formData] 
-                        ? (formData[field.name as keyof typeof formData] as File).name 
-                        : 'Aucun fichier choisi'}
-                    </span>
-                  </div>
+                  <>
+                    <div className="flex items-center space-x-2">
+                      <label
+                        htmlFor={field.name}
+                        className={`flex items-center px-4 py-2 bg-white border ${errors[field.name] ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 cursor-pointer`}
+                      >
+                        <DocumentIcon className="h-5 w-5 mr-2 text-gray-400" />
+                        Choisir un fichier
+                      </label>
+                      <input
+                        type="file"
+                        id={field.name}
+                        accept={field.accept}
+                        onChange={(e) => handleFileChange(e, field.name)}
+                        className="sr-only"
+                      />
+                      <span className="text-sm text-gray-500">
+                        {formData[field.name as keyof typeof formData] 
+                          ? (formData[field.name as keyof typeof formData] as File).name 
+                          : 'Aucun fichier choisi'}
+                      </span>
+                    </div>
+                    {errors[field.name] && (
+                      <p className="mt-1 text-sm text-red-500">{errors[field.name]}</p>
+                    )}
+                  </>
                 )}
               </div>
             ))}
@@ -603,32 +621,7 @@ export default function CreationMariage() {
         </div>
       </Dialog>
 
-      {/* Modal d'erreur */}
-      <Dialog open={isErrorModalOpen} onClose={() => setIsErrorModalOpen(false)} className="relative z-50">
-        <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-        <div className="fixed inset-0 flex items-center justify-center p-4">
-          <Dialog.Panel className="mx-auto max-w-md rounded bg-white p-6 w-full">
-            <div className="flex flex-col items-center">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-                <XMarkIcon className="h-10 w-10 text-red-500" />
-              </div>
-              <Dialog.Title className="text-lg font-medium text-gray-900 mb-2">
-                Erreur
-              </Dialog.Title>
-              <p className="text-sm text-gray-500 text-center mb-6">
-                {errorMessage}
-              </p>
-              <button
-                type="button"
-                onClick={() => setIsErrorModalOpen(false)}
-                className="px-4 py-2 bg-teal-600 text-white rounded-md text-sm font-medium hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
-              >
-                Fermer
-              </button>
-            </div>
-          </Dialog.Panel>
-        </div>
-      </Dialog>
+      {/* La modale d'erreur a été supprimée car les erreurs sont maintenant affichées directement dans le formulaire */}
 
       {/* Styles pour le DatePicker */}
       <style>

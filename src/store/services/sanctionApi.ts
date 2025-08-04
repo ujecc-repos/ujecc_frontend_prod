@@ -5,8 +5,11 @@ export interface Sanction {
   name: string;
   description?: string;
   startDate: string;
+  endDate?: string;
   status: string;
   churchId?: string;
+  userId?: string;
+  user?: any;
   church?: any;
   createdAt?: string;
   updatedAt?: string;
@@ -16,8 +19,10 @@ interface CreateSanctionRequest {
   name: string;
   description?: string;
   startDate: string;
+  endDate?: string;
   status: string;
   churchId?: string;
+  userId?: string;
 }
 
 interface UpdateSanctionRequest {

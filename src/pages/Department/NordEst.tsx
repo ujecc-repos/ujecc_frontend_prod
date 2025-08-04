@@ -1,0 +1,32 @@
+export const NordEst: { [commune: string]: string[] } = {
+  "Capotille": ["Capotille", "Lamine"],
+  "Caracol": ["Champin", "Glaudine"],
+  "Carice": ["Rose Bonite", "Bois Camelle"],
+  "Ferrier": ["Bas Maribahoux"],
+  "Fort-Liberté": ["Loiseau", "Dumas", "Bayaha", "Haut Madeleine"],
+  "Mombin Crochu": ["Bois Laurence", "Sans Souci"],
+  "Mont-Organisé": ["Bois Poux"],
+  "Ouanaminthe": [
+    "Haut Maribahoux",
+    "Ville de Ouanaminthe",
+    "Ouanaminthe",
+    "Acul des Pins",
+    "Savane Longue",
+    "Gens de Nantes",
+    "Savane au Lait",
+  ],
+  "Perches": ["Bas des Perches", "Haut des Perches"],
+  "Sainte Suzanne": [
+    "Fond Bleu",
+    "Bois Blanc",
+    "Sarazin",
+    "Foulon",
+    "Cotelette",
+    "Moka Neuf",
+  ],
+  "Terrier Rouge": ["Grand Bassin", "Fond Blanc"],
+  "Trou du Nord": ["Roucou", "Garcin", "Roche Plate"],
+  "Vallières": ["Grosse Roche", "Trois Palmistes", "Corosse"],
+  // Extra entry from Nord-Ouest
+  "Anse-à-Foleur": ["Côtes de Fer"],
+};

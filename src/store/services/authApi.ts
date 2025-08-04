@@ -80,8 +80,8 @@ export const authApi = createApi({
   keepUnusedDataFor: 3600,
   refetchOnFocus: true,
   baseQuery: fetchBaseQuery({
-    // baseUrl: 'http://localhost:4000/'
-    baseUrl: 'https://api.ujecc.org/api',
+    // baseUrl: 'http://localhost:4000/api',
+    baseUrl: 'https://ujecc-backend.onrender.com/api',
     prepareHeaders: async (headers, { getState }) => {
       console.log(getState)
 

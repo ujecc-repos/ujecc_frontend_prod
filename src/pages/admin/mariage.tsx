@@ -52,7 +52,7 @@ type FilterType = 'all' | 'en attente' | 'complèt';
 export default function Mariage() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedFilter, setSelectedFilter] = useState<FilterType>('all');
+  const [selectedFilter] = useState<FilterType>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [showExportModal, setShowExportModal] = useState(false);
@@ -495,26 +495,6 @@ export default function Mariage() {
           {/* Action Buttons */}
           <div className="flex items-center space-x-3">
             {/* Filter Buttons */}
-            <div className="flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
-              <button
-                onClick={() => setSelectedFilter('all')}
-                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${selectedFilter === 'all' ? 'bg-white shadow-sm text-teal-600' : 'text-gray-600 hover:text-gray-900'}`}
-              >
-                Tous
-              </button>
-              <button
-                onClick={() => setSelectedFilter('en attente')}
-                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${selectedFilter === 'en attente' ? 'bg-white shadow-sm text-teal-600' : 'text-gray-600 hover:text-gray-900'}`}
-              >
-                En attente
-              </button>
-              <button
-                onClick={() => setSelectedFilter('complèt')}
-                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${selectedFilter === 'complèt' ? 'bg-white shadow-sm text-teal-600' : 'text-gray-600 hover:text-gray-900'}`}
-              >
-                Complété
-              </button>
-            </div>
 
             <button
               onClick={() => setShowExportModal(true)}

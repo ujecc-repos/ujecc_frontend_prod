@@ -14,8 +14,6 @@ import {
   ArrowRightIcon,
   CalendarIcon,
   PhotoIcon,
-  EyeIcon,
-  EyeSlashIcon
 } from '@heroicons/react/24/outline';
 import { Menu, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
@@ -382,7 +380,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
     password: '',
     mobilePhone: '',
     homePhone: '',
-    role: '',
+    role: 'Membre',
     gender: '',
     birthDate: '',
     joinDate: '',
@@ -404,7 +402,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
     isActiveMember: true
   });
 
-  const [showPassword, setShowPassword] = useState(false);
+  // const [showPassword, setShowPassword] = useState(false);
   const [activeTab, setActiveTab] = useState('personal');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -445,15 +443,15 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
     
     if (!formData.firstname.trim()) newErrors.firstname = 'Le nom est obligatoire';
     if (!formData.lastname.trim()) newErrors.lastname = 'Le prénom est obligatoire';
-    if (!formData.email.trim()) newErrors.email = "L'adresse électronique est obligatoire";
-    if (!formData.password.trim()) newErrors.password = 'Le mot de passe est obligatoire';
-    if (!formData.role.trim()) newErrors.role = 'Le rôle est obligatoire';
+    // if (!formData.email.trim()) newErrors.email = "L'adresse électronique est obligatoire";
+    // if (!formData.password.trim()) newErrors.password = 'Le mot de passe est obligatoire';
+    // if (!formData.role.trim()) newErrors.role = 'Le rôle est obligatoire';
     
     // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (formData.email && !emailRegex.test(formData.email)) {
-      newErrors.email = 'Format d\'email invalide';
-    }
+    // const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    // if (formData.email && !emailRegex.test(formData.email)) {
+    //   newErrors.email = 'Format d\'email invalide';
+    // }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -637,7 +635,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                   </div>
 
                   {/* Email */}
-                  <div>
+                  {/* <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Adresse Électronique <span className="text-red-500">*</span>
                     </label>
@@ -651,10 +649,10 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                       placeholder="email@exemple.com"
                     />
                     {errors.email && <p className="mt-1 text-sm text-red-500">{errors.email}</p>}
-                  </div>
+                  </div> */}
 
                   {/* Password */}
-                  <div>
+                  {/* <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Mot de Passe <span className="text-red-500">*</span>
                     </label>
@@ -677,7 +675,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                       </button>
                     </div>
                     {errors.password && <p className="mt-1 text-sm text-red-500">{errors.password}</p>}
-                  </div>
+                  </div> */}
 
                   {/* Gender */}
                   <div>
@@ -931,7 +929,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                       }`}
                     >
                       <option value="">Sélectionner un rôle</option>
-                      <option value="Member">Membre</option>
+                      <option value="Membre">Membre</option>
                       <option value="Directeur">Directeur</option>
                       <option value="Admin">Administrateur</option>
                     </select>
@@ -1566,20 +1564,8 @@ export default function Membres() {
         return;
       }
       
-      if (!formData.email) {
-        alert("L'adresse électronique est obligatoire");
-        return;
-      }
       
-      if (!formData.password) {
-        alert('Le mot de passe est obligatoire');
-        return;
-      }
-      
-      if (!formData.role) {
-        alert('Le rôle est obligatoire');
-        return;
-      }
+    
       
       // If there's a profile image, use FormData to handle the multipart request
       if (formData.profileImage) {
@@ -1614,10 +1600,10 @@ export default function Membres() {
       
       // Close modal and show success message
       setIsAddMemberModalOpen(false);
-      alert('Membre ajouté avec succès!');
+      // alert('Membre ajouté avec succès!');
       
       // Refetch users to update the list
-      refetch();
+      // refetch();
     } catch (error: any) {
       console.error('Error adding member:', error);
       const errorMessage = error?.data?.message || error?.message || 'Erreur lors de l\'ajout du membre';
@@ -1796,7 +1782,7 @@ export default function Membres() {
                           {member.picture ? (
                             <img
                               className="h-10 w-10 rounded-full object-cover"
-                              src={`api.ujecc.org${member.picture}`}
+                              src={`https://api.ujecc.org${member.picture}`}
                               alt={`${member.firstname} ${member.lastname}`}
                             />
                           ) : (

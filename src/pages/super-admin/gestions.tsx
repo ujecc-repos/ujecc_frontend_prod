@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import {  Tab } from '@headlessui/react';
 import { CalendarIcon } from '@heroicons/react/24/outline';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/solid';
@@ -12,6 +12,17 @@ import 'react-toastify/dist/ReactToastify.css';
 import { useRegisterMutation, useGetUsersQuery } from '../../store/services/authApi';
 import { useCreateChurchMutation, useGetChurchesQuery, useAddUserToChurchMutation } from '../../store/services/churchApi';
 import { useGetMissionsQuery } from '../../store/services/mission';
+import { Nord } from '../Department/Nord';
+import { NordEst } from '../Department/NordEst';
+import { NordOuest } from '../Department/Nord-Ouest';
+import { Sude } from '../Department/Sude';
+import { SudEst } from '../Department/SudeEst';
+import { Centre } from '../Department/Centre';
+import { Ouest } from '../Department/Ouest';
+import { Artibonite } from '../Department/Artibonite';
+import { GrandAnse } from '../Department/Grandanse';
+import { Nippes } from '../Department/Nippes';
+
 
 // Types
 interface CreateChurchFormData {
@@ -20,6 +31,8 @@ interface CreateChurchFormData {
   commune: string;
   sectionCommunale: string;
   missionId: string;
+  longitude: string;
+  latitude: string;
 }
 
 interface SelectOption {
@@ -27,21 +40,13 @@ interface SelectOption {
   label: string;
 }
 
-interface Departement {
-  id: string;
-  name: string;
-}
-
-interface Commune {
-  id: string;
-  name: string;
-  departementId: string;
-}
-
-interface SectionCommunale {
-  id: string;
-  name: string;
-  communeId: string;
+// Data Structure Type
+interface DataType {
+  [departement: string]: {
+    communes: {
+      [commune: string]: string[];
+    };
+  };
 }
 
 interface CreateUserFormData {
@@ -82,103 +87,64 @@ const GestionPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('church');
   console.log(activeTab)
   
-  // Fake data for locations
-  const departements: Departement[] = [
-    { id: 'dep1', name: 'Ouest' },
-    { id: 'dep2', name: 'Nord' },
-    { id: 'dep3', name: 'Nord-Est' },
-    { id: 'dep4', name: 'Nord-Ouest' },
-    { id: 'dep5', name: 'Sud' },
-    { id: 'dep6', name: 'Sud-Est' },
-    { id: 'dep7', name: 'Artibonite' },
-    { id: 'dep8', name: 'Centre' },
-    { id: 'dep9', name: 'Grand\'Anse' },
-    { id: 'dep10', name: 'Nippes' }
-  ];
+  // Static Data for locations
+  const data: DataType = {
+    "Ouest": {
+      communes: Ouest,
+    },
+    "Nord": {
+      communes: Nord,
+    },
+    "Nord-Est": {
+      communes: NordEst
+    },
+    "Nord-Ouest": {
+      communes: NordOuest
+    },
+    "Sud": {
+      communes: Sude
+    },
+    "Sud-Est": {
+      communes: SudEst
+    },
+    "Artibonite": {
+      communes: Artibonite
+    },
+    "Centre": {
+      communes: Centre
+    },
+    "Grand'Anse": {
+      communes: GrandAnse
+    },
+    "Nippes": {
+      communes: Nippes
+    },
+  };
   
-  const communes: Commune[] = [
-    // Ouest
-    { id: 'com1', name: 'Port-au-Prince', departementId: 'dep1' },
-    { id: 'com2', name: 'Carrefour', departementId: 'dep1' },
-    { id: 'com3', name: 'Delmas', departementId: 'dep1' },
-    { id: 'com4', name: 'Pétion-Ville', departementId: 'dep1' },
-    { id: 'com5', name: 'Croix-des-Bouquets', departementId: 'dep1' },
-    // Nord
-    { id: 'com6', name: 'Cap-Haïtien', departementId: 'dep2' },
-    { id: 'com7', name: 'Limbé', departementId: 'dep2' },
-    { id: 'com8', name: 'Plaisance', departementId: 'dep2' },
-    // Nord-Est
-    { id: 'com9', name: 'Fort-Liberté', departementId: 'dep3' },
-    { id: 'com10', name: 'Ouanaminthe', departementId: 'dep3' },
-    // Nord-Ouest
-    { id: 'com11', name: 'Port-de-Paix', departementId: 'dep4' },
-    { id: 'com12', name: 'Saint-Louis du Nord', departementId: 'dep4' },
-    // Sud
-    { id: 'com13', name: 'Les Cayes', departementId: 'dep5' },
-    { id: 'com14', name: 'Aquin', departementId: 'dep5' },
-    // Sud-Est
-    { id: 'com15', name: 'Jacmel', departementId: 'dep6' },
-    { id: 'com16', name: 'Belle-Anse', departementId: 'dep6' },
-    // Artibonite
-    { id: 'com17', name: 'Gonaïves', departementId: 'dep7' },
-    { id: 'com18', name: 'Saint-Marc', departementId: 'dep7' },
-    // Centre
-    { id: 'com19', name: 'Hinche', departementId: 'dep8' },
-    { id: 'com20', name: 'Mirebalais', departementId: 'dep8' },
-    // Grand'Anse
-    { id: 'com21', name: 'Jérémie', departementId: 'dep9' },
-    { id: 'com22', name: 'Anse-d\'Hainault', departementId: 'dep9' },
-    // Nippes
-    { id: 'com23', name: 'Miragoâne', departementId: 'dep10' },
-    { id: 'com24', name: 'Anse-à-Veau', departementId: 'dep10' }
-  ];
-  
-  const sectionCommunales: SectionCommunale[] = [
-    // Port-au-Prince
-    { id: 'sec1', name: 'Turgeau', communeId: 'com1' },
-    { id: 'sec2', name: 'Bel Air', communeId: 'com1' },
-    { id: 'sec3', name: 'Martissant', communeId: 'com1' },
-    // Carrefour
-    { id: 'sec4', name: 'Thor', communeId: 'com2' },
-    { id: 'sec5', name: 'Rivière Froide', communeId: 'com2' },
-    // Delmas
-    { id: 'sec6', name: 'Delmas 32', communeId: 'com3' },
-    { id: 'sec7', name: 'Delmas 75', communeId: 'com3' },
-    // Pétion-Ville
-    { id: 'sec8', name: 'Frères', communeId: 'com4' },
-    { id: 'sec9', name: 'Pernier', communeId: 'com4' },
-    // Cap-Haïtien
-    { id: 'sec10', name: 'Bande du Nord', communeId: 'com6' },
-    { id: 'sec11', name: 'Haut du Cap', communeId: 'com6' },
-    // Gonaïves
-    { id: 'sec12', name: 'Pont Tamarin', communeId: 'com17' },
-    { id: 'sec13', name: 'Bassin', communeId: 'com17' },
-    // Les Cayes
-    { id: 'sec14', name: 'Bourdet', communeId: 'com13' },
-    { id: 'sec15', name: 'Laborde', communeId: 'com13' },
-    // Jacmel
-    { id: 'sec16', name: 'La Montagne', communeId: 'com15' },
-    { id: 'sec17', name: 'La Vallée', communeId: 'com15' },
-    // Other communes
-    { id: 'sec18', name: 'Section 1', communeId: 'com5' },
-    { id: 'sec19', name: 'Section 1', communeId: 'com7' },
-    { id: 'sec20', name: 'Section 1', communeId: 'com8' },
-    { id: 'sec21', name: 'Section 1', communeId: 'com9' },
-    { id: 'sec22', name: 'Section 1', communeId: 'com10' },
-    { id: 'sec23', name: 'Section 1', communeId: 'com11' },
-    { id: 'sec24', name: 'Section 1', communeId: 'com12' }
-  ];
+  // Location selector state
+  const [departement, setDepartement] = useState<SelectOption | null>(null);
+  const [commune, setCommune] = useState<SelectOption | null>(null);
+  const [sectionCommunale, setSectionCommunale] = useState<SelectOption | null>(null);
   
   // Transform location data for react-select
-  const departementOptions = useMemo(() => {
-    return departements.map(dep => ({
-      value: dep.id,
-      label: dep.name
-    }));
-  }, [departements]);
+  const departementOptions: SelectOption[] = Object.keys(data).map((dept) => ({
+    value: dept,
+    label: dept,
+  }));
   
-  const [filteredCommuneOptions, setFilteredCommuneOptions] = useState<SelectOption[]>([]);
-  const [filteredSectionOptions, setFilteredSectionOptions] = useState<SelectOption[]>([]);
+  const communeOptions: SelectOption[] = departement
+    ? Object.keys(data[departement.value].communes).map((commune) => ({
+        value: commune,
+        label: commune,
+      }))
+    : [];
+  
+  const sectionCommunaleOptions: SelectOption[] = departement && commune
+    ? data[departement.value].communes[commune.value].map((section) => ({
+        value: section,
+        label: section,
+      }))
+    : [];
 
   // Church form state
   const [churchFormData, setChurchFormData] = useState<CreateChurchFormData>({
@@ -186,65 +152,47 @@ const GestionPage: React.FC = () => {
     departement: '',
     commune: '',
     sectionCommunale: '',
-    missionId: ''
+    missionId: '',
+    longitude: '',
+    latitude: ''
   });
   
-  // Update commune options when departement changes
-  useEffect(() => {
-    if (churchFormData.departement) {
-      const filteredCommunes = communes.filter(commune => commune.departementId === churchFormData.departement);
-      setFilteredCommuneOptions(filteredCommunes.map(commune => ({
-        value: commune.id,
-        label: commune.name
-      })));
-      
-      // Reset commune and section communale when departement changes
-      setChurchFormData(prev => ({
-        ...prev,
-        commune: '',
-        sectionCommunale: ''
-      }));
-      
-      setFilteredSectionOptions([]);
-    } else {
-      setFilteredCommuneOptions([]);
-      setFilteredSectionOptions([]);
-    }
-  }, [churchFormData.departement, communes]);
-  
-  // Update section communale options when commune changes
-  useEffect(() => {
-    // Only run this effect when commune changes, not when sectionCommunale changes
-    const communeId = churchFormData.commune;
+  // Handle location selection changes
+  const handleDepartementChange = (selectedOption: SelectOption | null) => {
+    setDepartement(selectedOption);
+    setCommune(null);
+    setSectionCommunale(null);
     
-    // Check if commune has a value (it will be the commune ID)
-    if (communeId && communeId !== '') {
-      // Filter sections based on the selected commune
-      const filteredSections = sectionCommunales.filter(section => section.communeId === communeId);
-      
-      // Update the filtered section options
-      setFilteredSectionOptions(filteredSections.map(section => ({
-        value: section.id,
-        label: section.name
-      })));
-      
-      // Reset section communale when commune changes
-      // We need to do this in a separate useEffect to avoid infinite loops
-    } else {
-      setFilteredSectionOptions([]);
-    }
-  }, [churchFormData.commune, sectionCommunales]);
+    // Update church form data
+    setChurchFormData(prev => ({
+      ...prev,
+      departement: selectedOption?.value || '',
+      commune: '',
+      sectionCommunale: ''
+    }));
+  };
   
-  // Separate useEffect to reset sectionCommunale when commune changes
-  useEffect(() => {
-    // Only reset if commune has changed and we have a previous sectionCommunale value
-    if (churchFormData.commune && churchFormData.sectionCommunale) {
-      setChurchFormData(prev => ({
-        ...prev,
-        sectionCommunale: ''
-      }));
-    }
-  }, [churchFormData.commune]);
+  const handleCommuneChange = (selectedOption: SelectOption | null) => {
+    setCommune(selectedOption);
+    setSectionCommunale(null);
+    
+    // Update church form data
+    setChurchFormData(prev => ({
+      ...prev,
+      commune: selectedOption?.value || '',
+      sectionCommunale: ''
+    }));
+  };
+  
+  const handleSectionCommunaleChange = (selectedOption: SelectOption | null) => {
+    setSectionCommunale(selectedOption);
+    
+    // Update church form data
+    setChurchFormData(prev => ({
+      ...prev,
+      sectionCommunale: selectedOption?.value || ''
+    }));
+  };
   
   // User form state
   const [userFormData, setUserFormData] = useState<CreateUserFormData>({
@@ -350,7 +298,9 @@ const GestionPage: React.FC = () => {
         departement: '',
         commune: '',
         sectionCommunale: '',
-        missionId: ''
+        missionId: '',
+        longitude: '',
+        latitude: ''
       });
     } catch (error) {
       console.error('Error creating church:', error);
@@ -494,11 +444,8 @@ const GestionPage: React.FC = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Département</label>
                   <Select
-                    value={departementOptions.find(option => option.value === churchFormData.departement)}
-                    onChange={(selectedOption: any) => setChurchFormData(prev => ({ 
-                      ...prev, 
-                      departement: selectedOption?.value || '' 
-                    }))}
+                    value={departement}
+                    onChange={handleDepartementChange}
                     options={departementOptions}
                     placeholder="Sélectionner un département"
                     isClearable
@@ -513,16 +460,13 @@ const GestionPage: React.FC = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Commune</label>
                   <Select
-                    value={filteredCommuneOptions.find(option => option.value === churchFormData.commune)}
-                    onChange={(selectedOption: any) => setChurchFormData(prev => ({ 
-                      ...prev, 
-                      commune: selectedOption?.value || '' 
-                    }))}
-                    options={filteredCommuneOptions}
+                    value={commune}
+                    onChange={handleCommuneChange}
+                    options={communeOptions}
                     placeholder="Sélectionner une commune"
                     isClearable
                     isSearchable
-                    isDisabled={!churchFormData.departement}
+                    isDisabled={!departement}
                     className="react-select-container"
                     classNamePrefix="react-select"
                   />
@@ -533,16 +477,13 @@ const GestionPage: React.FC = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Section Communale</label>
                   <Select
-                    value={filteredSectionOptions.find(option => option.value === churchFormData.sectionCommunale)}
-                    onChange={(selectedOption: any) => setChurchFormData(prev => ({ 
-                      ...prev, 
-                      sectionCommunale: selectedOption?.value || '' 
-                    }))}
-                    options={filteredSectionOptions}
+                    value={sectionCommunale}
+                    onChange={handleSectionCommunaleChange}
+                    options={sectionCommunaleOptions}
                     placeholder="Sélectionner une section communale"
                     isClearable
                     isSearchable
-                    isDisabled={!churchFormData.commune || churchFormData.commune === ''}
+                    isDisabled={!commune}
                     className="react-select-container"
                     classNamePrefix="react-select"
                   />
@@ -562,6 +503,30 @@ const GestionPage: React.FC = () => {
                     classNamePrefix="react-select"
                   />
                   {churchErrors.missionId && <p className="mt-1 text-sm text-red-600">{churchErrors.missionId}</p>}
+                </div>
+                
+                {/* Longitude */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Longitude</label>
+                  <input
+                    type="text"
+                    value={churchFormData.longitude}
+                    onChange={(e) => setChurchFormData(prev => ({ ...prev, longitude: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    placeholder="Ex: -72.3388"
+                  />
+                </div>
+                
+                {/* Latitude */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Latitude</label>
+                  <input
+                    type="text"
+                    value={churchFormData.latitude}
+                    onChange={(e) => setChurchFormData(prev => ({ ...prev, latitude: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    placeholder="Ex: 18.5944"
+                  />
                 </div>
               </div>
               

@@ -133,11 +133,18 @@ const DashboardLayout = ({ userRole }: {userRole: UserRole}) => {
   const location = useLocation();
 
   const handleLogout = async () => {
-    await logout();
-    localStorage.removeItem("user")
-    localStorage.removeItem("token")
-    logOut();
-    navigate('/');
+    try {
+      await logout()
+      localStorage.removeItem("user")
+      localStorage.removeItem("token")
+      await logOut();
+      // Force navigation to root page and refresh
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Fallback navigation
+      navigate('/');
+    }
   };
 
   return (

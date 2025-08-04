@@ -14,8 +14,7 @@ export default function CreationFuneraille() {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
-  const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
   
   const [createFuneral, { isLoading }] = useCreateFuneralMutation();
   const { data: userToken } = useGetUserByTokenQuery();
@@ -38,52 +37,53 @@ export default function CreationFuneraille() {
 
   // Validation des champs
   const validateStep = (step: number) => {
-    const errors: string[] = [];
+    const newErrors: Record<string, string> = {};
 
     if (step === 0) {
-      if (!formData.fullname) errors.push('Le nom complet est obligatoire');
-      if (!formData.birthDate) errors.push('La date de naissance est obligatoire');
+      if (!formData.fullname) newErrors.fullname = 'Le nom complet est obligatoire';
+      if (!formData.birthDate) newErrors.birthDate = 'La date de naissance est obligatoire';
       if (!formData.deathCertificate) {
-        errors.push('Le certificat de décès est obligatoire');
+        newErrors.deathCertificate = 'Le certificat de décès est obligatoire';
       } else {
         // Validation du type de fichier (PDF uniquement)
         if (formData.deathCertificate.type !== 'application/pdf') {
-          errors.push('Le certificat de décès doit être au format PDF');
+          newErrors.deathCertificate = 'Le certificat de décès doit être au format PDF';
         }
         
         // Validation de la taille du fichier (max 5MB)
         const maxSize = 5 * 1024 * 1024; // 5MB
         if (formData.deathCertificate.size > maxSize) {
-          errors.push('Le certificat de décès ne doit pas dépasser 5MB');
+          newErrors.deathCertificate = 'Le certificat de décès ne doit pas dépasser 5MB';
         }
       }
     } else if (step === 1) {
-      if (!formData.nextOfKin) errors.push('Le nom du représentant est obligatoire');
-      if (!formData.relationShip) errors.push('La relation est obligatoire');
-      if (!formData.telephone) errors.push('Le téléphone est obligatoire');
-      if (!formData.email) errors.push('L\'email est obligatoire');
+      if (!formData.nextOfKin) newErrors.nextOfKin = 'Le nom du représentant est obligatoire';
+      if (!formData.relationShip) newErrors.relationShip = 'La relation est obligatoire';
+      if (!formData.telephone) newErrors.telephone = 'Le téléphone est obligatoire';
+      if (!formData.email) newErrors.email = 'L\'email est obligatoire';
       // Validation du format de l'email
       if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-        errors.push('Format d\'email invalide');
+        newErrors.email = 'Format d\'email invalide';
       }
       // Validation du format du téléphone
       if (formData.telephone && !/^\+?[0-9]{8,15}$/.test(formData.telephone)) {
-        errors.push('Format de téléphone invalide');
+        newErrors.telephone = 'Format de téléphone invalide';
       }
     } else if (step === 2) {
-      if (!formData.funeralDate) errors.push('La date des funérailles est obligatoire');
-      if (!formData.funeralTime) errors.push('L\'heure de service est obligatoire');
-      if (!formData.funeralLocation) errors.push('Le lieu est obligatoire');
-      if (!formData.officiantName) errors.push('Le nom de l\'officiant est obligatoire');
-      if (!formData.description) errors.push('La note additionnelle est obligatoire');
+      if (!formData.funeralDate) newErrors.funeralDate = 'La date des funérailles est obligatoire';
+      if (!formData.funeralTime) newErrors.funeralTime = 'L\'heure de service est obligatoire';
+      if (!formData.funeralLocation) newErrors.funeralLocation = 'Le lieu est obligatoire';
+      if (!formData.officiantName) newErrors.officiantName = 'Le nom de l\'officiant est obligatoire';
+      if (!formData.description) newErrors.description = 'La note additionnelle est obligatoire';
       
       // Validation du format de l'heure
       if (formData.funeralTime && !/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(formData.funeralTime)) {
-        errors.push('Format d\'heure invalide (HH:MM)');
+        newErrors.funeralTime = 'Format d\'heure invalide (HH:MM)';
       }
     }
 
-    return errors;
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleInputChange = (name: string, value: any) => {
@@ -104,26 +104,21 @@ export default function CreationFuneraille() {
   };
 
   const handleNext = () => {
-    const errors = validateStep(currentStep);
-    if (errors.length > 0) {
-      setErrorMessage(errors.join('\n'));
-      setIsErrorModalOpen(true);
-      return;
+    if (validateStep(currentStep)) {
+      setCurrentStep(prev => prev + 1);
     }
-    setCurrentStep(prev => prev + 1);
   };
 
   const handlePrevious = () => {
     setCurrentStep(prev => prev - 1);
+    // Clear errors when going back
+    setErrors({});
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const errors = validateStep(currentStep);
-    if (errors.length > 0) {
-      setErrorMessage(errors.join('\n'));
-      setIsErrorModalOpen(true);
+    if (!validateStep(currentStep)) {
       return;
     }
 
@@ -157,8 +152,8 @@ export default function CreationFuneraille() {
       toast.success('Funéraille enregistrée avec succès');
     } catch (error) {
       console.error('Erreur lors de la création de la funéraille:', error);
-      setErrorMessage('Une erreur est survenue lors de l\'enregistrement de la funéraille');
-      setIsErrorModalOpen(true);
+      // setErrorMessage('Une erreur est survenue lors de l\'enregistrement de la funéraille');
+      // setIsErrorModalOpen(true);
       toast.error('Erreur lors de l\'enregistrement de la funéraille');
     }
   };
@@ -330,26 +325,32 @@ export default function CreationFuneraille() {
                 </label>
                 
                 {field.type === 'text' || field.type === 'email' || field.type === 'tel' || field.type === 'time' ? (
-                  <input
-                    type={field.type}
-                    placeholder={field.placeholder}
-                    value={formData[field.name as keyof typeof formData] as string}
-                    onChange={(e) => handleInputChange(field.name, e.target.value)}
-                    className="border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  <div className="flex flex-col">
+                    <input
+                      type={field.type}
+                      placeholder={field.placeholder}
+                      value={formData[field.name as keyof typeof formData] as string}
+                      onChange={(e) => handleInputChange(field.name, e.target.value)}
+                      className={`border rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors[field.name] ? 'border-red-500' : 'border-gray-300'}`}
+                    />
+                    {errors[field.name] && <p className="mt-1 text-sm text-red-500">{errors[field.name]}</p>}
+                  </div>
                 ) : field.type === 'date' ? (
-                  <DatePicker
-                    selected={formData[field.name as keyof typeof formData] as Date}
-                    onChange={(date) => handleInputChange(field.name, date)}
-                    placeholderText={field.placeholder}
-                    dateFormat="dd/MM/yyyy"
-                    className="border border-gray-300 rounded-md p-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  <div className="flex flex-col">
+                    <DatePicker
+                      selected={formData[field.name as keyof typeof formData] as Date}
+                      onChange={(date) => handleInputChange(field.name, date)}
+                      placeholderText={field.placeholder}
+                      dateFormat="dd/MM/yyyy"
+                      className={`border rounded-md p-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors[field.name] ? 'border-red-500' : 'border-gray-300'}`}
+                    />
+                    {errors[field.name] && <p className="mt-1 text-sm text-red-500">{errors[field.name]}</p>}
+                  </div>
                 ) : field.type === 'file' ? (
                   <div className="flex flex-col">
                     <div className="flex items-center justify-center w-full">
                       <label
-                        className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100"
+                        className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 ${errors[field.name] ? 'border-red-500' : 'border-gray-300'}`}
                       >
                         <div className="flex flex-col items-center justify-center pt-5 pb-6">
                           <DocumentIcon className="w-10 h-10 mb-3 text-gray-400" />
@@ -380,15 +381,19 @@ export default function CreationFuneraille() {
                         </button>
                       </div>
                     )}
+                    {errors[field.name] && <p className="mt-1 text-sm text-red-500">{errors[field.name]}</p>}
                   </div>
                 ) : field.type === 'textarea' ? (
-                  <textarea
-                    placeholder={field.placeholder}
-                    value={formData[field.name as keyof typeof formData] as string}
-                    onChange={(e) => handleInputChange(field.name, e.target.value)}
-                    rows={4}
-                    className="border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  <div className="flex flex-col">
+                    <textarea
+                      placeholder={field.placeholder}
+                      value={formData[field.name as keyof typeof formData] as string}
+                      onChange={(e) => handleInputChange(field.name, e.target.value)}
+                      rows={4}
+                      className={`border rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors[field.name] ? 'border-red-500' : 'border-gray-300'}`}
+                    />
+                    {errors[field.name] && <p className="mt-1 text-sm text-red-500">{errors[field.name]}</p>}
+                  </div>
                 ) : null}
               </div>
             ))}
@@ -469,7 +474,7 @@ export default function CreationFuneraille() {
                 <button
                   onClick={() => {
                     setIsSuccessModalOpen(false);
-                    navigate('/admin/funeraille');
+                    navigate('/tableau-de-bord/admin/funerailles');
                   }}
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                 >
@@ -507,52 +512,7 @@ export default function CreationFuneraille() {
         </div>
       </Dialog>
       
-      {/* Modal d'erreur */}
-      <Dialog
-        open={isErrorModalOpen}
-        onClose={() => setIsErrorModalOpen(false)}
-        className="fixed inset-0 z-10 overflow-y-auto"
-      >
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="fixed inset-0 bg-black opacity-30" />
-          
-          <div className="relative bg-white rounded-lg max-w-md mx-auto p-6 shadow-xl">
-            <div className="flex flex-col items-center">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-                <svg
-                  className="w-8 h-8 text-red-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M6 18L18 6M6 6l12 12"
-                  ></path>
-                </svg>
-              </div>
-              
-              <Dialog.Title className="text-xl font-semibold text-gray-900 mb-2">
-                Erreur
-              </Dialog.Title>
-              
-              <div className="text-gray-600 text-center mb-6 whitespace-pre-line">
-                {errorMessage}
-              </div>
-              
-              <button
-                onClick={() => setIsErrorModalOpen(false)}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-              >
-                Fermer
-              </button>
-            </div>
-          </div>
-        </div>
-      </Dialog>
+
     </div>
   );
 }

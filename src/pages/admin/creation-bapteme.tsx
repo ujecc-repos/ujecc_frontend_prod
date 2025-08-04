@@ -29,8 +29,7 @@ export default function CreationBapteme() {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
-  const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   
   // Récupération des données utilisateur et de l'église
@@ -64,25 +63,41 @@ export default function CreationBapteme() {
       ...prevData,
       [name]: value
     }));
+    
+    // Effacer l'erreur pour ce champ si elle existe
+    if (errors[name]) {
+      const newErrors = { ...errors };
+      delete newErrors[name];
+      setErrors(newErrors);
+    }
   };
 
   // Fonction pour gérer le téléchargement de documents
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fieldName: string) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
+      const newErrors = { ...errors };
       
       // Vérifier le type de fichier (PDF uniquement)
       if (file.type !== 'application/pdf') {
-        setErrorMessage('Seuls les fichiers PDF sont acceptés.');
-        setIsErrorModalOpen(true);
+        newErrors[fieldName] = 'Seuls les fichiers PDF sont acceptés.';
+        setErrors(newErrors);
+        e.target.value = '';
         return;
       }
       
       // Vérifier la taille du fichier (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        setErrorMessage('La taille du fichier ne doit pas dépasser 5MB.');
-        setIsErrorModalOpen(true);
+        newErrors[fieldName] = 'La taille du fichier ne doit pas dépasser 5MB.';
+        setErrors(newErrors);
+        e.target.value = '';
         return;
+      }
+      
+      // Effacer l'erreur si le fichier est valide
+      if (errors[fieldName]) {
+        delete newErrors[fieldName];
+        setErrors(newErrors);
       }
       
       handleInputChange(fieldName, file);
@@ -90,83 +105,60 @@ export default function CreationBapteme() {
   };
 
   // Fonction pour valider le formulaire
-  const validateForm = () => {
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+    
     // Validation générale selon l'étape actuelle
     if (currentStep === 0) {
       // Validation des informations personnelles
       if (!formData.fullName) {
-        setErrorMessage('Le nom complet est requis.');
-        setIsErrorModalOpen(true);
-        return false;
-      }
-      
-      if (formData.fullName.length < 2) {
-        setErrorMessage('Le nom complet doit contenir au moins 2 caractères.');
-        setIsErrorModalOpen(true);
-        return false;
+        newErrors.fullName = 'Le nom complet est requis.';
+      } else if (formData.fullName.length < 2) {
+        newErrors.fullName = 'Le nom complet doit contenir au moins 2 caractères.';
       }
       
       if (!formData.birthDate) {
-        setErrorMessage('La date de naissance est requise.');
-        setIsErrorModalOpen(true);
-        return false;
+        newErrors.birthDate = 'La date de naissance est requise.';
       }
       
       if (!formData.placeOfBirth) {
-        setErrorMessage('Le lieu de naissance est requis.');
-        setIsErrorModalOpen(true);
-        return false;
+        newErrors.placeOfBirth = 'Le lieu de naissance est requis.';
       }
     } else if (currentStep === 1) {
       // Validation des informations religieuses
       if (!formData.conversionDate) {
-        setErrorMessage('La date de conversion est requise.');
-        setIsErrorModalOpen(true);
-        return false;
+        newErrors.conversionDate = 'La date de conversion est requise.';
       }
       
       if (!formData.testimony) {
-        setErrorMessage('Le témoignage est requis.');
-        setIsErrorModalOpen(true);
-        return false;
+        newErrors.testimony = 'Le témoignage est requis.';
       }
       
       // Validation conditionnelle pour catéchumène
-      if (formData.isCatechumene) {
-        if (!formData.catechumeneStartDate) {
-          setErrorMessage('La date de début de catéchuménat est requise.');
-          setIsErrorModalOpen(true);
-          return false;
-        }
+      if (formData.isCatechumene && !formData.catechumeneStartDate) {
+        newErrors.catechumeneStartDate = 'La date de début de catéchuménat est requise.';
       }
     } else if (currentStep === 2) {
       // Validation des informations du baptême
       if (!formData.baptismDate) {
-        setErrorMessage('La date du baptême est requise.');
-        setIsErrorModalOpen(true);
-        return false;
+        newErrors.baptismDate = 'La date du baptême est requise.';
       }
       
       if (!formData.baptismLocation) {
-        setErrorMessage('Le lieu du baptême est requis.');
-        setIsErrorModalOpen(true);
-        return false;
+        newErrors.baptismLocation = 'Le lieu du baptême est requis.';
       }
       
       if (!formData.officiantName) {
-        setErrorMessage('Le nom de l\'officiant est requis.');
-        setIsErrorModalOpen(true);
-        return false;
+        newErrors.officiantName = 'Le nom de l\'officiant est requis.';
       }
       
       if (!formData.withness) {
-        setErrorMessage('Le nom du témoin est requis.');
-        setIsErrorModalOpen(true);
-        return false;
+        newErrors.withness = 'Le nom du témoin est requis.';
       }
     }
     
-    return true;
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   // Fonction pour passer à l'étape suivante
@@ -231,22 +223,16 @@ export default function CreationBapteme() {
     } catch (error: any) {
       console.error('Erreur lors de la création du baptême:', error);
       
-      // Gestion des différents types d'erreurs
-      if (error?.data?.message) {
-        setErrorMessage(error.data.message);
-      } else if (error?.status === 400) {
-        setErrorMessage('Données invalides. Veuillez vérifier vos informations.');
-      } else if (error?.status === 422) {
-        setErrorMessage('Format de données incorrect. Veuillez vérifier vos informations.');
-      } else if (error?.status >= 500) {
-        setErrorMessage('Erreur du serveur. Veuillez réessayer plus tard.');
-      } else if (error?.name === 'NetworkError' || !error?.status) {
-        setErrorMessage('Problème de connexion. Vérifiez votre connexion internet.');
-      } else {
-        setErrorMessage('Une erreur inattendue s\'est produite. Veuillez réessayer.');
-      }
+      // Afficher l'erreur dans le formulaire
+      const newErrors: Record<string, string> = {};
+      newErrors.form = error?.data?.message || 
+                      (error?.status === 400 ? 'Données invalides. Veuillez vérifier vos informations.' : 
+                      (error?.status === 422 ? 'Format de données incorrect. Veuillez vérifier vos informations.' : 
+                      (error?.status >= 500 ? 'Erreur du serveur. Veuillez réessayer plus tard.' : 
+                      (error?.name === 'NetworkError' || !error?.status ? 'Problème de connexion. Vérifiez votre connexion internet.' : 
+                      'Une erreur inattendue s\'est produite. Veuillez réessayer.'))));
       
-      setIsErrorModalOpen(true);
+      setErrors(newErrors);
     } finally {
       setIsLoading(false);
     }
@@ -440,78 +426,103 @@ export default function CreationBapteme() {
                   </label>
                   
                   {field.type === 'text' && (
-                    <input
-                      type="text"
-                      id={field.name}
-                      value={formData[field.name as keyof typeof formData] as string || ''}
-                      onChange={(e) => handleInputChange(field.name, e.target.value)}
-                      placeholder={field.placeholder}
-                      className="block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500"
-                    />
+                    <>
+                      <input
+                        type="text"
+                        id={field.name}
+                        value={formData[field.name as keyof typeof formData] as string || ''}
+                        onChange={(e) => handleInputChange(field.name, e.target.value)}
+                        placeholder={field.placeholder}
+                        className={`block w-full px-4 py-2 border ${errors[field.name] ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500`}
+                      />
+                      {errors[field.name] && (
+                        <p className="mt-1 text-sm text-red-600">{errors[field.name]}</p>
+                      )}
+                    </>
                   )}
                   
                   {field.type === 'textarea' && (
-                    <textarea
-                      id={field.name}
-                      value={formData[field.name as keyof typeof formData] as string || ''}
-                      onChange={(e) => handleInputChange(field.name, e.target.value)}
-                      placeholder={field.placeholder}
-                      rows={4}
-                      className="block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500"
-                    />
+                    <>
+                      <textarea
+                        id={field.name}
+                        value={formData[field.name as keyof typeof formData] as string || ''}
+                        onChange={(e) => handleInputChange(field.name, e.target.value)}
+                        placeholder={field.placeholder}
+                        rows={4}
+                        className={`block w-full px-4 py-2 border ${errors[field.name] ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500`}
+                      />
+                      {errors[field.name] && (
+                        <p className="mt-1 text-sm text-red-600">{errors[field.name]}</p>
+                      )}
+                    </>
                   )}
                   
                   {field.type === 'date' && (
-                    <div className="date-picker-container">
-                      <DatePicker
-                        selected={formData[field.name as keyof typeof formData] as Date | null}
-                        onChange={(date) => handleInputChange(field.name, date)}
-                        dateFormat="dd/MM/yyyy"
-                        placeholderText={field.placeholder}
-                        className="block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500"
-                        showYearDropdown
-                        dropdownMode="select"
-                      />
-                    </div>
+                    <>
+                      <div className="date-picker-container">
+                        <DatePicker
+                          selected={formData[field.name as keyof typeof formData] as Date | null}
+                          onChange={(date) => handleInputChange(field.name, date)}
+                          dateFormat="dd/MM/yyyy"
+                          placeholderText={field.placeholder}
+                          className={`block w-full px-4 py-2 border ${errors[field.name] ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500`}
+                          showYearDropdown
+                          dropdownMode="select"
+                        />
+                      </div>
+                      {errors[field.name] && (
+                        <p className="mt-1 text-sm text-red-600">{errors[field.name]}</p>
+                      )}
+                    </>
                   )}
                   
                   {field.type === 'checkbox' && (
-                    <div className="flex items-center">
-                      <input
-                        type="checkbox"
-                        id={field.name}
-                        checked={formData[field.name as keyof typeof formData] as boolean || false}
-                        onChange={(e) => handleInputChange(field.name, e.target.checked)}
-                        className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded"
-                      />
-                      <label htmlFor={field.name} className="ml-2 block text-sm text-gray-900">
-                        {field.placeholder}
-                      </label>
-                    </div>
+                    <>
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          id={field.name}
+                          checked={formData[field.name as keyof typeof formData] as boolean || false}
+                          onChange={(e) => handleInputChange(field.name, e.target.checked)}
+                          className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded"
+                        />
+                        <label htmlFor={field.name} className="ml-2 block text-sm text-gray-900">
+                          {field.placeholder}
+                        </label>
+                      </div>
+                      {errors[field.name] && (
+                        <p className="mt-1 text-sm text-red-600">{errors[field.name]}</p>
+                      )}
+                    </>
                   )}
                   
                   {field.type === 'file' && (
-                    <div className="flex items-center space-x-2">
-                      <label
-                        htmlFor={field.name}
-                        className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 cursor-pointer"
-                      >
-                        <DocumentIcon className="h-5 w-5 mr-2 text-gray-400" />
-                        Choisir un fichier
-                      </label>
-                      <input
-                        type="file"
-                        id={field.name}
-                        accept={field.accept}
-                        onChange={(e) => handleFileChange(e, field.name)}
-                        className="sr-only"
-                      />
-                      <span className="text-sm text-gray-500">
-                        {formData[field.name as keyof typeof formData] 
+                    <>
+                      <div className="flex items-center space-x-2">
+                        <label
+                          htmlFor={field.name}
+                          className={`flex items-center px-4 py-2 bg-white border ${errors[field.name] ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 cursor-pointer`}
+                        >
+                          <DocumentIcon className="h-5 w-5 mr-2 text-gray-400" />
+                          Choisir un fichier
+                        </label>
+                        <input
+                          type="file"
+                          id={field.name}
+                          accept={field.accept}
+                          onChange={(e) => handleFileChange(e, field.name)}
+                          className="sr-only"
+                        />
+                        <span className="text-sm text-gray-500">
+                          {formData[field.name as keyof typeof formData] 
                           ? (formData[field.name as keyof typeof formData] as File).name 
                           : 'Aucun fichier choisi'}
-                      </span>
-                    </div>
+                        </span>
+                      </div>
+                      {errors[field.name] && (
+                        <p className="mt-1 text-sm text-red-600">{errors[field.name]}</p>
+                      )}
+                    </>
                   )}
                 </div>
               );
@@ -594,32 +605,22 @@ export default function CreationBapteme() {
         </div>
       </Dialog>
 
-      {/* Modal d'erreur */}
-      <Dialog open={isErrorModalOpen} onClose={() => setIsErrorModalOpen(false)} className="relative z-50">
-        <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-        <div className="fixed inset-0 flex items-center justify-center p-4">
-          <Dialog.Panel className="mx-auto max-w-md rounded bg-white p-6 w-full">
-            <div className="flex flex-col items-center">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-                <XMarkIcon className="h-10 w-10 text-red-500" />
-              </div>
-              <Dialog.Title className="text-lg font-medium text-gray-900 mb-2">
-                Erreur
-              </Dialog.Title>
-              <p className="text-sm text-gray-500 text-center mb-6">
-                {errorMessage}
-              </p>
-              <button
-                type="button"
-                onClick={() => setIsErrorModalOpen(false)}
-                className="px-4 py-2 bg-teal-600 text-white rounded-md text-sm font-medium hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
-              >
-                Fermer
-              </button>
+      {/* Affichage des erreurs générales du formulaire */}
+      {errors.form && (
+        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-md">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <XMarkIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
             </div>
-          </Dialog.Panel>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800">Erreur</h3>
+              <div className="mt-2 text-sm text-red-700">
+                <p>{errors.form}</p>
+              </div>
+            </div>
+          </div>
         </div>
-      </Dialog>
+      )}
 
       {/* Styles pour le DatePicker */}
       <style>
