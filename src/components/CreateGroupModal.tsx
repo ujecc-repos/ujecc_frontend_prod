@@ -283,6 +283,11 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ isOpen, onClose, on
                             borderColor: '#14b8a6',
                             boxShadow: '0 0 0 1px #14b8a6'
                           }
+                        }),
+                        menu: (provided) => ({
+                          ...provided,
+                          zIndex: 9999,
+                          position: 'absolute'
                         })
                       }}
                     />
@@ -344,6 +349,11 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ isOpen, onClose, on
                             borderColor: '#14b8a6',
                             boxShadow: '0 0 0 1px #14b8a6'
                           }
+                        }),
+                        menu: (provided) => ({
+                          ...provided,
+                          zIndex: 9999,
+                          position: 'absolute'
                         })
                       }}
                     />
@@ -373,6 +383,11 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ isOpen, onClose, on
                             borderColor: '#14b8a6',
                             boxShadow: '0 0 0 1px #14b8a6'
                           }
+                        }),
+                        menu: (provided) => ({
+                          ...provided,
+                          zIndex: 9999,
+                          position: 'absolute'
                         })
                       }}
                     />

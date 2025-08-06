@@ -3,7 +3,6 @@ import {
   MagnifyingGlassIcon,
   FunnelIcon,
   PlusIcon,
-  EllipsisVerticalIcon,
   PencilIcon,
   TrashIcon,
   UserIcon,
@@ -23,6 +22,9 @@ import {
   useUpdateMissionMutation, 
   useDeleteMissionMutation,
 } from '../../store/services/mission';
+// import Select from 'react-select';
+import Creatable from 'react-select/creatable';
+
 
 interface Mission {
   id: string;
@@ -77,6 +79,15 @@ export default function MissionPage() {
   const [createMission, { isLoading: isCreating }] = useCreateMissionMutation();
   const [updateMission, { isLoading: isUpdating }] = useUpdateMissionMutation();
   const [deleteMission, { isLoading: isDeleting }] = useDeleteMissionMutation();
+
+  // Transform missions for react-select
+  const missionOptions = useMemo(() => {
+    if (!missions) return [];
+    return missions.map(mission => ({
+      value: mission.id,
+      label: mission.missionName
+    }));
+  }, [missions]);
 
   // Filter and paginate missions
   const filteredMissions = useMemo(() => {
@@ -437,50 +448,22 @@ export default function MissionPage() {
                           </span>
                         </td>
                         <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                          <Menu as="div" className="relative inline-block text-left" onClick={(e) => e.stopPropagation()}>
-                            <div>
-                              <Menu.Button className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-white hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500">
-                                <EllipsisVerticalIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
-                              </Menu.Button>
-                            </div>
-
-                            <Transition
-                              as={Fragment}
-                              enter="transition ease-out duration-100"
-                              enterFrom="transform opacity-0 scale-95"
-                              enterTo="transform opacity-100 scale-100"
-                              leave="transition ease-in duration-75"
-                              leaveFrom="transform opacity-100 scale-100"
-                              leaveTo="transform opacity-0 scale-95"
+                          <div className="flex items-center justify-end space-x-2" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              onClick={() => openEditModal(mission)}
+                              className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-white hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+                              title="Modifier"
                             >
-                              <Menu.Items className="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
-                                <div className="py-1">
-                                  <Menu.Item>
-                                    {({ active }) => (
-                                      <button
-                                        onClick={() => openEditModal(mission)}
-                                        className={`${active ? 'bg-gray-100' : ''} group flex items-center px-4 py-2 text-sm text-gray-700 w-full text-left`}
-                                      >
-                                        <PencilIcon className="mr-3 h-4 w-4 text-gray-400" />
-                                        Modifier
-                                      </button>
-                                    )}
-                                  </Menu.Item>
-                                  <Menu.Item>
-                                    {({ active }) => (
-                                      <button
-                                        onClick={() => openDeleteModal(mission)}
-                                        className={`${active ? 'bg-gray-100' : ''} group flex items-center px-4 py-2 text-sm text-red-700 w-full text-left`}
-                                      >
-                                        <TrashIcon className="mr-3 h-4 w-4 text-red-400" />
-                                        Supprimer
-                                      </button>
-                                    )}
-                                  </Menu.Item>
-                                </div>
-                              </Menu.Items>
-                            </Transition>
-                          </Menu>
+                              <PencilIcon className="h-4 w-4 text-gray-600" />
+                            </button>
+                            <button
+                              onClick={() => openDeleteModal(mission)}
+                              className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-white hover:bg-gray-100 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                              title="Supprimer"
+                            >
+                              <TrashIcon className="h-4 w-4 text-red-500" />
+                             </button>
+                           </div>
                         </td>
                       </tr>
                     ))}
@@ -576,13 +559,24 @@ export default function MissionPage() {
                       <label htmlFor="missionName" className="block text-sm font-medium text-gray-700">
                         Nom de la mission
                       </label>
-                      <input
-                        type="text"
-                        name="missionName"
+                      <Creatable
                         id="missionName"
-                        value={formData.missionName}
-                        onChange={handleInputChange}
-                        className={`mt-1 p-2 block w-full rounded-md shadow-sm sm:text-sm ${errors.missionName ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-teal-500 focus:ring-teal-500'}`}
+                        name="missionName"
+                        value={missionOptions.find(option => option.label === formData.missionName)}
+                        onChange={(selectedOption: any) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            missionName: selectedOption?.label || ''
+                          }));
+                        }}
+                        options={missionOptions}
+                        placeholder="Sélectionner une mission"
+                        isClearable
+                        isSearchable
+                        className="react-select-container"
+                        classNamePrefix="react-select"
+                        formatCreateLabel={(inputValue) => `${inputValue}`}
+      
                       />
                       {errors.missionName && (
                         <p className="mt-1 text-sm text-red-600">{errors.missionName}</p>
@@ -720,13 +714,23 @@ export default function MissionPage() {
                       <label htmlFor="edit-missionName" className="block text-sm font-medium text-gray-700">
                         Nom de la mission
                       </label>
-                      <input
-                        type="text"
-                        name="missionName"
+                      <Creatable
                         id="edit-missionName"
-                        value={formData.missionName}
-                        onChange={handleInputChange}
-                        className={`mt-1 p-2 block w-full rounded-md shadow-sm sm:text-sm ${errors.missionName ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-teal-500 focus:ring-teal-500'}`}
+                        name="missionName"
+                        value={missionOptions.find(option => option.label === formData.missionName)}
+                        onChange={(selectedOption: any) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            missionName: selectedOption?.label || ''
+                          }));
+                        }}
+                        options={missionOptions}
+                        placeholder="Sélectionner une mission"
+                        isClearable
+                        isSearchable
+                        className="react-select-container"
+                        classNamePrefix="react-select"
+                        formatCreateLabel={(inputValue) => `${inputValue}`}
                       />
                       {errors.missionName && (
                         <p className="mt-1 text-sm text-red-600">{errors.missionName}</p>
@@ -777,7 +781,7 @@ export default function MissionPage() {
                         id="edit-location"
                         value={formData.location}
                         onChange={handleInputChange}
-                        className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm ${errors.location ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-teal-500 focus:ring-teal-500'}`}
+                        className={`mt-1 p-2 block w-full rounded-md shadow-sm sm:text-sm ${errors.location ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-teal-500 focus:ring-teal-500'}`}
                       />
                       {errors.location && (
                         <p className="mt-1 p-2 text-sm text-red-600">{errors.location}</p>

@@ -24,11 +24,12 @@ import { saveAs } from 'file-saver';
 import Calendar from 'react-calendar';
 import Select from 'react-select';
 import 'react-calendar/dist/Calendar.css';
+import {useGetDepartementCommunesQuery} from '../../store/services/churchApi';
 
 // Import API hooks (adjust based on your actual API structure)
 import { useGetUserByTokenQuery, useGetUsersByChurchQuery, useRegisterMutation, useUpdateUserMutation } from '../../store/services/authApi';
 import { useGetMinistriesByChurchQuery } from '../../store/services/ministryApi';
-    import { useCreateTransferMutation } from '../../store/services/transferApi';
+import { useCreateTransferMutation } from '../../store/services/transferApi';
 
 // Import custom components
 import ChangeRoleModal from '../../components/ChangeRoleModal';
@@ -122,7 +123,7 @@ interface AddMemberModalProps {
 const FilterModal: React.FC<FilterModalProps> = ({ isOpen, onClose, filters, onApplyFilters, onClear }) => {
   const [localFilters, setLocalFilters] = useState<FilterState>(filters);
   const [activeSection, setActiveSection] = useState<string>('searchType');
-
+  
   useEffect(() => {
     if (isOpen) {
       setLocalFilters(filters);
@@ -417,6 +418,20 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
   // Fetch ministries for the church
   const { data: ministriesData } = useGetMinistriesByChurchQuery(churchId || '', { skip: !churchId });
   
+  // Fetch department communes data
+  const {data: Ouest} = useGetDepartementCommunesQuery("Ouest")
+  const {data: Nord} = useGetDepartementCommunesQuery(`Nord`)
+  const {data: NordEst} = useGetDepartementCommunesQuery("Nord-Est")
+  const {data: NordOuest} = useGetDepartementCommunesQuery("Nord-Ouest")
+  const {data: Sude} = useGetDepartementCommunesQuery("Sude")
+  const {data: SudEst} = useGetDepartementCommunesQuery("Sud-Est")
+  const {data: Artibonite} = useGetDepartementCommunesQuery("Artibonite")
+  const {data: Centre} = useGetDepartementCommunesQuery("Centre")
+  const {data: GrandAnse} = useGetDepartementCommunesQuery("Grand'Anse")
+  const {data: Nippes} = useGetDepartementCommunesQuery("Nippes")
+
+  const villeAndVilleDenaissance = Object.keys(Ouest || {}).concat(Object.keys(Nord || {}), Object.keys(NordEst || {}), Object.keys(NordOuest || {}), Object.keys(Sude || {}), Object.keys(SudEst || {}), Object.keys(Artibonite || {}), Object.keys(Centre || {}), Object.keys(GrandAnse || {}), Object.keys(Nippes || {}))
+  
   // Transform ministries data for react-select
   const ministryOptions = useMemo(() => {
     if (!ministriesData) return [];
@@ -524,6 +539,8 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
   };
 
   if (!isOpen) return null;
+
+  // console.log("ville de naissance : ",villeAndVilleDenaissance)
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -741,7 +758,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                   </div>
 
                   {/* Age */}
-                  <div>
+                  {/* <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Âge</label>
                     <input
                       type="number"
@@ -750,7 +767,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                       placeholder="Âge"
                     />
-                  </div>
+                  </div> */}
 
                   {/* Civil State */}
                   <div>
@@ -864,48 +881,108 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                   {/* City */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Ville</label>
-                    <input
-                      type="text"
-                      value={formData.city}
-                      onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      placeholder="Ville"
+                    <Select
+                      value={villeAndVilleDenaissance.map(city => ({ value: city, label: city })).find(option => option.value === formData.city) || null}
+                      onChange={(selectedOption) => setFormData(prev => ({ ...prev, city: selectedOption?.value || '' }))}
+                      options={villeAndVilleDenaissance.map(city => ({ value: city, label: city }))}
+                      placeholder="Sélectionner une ville"
+                      isClearable
+                      isSearchable
+                      className="react-select-container"
+                      classNamePrefix="react-select"
+                      styles={{
+                        control: (provided) => ({
+                          ...provided,
+                          borderColor: '#d1d5db',
+                          '&:hover': {
+                            borderColor: '#d1d5db'
+                          },
+                          '&:focus-within': {
+                            borderColor: '#14b8a6',
+                            boxShadow: '0 0 0 2px rgba(20, 184, 166, 0.2)'
+                          }
+                        })
+                      }}
                     />
                   </div>
 
                   {/* Birth City */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Ville de Naissance</label>
-                    <input
-                      type="text"
-                      value={formData.birthCity}
-                      onChange={(e) => setFormData(prev => ({ ...prev, birthCity: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      placeholder="Ville de naissance"
+                    <Select
+                      value={villeAndVilleDenaissance.map(city => ({ value: city, label: city })).find(option => option.value === formData.birthCity) || null}
+                      onChange={(selectedOption) => setFormData(prev => ({ ...prev, birthCity: selectedOption?.value || '' }))}
+                      options={villeAndVilleDenaissance.map(city => ({ value: city, label: city }))}
+                      placeholder="Sélectionner une ville de naissance"
+                      isClearable
+                      isSearchable
+                      className="react-select-container"
+                      classNamePrefix="react-select"
+                      styles={{
+                        control: (provided) => ({
+                          ...provided,
+                          borderColor: '#d1d5db',
+                          '&:hover': {
+                            borderColor: '#d1d5db'
+                          },
+                          '&:focus-within': {
+                            borderColor: '#14b8a6',
+                            boxShadow: '0 0 0 2px rgba(20, 184, 166, 0.2)'
+                          }
+                        })
+                      }}
                     />
                   </div>
 
                   {/* Country */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Pays</label>
-                    <input
-                      type="text"
-                      value={formData.country}
-                      onChange={(e) => setFormData(prev => ({ ...prev, country: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      placeholder="Pays"
+                    <Select
+                      value={{ value: 'Haiti', label: 'Haiti' }}
+                      onChange={(selectedOption) => setFormData(prev => ({ ...prev, country: selectedOption?.value || 'Haiti' }))}
+                      options={[{ value: 'Haiti', label: 'Haiti' }]}
+                      isSearchable={false}
+                      className="react-select-container"
+                      classNamePrefix="react-select"
+                      styles={{
+                        control: (provided) => ({
+                          ...provided,
+                          borderColor: '#d1d5db',
+                          '&:hover': {
+                            borderColor: '#d1d5db'
+                          },
+                          '&:focus-within': {
+                            borderColor: '#14b8a6',
+                            boxShadow: '0 0 0 2px rgba(20, 184, 166, 0.2)'
+                          }
+                        })
+                      }}
                     />
                   </div>
 
                   {/* Birth Country */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Pays de Naissance</label>
-                    <input
-                      type="text"
-                      value={formData.birthCountry}
-                      onChange={(e) => setFormData(prev => ({ ...prev, birthCountry: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      placeholder="Pays de naissance"
+                    <Select
+                      value={{ value: 'Haiti', label: 'Haiti' }}
+                      onChange={(selectedOption) => setFormData(prev => ({ ...prev, birthCountry: selectedOption?.value || 'Haiti' }))}
+                      options={[{ value: 'Haiti', label: 'Haiti' }]}
+                      isSearchable={false}
+                      className="react-select-container"
+                      classNamePrefix="react-select"
+                      styles={{
+                        control: (provided) => ({
+                          ...provided,
+                          borderColor: '#d1d5db',
+                          '&:hover': {
+                            borderColor: '#d1d5db'
+                          },
+                          '&:focus-within': {
+                            borderColor: '#14b8a6',
+                            boxShadow: '0 0 0 2px rgba(20, 184, 166, 0.2)'
+                          }
+                        })
+                      }}
                     />
                   </div>
                 </div>

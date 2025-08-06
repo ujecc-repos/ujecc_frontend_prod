@@ -56,6 +56,10 @@ interface AddUserToChurchResponse {
   };
 }
 
+interface DepartementCommunesResponse {
+  [communeName: string]: string[];
+}
+
 export const churchApi = authApi.injectEndpoints({
   endpoints: (builder) => ({
     createChurch: builder.mutation<createChurchResponse, CreateChurchRequest>({
@@ -112,6 +116,11 @@ export const churchApi = authApi.injectEndpoints({
       }),
       invalidatesTags: ['Church', 'Transfer'],
     }),
+    
+    getDepartementCommunes: builder.query<DepartementCommunesResponse, string>({
+      query: (departementName) => `/departement/${departementName}`,
+      providesTags: ['Church'],
+    }),
   }),
 });
 
@@ -122,4 +131,5 @@ export const {
   useUpdateChurchMutation,
   useDeleteChurchMutation,
   useAddUserToChurchMutation,
+  useGetDepartementCommunesQuery,
 } = churchApi;

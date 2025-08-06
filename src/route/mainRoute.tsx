@@ -34,6 +34,7 @@ import ChangePassword from "../pages/change-password";
 import MainPage from "../pages/mainPage";
 import PasteurPage from "../pages/director/pasteurs";
 import App from "../App";
+import AllChurches from "../pages/super-admin/allChurches";
 
 
 const router = createBrowserRouter([
@@ -143,6 +144,7 @@ const router = createBrowserRouter([
                     { path: "/tableau-de-bord/super-admin/gestions", element: <GestionPage/> },
                     // 
                     { path: "/tableau-de-bord/pasteurs", element: <PasteurPage/> },
+                    { path: "/tableau-de-bord/super-admin/allchurches", element: <AllChurches/> },
 
                     
                 ]

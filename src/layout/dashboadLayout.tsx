@@ -17,7 +17,7 @@ import {
   Bars3CenterLeftIcon,
   XMarkIcon,
   CurrencyDollarIcon,
-  CalendarDaysIcon,
+  // CalendarDaysIcon,
   HeartIcon,
   GiftIcon,
   AcademicCapIcon,
@@ -28,6 +28,7 @@ import {
 import { TfiStatsUp } from "react-icons/tfi";
 import { motion } from 'framer-motion';
 import { useGetLogoutMutation } from '../store/services/authApi';
+import { useGetUserByTokenQuery } from '../store/services/authApi';
 
 
 const navigation = {
@@ -49,11 +50,11 @@ const navigation = {
       href: '/tableau-de-bord/admin/ministères',
       icon: BuildingLibraryIcon,
     },
-    {
-      name: 'Évenements',
-      href: '/tableau-de-bord/admin/evenements',
-      icon: CalendarDaysIcon,
-    },
+    // {
+    //   name: 'Évenements',
+    //   href: '/tableau-de-bord/admin/evenements',
+    //   icon: CalendarDaysIcon,
+    // },
     { name: 'Sanctions', href: '/tableau-de-bord/admin/sanctions', icon: ExclamationTriangleIcon },
     {
       name: 'Mariages',
@@ -111,6 +112,7 @@ const navigation = {
     { name: 'Tableau de bord', href: '/tableau-de-bord', icon: TfiStatsUp },
     { name: 'Missions', href: '/tableau-de-bord/super-admin/missions', icon: UserIcon },
     { name: 'Gestions', href: '/tableau-de-bord/super-admin/gestions', icon: BuildingLibraryIcon },
+    { name: 'Toutes les églises', href: '/tableau-de-bord/super-admin/allchurches', icon: BuildingLibraryIcon },
   ],
   Directeur: [
     { name: 'Tableau de bord', href: '/tableau-de-bord', icon: TfiStatsUp },
@@ -126,8 +128,9 @@ const DashboardLayout = ({ userRole }: {userRole: UserRole}) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [notificationCount] = useState(3);
   const [logOut] = useGetLogoutMutation()
+  const {data: userToken} = useGetUserByTokenQuery()
   // const { user, logout } = useAuth();
-  const user = { name: 'User', email: 'user@example.com' }; // Temporary mock user
+  // const user = { name: 'User', email: 'user@example.com' }; // Temporary mock user
   const logout = () => Promise.resolve(); // Temporary mock logout
   const navigate = useNavigate();
   const location = useLocation();
@@ -201,8 +204,8 @@ const DashboardLayout = ({ userRole }: {userRole: UserRole}) => {
                       <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-400 ring-2 ring-white"></div>
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-sm font-medium text-gray-900 capitalize">{user?.name}</span>
-                      <span className="text-xs text-gray-500">{user?.email}</span>
+                      <span className="text-sm font-medium text-gray-900 capitalize">{userToken?.firstname} {userToken?.lastname}</span>
+                      <span className="text-xs text-gray-500">{userToken?.email}</span>
                     </div>
                   </div>
                   </div>
@@ -286,8 +289,8 @@ const DashboardLayout = ({ userRole }: {userRole: UserRole}) => {
               <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-400 ring-2 ring-white"></div>
             </div>
             {!sidebarCollapsed && <div className="flex flex-col">
-              <span className="text-sm font-medium text-gray-900 capitalize">{user?.name}</span>
-              <span className="text-xs text-gray-500">{user?.email}</span>
+              <span className="text-sm font-medium text-gray-900 capitalize">{userToken?.firstname} {userToken?.lastname}</span>
+              <span className="text-xs text-gray-500">{userToken?.email}</span>
             </div>}
           </div>
           </div>

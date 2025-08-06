@@ -56,7 +56,9 @@ export default function Evenements() {
 
   // API hooks
   const { data: userData } = useGetUserByTokenQuery();
-  const { data: events = [], isLoading: isLoadingEvents, refetch: refetchEvents } = useGetEventsByChurchQuery(`${userData?.church.id}`);
+  const { data: events = [], isLoading: isLoadingEvents, refetch: refetchEvents } = useGetEventsByChurchQuery(
+    userData?.church?.id ? `${userData.church.id}` : ''
+  );
   const [createEvent] = useCreateEventMutation();
   const [updateEvent] = useUpdateEventMutation();
   const [deleteEvent] = useDeleteEventMutation();

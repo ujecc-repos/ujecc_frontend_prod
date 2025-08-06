@@ -12,16 +12,9 @@ import 'react-toastify/dist/ReactToastify.css';
 import { useRegisterMutation, useGetUsersQuery } from '../../store/services/authApi';
 import { useCreateChurchMutation, useGetChurchesQuery, useAddUserToChurchMutation } from '../../store/services/churchApi';
 import { useGetMissionsQuery } from '../../store/services/mission';
-import { Nord } from '../Department/Nord';
-import { NordEst } from '../Department/NordEst';
-import { NordOuest } from '../Department/Nord-Ouest';
-import { Sude } from '../Department/Sude';
-import { SudEst } from '../Department/SudeEst';
-import { Centre } from '../Department/Centre';
-import { Ouest } from '../Department/Ouest';
-import { Artibonite } from '../Department/Artibonite';
-import { GrandAnse } from '../Department/Grandanse';
-import { Nippes } from '../Department/Nippes';
+import { useGetDepartementCommunesQuery } from '../../store/services/churchApi';
+import Creatable from 'react-select/creatable';
+
 
 
 // Types
@@ -86,38 +79,48 @@ const GestionPage: React.FC = () => {
   // State for active tab
   const [activeTab, setActiveTab] = useState<string>('church');
   console.log(activeTab)
+  const {data: Ouest} = useGetDepartementCommunesQuery("Ouest")
+  const {data: Nord} = useGetDepartementCommunesQuery(`Nord`)
+  const {data: NordEst} = useGetDepartementCommunesQuery("Nord-Est")
+  const {data: NordOuest} = useGetDepartementCommunesQuery("Nord-Ouest")
+  const {data: Sude} = useGetDepartementCommunesQuery("Sude")
+  const {data: SudEst} = useGetDepartementCommunesQuery("Sud-Est")
+  const {data: Artibonite} = useGetDepartementCommunesQuery("Artibonite")
+  const {data: Centre} = useGetDepartementCommunesQuery("Centre")
+  const {data: GrandAnse} = useGetDepartementCommunesQuery("Grand'Anse")
+  const {data: Nippes} = useGetDepartementCommunesQuery("Nippes")
   
   // Static Data for locations
   const data: DataType = {
     "Ouest": {
-      communes: Ouest,
+      communes: Ouest || {}
     },
     "Nord": {
-      communes: Nord,
+      communes: Nord || {}
     },
     "Nord-Est": {
-      communes: NordEst
+      communes: NordEst || {}
     },
     "Nord-Ouest": {
-      communes: NordOuest
+      communes: NordOuest || {}
     },
     "Sud": {
-      communes: Sude
+      communes: Sude || {}
     },
     "Sud-Est": {
-      communes: SudEst
+      communes: SudEst || {}
     },
     "Artibonite": {
-      communes: Artibonite
+      communes: Artibonite || {}
     },
     "Centre": {
-      communes: Centre
+      communes: Centre || {}
     },
     "Grand'Anse": {
-      communes: GrandAnse
+      communes: GrandAnse || {}
     },
     "Nippes": {
-      communes: Nippes
+      communes: Nippes || {}
     },
   };
   
@@ -372,10 +375,11 @@ const GestionPage: React.FC = () => {
   
   // Transform users for react-select
   const userOptions = useMemo(() => {
+    const message = "pas d'église"
     if (!users) return [];
     return users.map(user => ({
       value: user.id,
-      label: `${user.firstname} ${user.lastname} (${user.email})`
+      label: `${user.firstname} ${user.lastname} (${user.church ? user.church.name : message})`
     }));
   }, [users]);
   
@@ -430,12 +434,16 @@ const GestionPage: React.FC = () => {
                 {/* Church Name */}
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Nom de l'Église</label>
-                  <input
-                    type="text"
-                    value={churchFormData.name}
-                    onChange={(e) => setChurchFormData(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    placeholder="Nom de l'église"
+                  <Creatable
+                    value={churchOptions.find(option => option.label === churchFormData.name)}
+                    onChange={(selectedOption: any) => setChurchFormData(prev => ({ ...prev, name: selectedOption?.label || '' }))}
+                    options={churchOptions}
+                    placeholder="Sélectionner une église"
+                    isClearable
+                    isSearchable
+                    className="react-select-container"
+                    classNamePrefix="react-select"
+                    formatCreateLabel={(inputValue) => inputValue}
                   />
                   {churchErrors.name && <p className="mt-1 text-sm text-red-600">{churchErrors.name}</p>}
                 </div>
