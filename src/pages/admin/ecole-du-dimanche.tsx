@@ -1,5 +1,4 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import {
   MagnifyingGlassIcon,
   ArrowPathIcon,
@@ -8,10 +7,11 @@ import {
   UserGroupIcon,
   MapPinIcon,
   BookOpenIcon,
-  EyeIcon,
+  TrashIcon,
 } from '@heroicons/react/24/outline';
+import { Dialog } from '@headlessui/react';
+import { useGetSundayClassesByChurchQuery, useDeleteSundayClassMutation } from '../../store/services/sundayClassApi';
 import { useGetUserByTokenQuery } from '../../store/services/authApi';
-import { useGetSundayClassesByChurchQuery } from '../../store/services/sundayClassApi';
 import { toast } from 'react-toastify';
 import CreateSundayClassModal from '../../components/modals/CreateSundayClassModal';
 
@@ -25,6 +25,14 @@ interface FilterModalProps {
   filters: FilterState;
   onApplyFilters: (filters: FilterState) => void;
   onClear: () => void;
+}
+
+interface DeleteConfirmationModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  className: string;
+  isLoading: boolean;
 }
 
 const FilterModal: React.FC<FilterModalProps> = ({
@@ -81,7 +89,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
                           type="radio"
                           checked={localFilters.ageGroup === ''}
                           onChange={() => handleAgeGroupChange('')}
-                          className="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
+                          className="h-4 w-4 text-teal-600 border-gray-300 focus:ring-teal-500"
                         />
                         <label htmlFor="all" className="ml-3 block text-sm font-medium text-gray-700">
                           Tous
@@ -94,7 +102,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
                           type="radio"
                           checked={localFilters.ageGroup === 'Enfants (3-12 ans)'}
                           onChange={() => handleAgeGroupChange('Enfants (3-12 ans)')}
-                          className="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
+                          className="h-4 w-4 text-teal-600 border-gray-300 focus:ring-teal-500"
                         />
                         <label htmlFor="enfants" className="ml-3 block text-sm font-medium text-gray-700">
                           Enfants (3-12 ans)
@@ -107,7 +115,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
                           type="radio"
                           checked={localFilters.ageGroup === 'Adolescents (13-17 ans)'}
                           onChange={() => handleAgeGroupChange('Adolescents (13-17 ans)')}
-                          className="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
+                          className="h-4 w-4 text-teal-600 border-gray-300 focus:ring-teal-500"
                         />
                         <label htmlFor="adolescents" className="ml-3 block text-sm font-medium text-gray-700">
                           Adolescents (13-17 ans)
@@ -120,7 +128,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
                           type="radio"
                           checked={localFilters.ageGroup === 'Jeunes (18-30 ans)'}
                           onChange={() => handleAgeGroupChange('Jeunes (18-30 ans)')}
-                          className="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
+                          className="h-4 w-4 text-teal-600 border-gray-300 focus:ring-teal-500"
                         />
                         <label htmlFor="jeunes" className="ml-3 block text-sm font-medium text-gray-700">
                           Jeunes (18-30 ans)
@@ -133,7 +141,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
                           type="radio"
                           checked={localFilters.ageGroup === 'Adultes (31+ ans)'}
                           onChange={() => handleAgeGroupChange('Adultes (31+ ans)')}
-                          className="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
+                          className="h-4 w-4 text-teal-600 border-gray-300 focus:ring-teal-500"
                         />
                         <label htmlFor="adultes" className="ml-3 block text-sm font-medium text-gray-700">
                           Adultes (31+ ans)
@@ -149,21 +157,21 @@ const FilterModal: React.FC<FilterModalProps> = ({
             <button
               type="button"
               onClick={handleApply}
-              className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm"
+              className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-teal-600 text-base font-medium text-white hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 sm:ml-3 sm:w-auto sm:text-sm"
             >
               Appliquer
             </button>
             <button
               type="button"
               onClick={handleClear}
-              className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+              className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
             >
               Effacer
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:w-auto sm:text-sm"
+              className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 sm:mt-0 sm:w-auto sm:text-sm"
             >
               Annuler
             </button>
@@ -171,6 +179,69 @@ const FilterModal: React.FC<FilterModalProps> = ({
         </div>
       </div>
     </div>
+  );
+};
+
+const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  className,
+  isLoading,
+}) => {
+  return (
+    <Dialog open={isOpen} onClose={onClose} className="relative z-50">
+      <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+      
+      <div className="fixed inset-0 flex items-center justify-center p-4">
+        <Dialog.Panel className="mx-auto max-w-md rounded bg-white p-6 w-full">
+          <div className="sm:flex sm:items-start">
+            <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+              <TrashIcon className="h-6 w-6 text-red-600" aria-hidden="true" />
+            </div>
+            <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+              <Dialog.Title className="text-lg leading-6 font-medium text-gray-900">
+                Supprimer la classe
+              </Dialog.Title>
+              <div className="mt-2">
+                <p className="text-sm text-gray-500">
+                  Êtes-vous sûr de vouloir supprimer la classe "{className}" ? Cette action est irréversible.
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+            <button
+              type="button"
+              onClick={onConfirm}
+              disabled={isLoading}
+              className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Suppression...
+                </>
+              ) : (
+                'Supprimer'
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isLoading}
+              className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 sm:mt-0 sm:mr-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Annuler
+            </button>
+          </div>
+        </Dialog.Panel>
+      </div>
+    </Dialog>
   );
 };
 
@@ -182,6 +253,8 @@ export default function EcoleDuDimanche() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [classToDelete, setClassToDelete] = useState<{ id: string; name: string } | null>(null);
 
   // Fetch user data and church ID
   const { data: userData } = useGetUserByTokenQuery();
@@ -196,6 +269,9 @@ export default function EcoleDuDimanche() {
     { churchId: churchId || '' },
     { skip: !churchId }
   );
+
+  // Delete mutation
+  const [deleteSundayClass, { isLoading: isDeleting }] = useDeleteSundayClassMutation();
 
   // Filter Sunday classes based on search and filters
   const filteredClasses = useMemo(() => {
@@ -233,11 +309,39 @@ export default function EcoleDuDimanche() {
     setFilters({ ageGroup: '' });
   };
 
+  // Handle delete class
+  const handleDeleteClass = (id: string, name: string) => {
+    setClassToDelete({ id, name });
+    setDeleteModalOpen(true);
+  };
+
+  // Confirm delete
+  const confirmDelete = async () => {
+    if (!classToDelete) return;
+
+    try {
+      await deleteSundayClass(classToDelete.id).unwrap();
+      toast.success('Classe supprimée avec succès!');
+      refetch();
+      setDeleteModalOpen(false);
+      setClassToDelete(null);
+    } catch (error) {
+      toast.error('Erreur lors de la suppression de la classe');
+      console.error('Delete error:', error);
+    }
+  };
+
+  // Cancel delete
+  const cancelDelete = () => {
+    setDeleteModalOpen(false);
+    setClassToDelete(null);
+  };
+
   return (
     <div className="bg-white shadow-lg rounded-xl overflow-hidden">
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-500"></div>
         </div>
       ) : (
         <>
@@ -253,19 +357,19 @@ export default function EcoleDuDimanche() {
                   placeholder="Rechercher une classe..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-teal-500 focus:border-teal-500 sm:text-sm"
                 />
               </div>
               {/* <button
                 onClick={() => setFilterVisible(true)}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
               >
                 <FunnelIcon className="-ml-0.5 mr-2 h-4 w-4" aria-hidden="true" />
                 Filtrer
               </button> */}
               <button
                 onClick={() => refetch()}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
               >
                 <ArrowPathIcon className="-ml-0.5 mr-2 h-4 w-4" aria-hidden="true" />
                 Actualiser
@@ -274,7 +378,7 @@ export default function EcoleDuDimanche() {
             <div className="flex items-center">
               <button
                 onClick={() => setIsCreateModalOpen(true)}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
               >
                 <PlusIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
                 Ajouter une classe
@@ -407,12 +511,16 @@ export default function EcoleDuDimanche() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <Link
-                          to={`/admin/sunday-class/${sundayClass.id}`}
-                          className="text-indigo-600 hover:text-indigo-900 mr-4"
-                        >
-                          <EyeIcon className="h-5 w-5 inline" />
-                        </Link>
+                        <div className="flex items-center justify-end space-x-2">
+  
+                          <button
+                            onClick={() => handleDeleteClass(sundayClass.id, sundayClass.nom)}
+                            className="text-red-600 hover:text-red-900 p-1 rounded-md hover:bg-red-50 transition-colors"
+                            title="Supprimer la classe"
+                          >
+                            <TrashIcon className="h-5 w-5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -639,6 +747,15 @@ export default function EcoleDuDimanche() {
               refetch();
               toast.success('Classe créée avec succès!');
             }}
+          />
+          
+          {/* Delete Confirmation Modal */}
+          <DeleteConfirmationModal
+            isOpen={deleteModalOpen}
+            onClose={cancelDelete}
+            onConfirm={confirmDelete}
+            className={classToDelete?.name || ''}
+            isLoading={isDeleting}
           />
         </>
       )}

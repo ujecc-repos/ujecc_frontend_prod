@@ -193,31 +193,31 @@ const Anniversaire: React.FC = () => {
     const formattedBirthDate = formatDate(user.birthDate);
     
     return (
-      <div className="bg-white rounded-lg shadow-md overflow-hidden border border-indigo-100 hover:shadow-lg transition-all duration-200">
+      <div className="bg-white rounded-lg shadow-md overflow-hidden border border-teal-100 hover:shadow-lg transition-all duration-200">
         <div className="flex p-5">
           <div className="flex-shrink-0">
             {user.picture ? (
               <img
                 src={`http://localhost:4000${user.picture}`}
                 alt={`${user.firstname} ${user.lastname}`}
-                className="h-20 w-20 rounded-full object-cover border-2 border-indigo-200 shadow"
+                className="h-20 w-20 rounded-full object-cover border-2 border-teal-200 shadow"
               />
             ) : (
-              <div className="h-20 w-20 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center border-2 border-indigo-200 shadow">
-                <UserIcon className="h-10 w-10 text-indigo-500" />
+              <div className="h-20 w-20 rounded-full bg-gradient-to-br from-teal-100 to-purple-100 flex items-center justify-center border-2 border-teal-200 shadow">
+                <UserIcon className="h-10 w-10 text-teal-500" />
               </div>
             )}
           </div>
           <div className="ml-5 flex-1">
-            <h3 className="text-xl font-bold text-indigo-900">
+            <h3 className="text-xl font-bold text-teal-900">
               {user.firstname} {user.lastname}
             </h3>
             <div className="flex items-center text-sm text-gray-600 mt-2">
-              <CalendarIcon className="h-5 w-5 mr-2 text-indigo-500" />
+              <CalendarIcon className="h-5 w-5 mr-2 text-teal-500" />
               <span className="font-medium">{formattedBirthDate}</span>
             </div>
             <div className="flex items-center text-sm text-gray-600 mt-2">
-              <CakeIcon className="h-5 w-5 mr-2 text-indigo-500" />
+              <CakeIcon className="h-5 w-5 mr-2 text-teal-500" />
               <span className="font-medium">{user.age} ans</span>
             </div>
           </div>
@@ -251,22 +251,22 @@ const Anniversaire: React.FC = () => {
         <h1 className="text-2xl font-bold text-gray-900">Anniversaires</h1>
         <button
           onClick={handleRefresh}
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-md text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200"
+          className="inline-flex items-center px-4 py-2 border text-sm font-medium rounded-lg shadow-sm text-white bg-gradient-to-r from-teal-600 to-teal-400 hover:from-teal-600 hover:to-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-all duration-200"
         >
           Rafraîchir
         </button>
       </div>
 
       <div className="bg-white shadow rounded-lg">
-        <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-purple-50">
+        <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-teal-50 to-purple-50">
           <div className="flex flex-col md:flex-row md:items-start md:justify-between space-y-4 md:space-y-0 md:space-x-4">
             <div className="relative rounded-lg shadow-md max-w-xs w-full">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <MagnifyingGlassIcon className="h-5 w-5 text-indigo-500" />
+                <MagnifyingGlassIcon className="h-5 w-5 text-teal-500" />
               </div>
               <input
                 type="text"
-                className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 py-3 sm:text-sm border-2 border-indigo-200 rounded-lg bg-white shadow-inner"
+                className="focus:ring-teal-500 focus:border-teal-500 block w-full pl-10 py-3 sm:text-sm border-2 border-teal-200 rounded-lg bg-white shadow-inner"
                 placeholder="Rechercher un membre..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -276,14 +276,14 @@ const Anniversaire: React.FC = () => {
             <div className="max-w-xs relative z-10">
               <div className="relative rounded-lg shadow-md w-full overflow-visible">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-20 bg-transparent">
-                  <CalendarIcon className="h-6 w-6 text-indigo-500" />
+                  <CalendarIcon className="h-6 w-6 text-teal-500" />
                 </div>
                 <DatePicker
                   selected={selectedDate}
                   onChange={(date) => setSelectedDate(date)}
                   dateFormat="dd/MM"
                   placeholderText="Sélectionner une date"
-                  className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-12 py-3 sm:text-sm border-2 border-indigo-200 rounded-lg bg-white shadow-inner"
+                  className="focus:ring-teal-500 focus:border-teal-500 block w-full pl-12 py-3 sm:text-sm border-2 border-teal-200 rounded-lg bg-white shadow-inner"
                   showMonthDropdown
                   showYearDropdown
                   dropdownMode="select"
@@ -311,8 +311,8 @@ const Anniversaire: React.FC = () => {
         <div className="p-4">
           {isCurrentUserLoading || isBirthdaysLoading ? (
             <div className="flex justify-center items-center py-12">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-t-2 border-indigo-600"></div>
-              <span className="ml-3 text-indigo-700 font-medium">Chargement...</span>
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-t-2 border-teal-600"></div>
+              <span className="ml-3 text-teal-700 font-medium">Chargement...</span>
             </div>
           ) : birthdaysError ? (
             <div className="text-center py-12 bg-red-50 rounded-lg">
@@ -329,18 +329,18 @@ const Anniversaire: React.FC = () => {
               {selectedDate ? (
                 <p className="text-gray-600 font-medium">Aucun anniversaire trouvé pour cette date.</p>
               ) : searchQuery ? (
-                <p className="text-gray-600 font-medium">Aucun résultat trouvé pour <span className="font-bold text-indigo-600">"{searchQuery}"</span>.</p>
+                <p className="text-gray-600 font-medium">Aucun résultat trouvé pour <span className="font-bold text-teal-600">"{searchQuery}"</span>.</p>
               ) : (
                 <p className="text-gray-600 font-medium">Aucun anniversaire à venir.</p>
               )}
             </div>
           ) : (
             <div>
-              <h2 className="text-xl font-bold text-indigo-800 mb-6 border-b-2 border-indigo-100 pb-2">
+              <h2 className="text-xl font-bold text-teal-800 mb-6 border-b-2 border-teal-100 pb-2">
                 {selectedDate
                   ? `Anniversaires du ${format(selectedDate, 'dd MMMM', { locale: fr })}`
                   : 'Anniversaires à venir'}
-                <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
                   {filteredBirthdays.length}
                 </span>
               </h2>

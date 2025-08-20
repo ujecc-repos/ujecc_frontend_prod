@@ -292,7 +292,7 @@ export default function CreationFuneraille() {
             <div key={index} className="flex flex-col items-center">
               <div
                 className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                  index <= currentStep ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'
+                  index <= currentStep ? 'bg-teal-600 text-white' : 'bg-gray-300 text-gray-600'
                 }`}
               >
                 {index + 1}
@@ -303,7 +303,7 @@ export default function CreationFuneraille() {
         </div>
         <div className="mt-2 h-2 bg-gray-200 rounded-full">
           <div
-            className="h-full bg-blue-600 rounded-full transition-all duration-300"
+            className="h-full bg-teal-600 rounded-full transition-all duration-300"
             style={{ width: `${((currentStep + 1) / formSections.length) * 100}%` }}
           ></div>
         </div>
@@ -331,7 +331,7 @@ export default function CreationFuneraille() {
                       placeholder={field.placeholder}
                       value={formData[field.name as keyof typeof formData] as string}
                       onChange={(e) => handleInputChange(field.name, e.target.value)}
-                      className={`border rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors[field.name] ? 'border-red-500' : 'border-gray-300'}`}
+                      className={`border rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-teal-500 ${errors[field.name] ? 'border-red-500' : 'border-gray-300'}`}
                     />
                     {errors[field.name] && <p className="mt-1 text-sm text-red-500">{errors[field.name]}</p>}
                   </div>
@@ -342,7 +342,7 @@ export default function CreationFuneraille() {
                       onChange={(date) => handleInputChange(field.name, date)}
                       placeholderText={field.placeholder}
                       dateFormat="dd/MM/yyyy"
-                      className={`border rounded-md p-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors[field.name] ? 'border-red-500' : 'border-gray-300'}`}
+                      className={`border rounded-md p-2 w-full focus:outline-none focus:ring-2 focus:ring-teal-500 ${errors[field.name] ? 'border-red-500' : 'border-gray-300'}`}
                     />
                     {errors[field.name] && <p className="mt-1 text-sm text-red-500">{errors[field.name]}</p>}
                   </div>
@@ -390,7 +390,7 @@ export default function CreationFuneraille() {
                       value={formData[field.name as keyof typeof formData] as string}
                       onChange={(e) => handleInputChange(field.name, e.target.value)}
                       rows={4}
-                      className={`border rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors[field.name] ? 'border-red-500' : 'border-gray-300'}`}
+                      className={`border rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-teal-500 ${errors[field.name] ? 'border-red-500' : 'border-gray-300'}`}
                     />
                     {errors[field.name] && <p className="mt-1 text-sm text-red-500">{errors[field.name]}</p>}
                   </div>
@@ -418,7 +418,7 @@ export default function CreationFuneraille() {
             <button
               type="button"
               onClick={handleNext}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-colors"
             >
               Suivant
             </button>
@@ -476,7 +476,7 @@ export default function CreationFuneraille() {
                     setIsSuccessModalOpen(false);
                     navigate('/tableau-de-bord/admin/funerailles');
                   }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                  className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-colors"
                 >
                   Voir la liste
                 </button>

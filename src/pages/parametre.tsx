@@ -55,7 +55,7 @@ export default function ParametreScreen() {
     mainPasteur: ''
   });
 
-  const baseUrl = 'https://api.ujecc.org';
+  const baseUrl = 'https://ujecc-backend.onrender.com';
 
   useEffect(() => {
     if (churchData) {

@@ -115,7 +115,7 @@ const PersonDetail: React.FC = () => {
                 <div className="w-24 h-24 mx-auto mb-4 bg-white/20 rounded-full flex items-center justify-center">
                   {member.picture ? (
                     <img
-                      src={`https://api.ujecc.org${member.picture}`}
+                      src={`https://ujecc-backend.onrender.com${member.picture}`}
                       alt={`${member.firstname} ${member.lastname}`}
                       className="w-24 h-24 rounded-full object-cover"
                     />

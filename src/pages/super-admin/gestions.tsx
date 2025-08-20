@@ -14,9 +14,6 @@ import { useCreateChurchMutation, useGetChurchesQuery, useAddUserToChurchMutatio
 import { useGetMissionsQuery } from '../../store/services/mission';
 import { useGetDepartementCommunesQuery } from '../../store/services/churchApi';
 import Creatable from 'react-select/creatable';
-
-
-
 // Types
 interface CreateChurchFormData {
   name: string;
@@ -712,7 +709,7 @@ const GestionPage: React.FC = () => {
                       <div className="relative">
                         <input
                           type="text"
-                          value={userFormData.birthDate ? new Date(userFormData.birthDate).toLocaleDateString('fr-FR') : ''}
+                          value={userFormData.birthDate ? userFormData.birthDate.split('-').reverse().join('/') : ''}
                           onClick={() => setShowBirthCalendar(!showBirthCalendar)}
                           readOnly
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer"
@@ -726,12 +723,15 @@ const GestionPage: React.FC = () => {
                                 if (date) {
                                   const selectedDate = Array.isArray(date) ? date[0] : date;
                                   if (selectedDate) {
-                                    setUserFormData(prev => ({ ...prev, birthDate: selectedDate.toISOString().split('T')[0] }));
+                                    const year = selectedDate.getFullYear();
+                                    const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+                                    const day = String(selectedDate.getDate()).padStart(2, '0');
+                                    setUserFormData(prev => ({ ...prev, birthDate: `${year}-${month}-${day}` }));
                                     setShowBirthCalendar(false);
                                   }
                                 }
                               }}
-                              value={userFormData.birthDate ? new Date(userFormData.birthDate) : null}
+                              value={userFormData.birthDate ? new Date(userFormData.birthDate + 'T00:00:00') : null}
                               className="react-calendar"
                             />
                           </div>
@@ -923,7 +923,7 @@ const GestionPage: React.FC = () => {
                       <div className="relative">
                         <input
                           type="text"
-                          value={userFormData.joinDate ? new Date(userFormData.joinDate).toLocaleDateString('fr-FR') : ''}
+                          value={userFormData.joinDate ? userFormData.joinDate.split('-').reverse().join('/') : ''}
                           onClick={() => setShowJoinCalendar(!showJoinCalendar)}
                           readOnly
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer"
@@ -937,12 +937,15 @@ const GestionPage: React.FC = () => {
                                 if (date) {
                                   const selectedDate = Array.isArray(date) ? date[0] : date;
                                   if (selectedDate) {
-                                    setUserFormData(prev => ({ ...prev, joinDate: selectedDate.toISOString().split('T')[0] }));
+                                    const year = selectedDate.getFullYear();
+                                    const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+                                    const day = String(selectedDate.getDate()).padStart(2, '0');
+                                    setUserFormData(prev => ({ ...prev, joinDate: `${year}-${month}-${day}` }));
                                     setShowJoinCalendar(false);
                                   }
                                 }
                               }}
-                              value={userFormData.joinDate ? new Date(userFormData.joinDate) : null}
+                              value={userFormData.joinDate ? new Date(userFormData.joinDate + 'T00:00:00') : null}
                               className="react-calendar"
                             />
                           </div>
@@ -956,7 +959,7 @@ const GestionPage: React.FC = () => {
                       <div className="relative">
                         <input
                           type="text"
-                          value={userFormData.baptismDate ? new Date(userFormData.baptismDate).toLocaleDateString('fr-FR') : ''}
+                          value={userFormData.baptismDate ? userFormData.baptismDate.split('-').reverse().join('/') : ''}
                           onClick={() => setShowBaptismCalendar(!showBaptismCalendar)}
                           readOnly
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer"
@@ -970,12 +973,15 @@ const GestionPage: React.FC = () => {
                                 if (date) {
                                   const selectedDate = Array.isArray(date) ? date[0] : date;
                                   if (selectedDate) {
-                                    setUserFormData(prev => ({ ...prev, baptismDate: selectedDate.toISOString().split('T')[0] }));
+                                    const year = selectedDate.getFullYear();
+                                    const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+                                    const day = String(selectedDate.getDate()).padStart(2, '0');
+                                    setUserFormData(prev => ({ ...prev, baptismDate: `${year}-${month}-${day}` }));
                                     setShowBaptismCalendar(false);
                                   }
                                 }
                               }}
-                              value={userFormData.baptismDate ? new Date(userFormData.baptismDate) : null}
+                              value={userFormData.baptismDate ? new Date(userFormData.baptismDate + 'T00:00:00') : null}
                               className="react-calendar"
                             />
                           </div>

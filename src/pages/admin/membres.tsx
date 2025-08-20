@@ -5,7 +5,6 @@ import {
   FunnelIcon,
   ArrowDownTrayIcon,
   PlusIcon,
-  EllipsisVerticalIcon,
   PencilIcon,
   TrashIcon,
   UserIcon,
@@ -15,8 +14,6 @@ import {
   CalendarIcon,
   PhotoIcon,
 } from '@heroicons/react/24/outline';
-import { Menu, Transition } from '@headlessui/react';
-import { Fragment } from 'react';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 import { Document, Packer, Paragraph, Table, TableCell, TableRow, TextRun, WidthType, AlignmentType } from 'docx';
@@ -111,6 +108,8 @@ interface AddMemberFormData {
   facebook: string;
   profileImage: File | null;
   isActiveMember: boolean;
+  nif?: string;
+  groupeSanguin?: string;
 }
 
 interface AddMemberModalProps {
@@ -400,7 +399,9 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
     personToContact: '',
     facebook: '',
     profileImage: null,
-    isActiveMember: true
+    isActiveMember: true,
+    nif: '',
+    groupeSanguin: ''
   });
 
   // const [showPassword, setShowPassword] = useState(false);
@@ -506,7 +507,9 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
       personToContact: '',
       facebook: '',
       profileImage: null,
-      isActiveMember: true
+      isActiveMember: true,
+      nif: '',
+      groupeSanguin: ''
     });
     setImagePreview(null);
     setErrors({});
@@ -729,7 +732,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                     <div className="relative">
                       <input
                         type="text"
-                        value={formData.birthDate ? new Date(formData.birthDate).toLocaleDateString('fr-FR') : ''}
+                        value={formData.birthDate ? formData.birthDate.split('-').reverse().join('/') : ''}
                         onClick={() => setShowBirthCalendar(!showBirthCalendar)}
                         readOnly
                         data-calendar-trigger
@@ -744,12 +747,22 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                                if (date) {
                                  const selectedDate = Array.isArray(date) ? date[0] : date;
                                  if (selectedDate) {
-                                   setFormData(prev => ({ ...prev, birthDate: selectedDate.toISOString().split('T')[0] }));
+                                   // Format date as YYYY-MM-DD without timezone issues
+                                   const year = selectedDate.getFullYear();
+                                   const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+                                   const day = String(selectedDate.getDate()).padStart(2, '0');
+                                   const dateString = `${year}-${month}-${day}`;
+                                   setFormData(prev => ({ ...prev, birthDate: dateString }));
                                    setShowBirthCalendar(false);
                                  }
                                }
                              }}
-                            value={formData.birthDate ? new Date(formData.birthDate) : null}
+                            value={formData.birthDate ? new Date(formData.birthDate + 'T00:00:00') : null}
+                            minDate={undefined}
+                            maxDate={undefined}
+                            tileDisabled={() => false}
+                            selectRange={false}
+                            allowPartialRange={false}
                             className="react-calendar"
                           />
                         </div>
@@ -809,6 +822,38 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                       placeholder="Profession"
                     />
+                  </div>
+
+                  {/* NIF */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">NIF (Numéro d'Identification Fiscale)</label>
+                    <input
+                      type="text"
+                      value={formData.nif || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, nif: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      placeholder="NIF (optionnel)"
+                    />
+                  </div>
+
+                  {/* Groupe Sanguin */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Groupe Sanguin</label>
+                    <select
+                      value={formData.groupeSanguin || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, groupeSanguin: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    >
+                      <option value="">Sélectionner groupe sanguin (optionnel)</option>
+                      <option value="A+">A+</option>
+                      <option value="A-">A-</option>
+                      <option value="B+">B+</option>
+                      <option value="B-">B-</option>
+                      <option value="AB+">AB+</option>
+                      <option value="AB-">AB-</option>
+                      <option value="O+">O+</option>
+                      <option value="O-">O-</option>
+                    </select>
                   </div>
                 </div>
               </div>
@@ -1047,7 +1092,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                     <div className="relative">
                       <input
                         type="text"
-                        value={formData.joinDate ? new Date(formData.joinDate).toLocaleDateString('fr-FR') : ''}
+                        value={formData.joinDate ? formData.joinDate.split('-').reverse().join('/') : ''}
                         onClick={() => setShowJoinCalendar(!showJoinCalendar)}
                         readOnly
                         data-calendar-trigger
@@ -1060,11 +1105,21 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                           <Calendar
                             onChange={(date) => {
                               if (date instanceof Date) {
-                                setFormData(prev => ({ ...prev, joinDate: date.toISOString().split('T')[0] }));
+                                // Format date as YYYY-MM-DD without timezone issues
+                                const year = date.getFullYear();
+                                const month = String(date.getMonth() + 1).padStart(2, '0');
+                                const day = String(date.getDate()).padStart(2, '0');
+                                const dateString = `${year}-${month}-${day}`;
+                                setFormData(prev => ({ ...prev, joinDate: dateString }));
                                 setShowJoinCalendar(false);
                               }
                             }}
-                            value={formData.joinDate ? new Date(formData.joinDate) : null}
+                            value={formData.joinDate ? new Date(formData.joinDate + 'T00:00:00') : null}
+                            minDate={undefined}
+                            maxDate={undefined}
+                            tileDisabled={() => false}
+                            selectRange={false}
+                            allowPartialRange={false}
                             locale="fr-FR"
                           />
                         </div>
@@ -1078,7 +1133,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                     <div className="relative">
                       <input
                         type="text"
-                        value={formData.baptismDate ? new Date(formData.baptismDate).toLocaleDateString('fr-FR') : ''}
+                        value={formData.baptismDate ? formData.baptismDate.split('-').reverse().join('/') : ''}
                         onClick={() => setShowBaptismCalendar(!showBaptismCalendar)}
                         readOnly
                         data-calendar-trigger
@@ -1091,11 +1146,21 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                           <Calendar
                             onChange={(date) => {
                               if (date instanceof Date) {
-                                setFormData(prev => ({ ...prev, baptismDate: date.toISOString().split('T')[0] }));
+                                // Format date as YYYY-MM-DD without timezone issues
+                                const year = date.getFullYear();
+                                const month = String(date.getMonth() + 1).padStart(2, '0');
+                                const day = String(date.getDate()).padStart(2, '0');
+                                const dateString = `${year}-${month}-${day}`;
+                                setFormData(prev => ({ ...prev, baptismDate: dateString }));
                                 setShowBaptismCalendar(false);
                               }
                             }}
-                            value={formData.baptismDate ? new Date(formData.baptismDate) : null}
+                            value={formData.baptismDate ? new Date(formData.baptismDate + 'T00:00:00') : null}
+                            minDate={undefined}
+                            maxDate={undefined}
+                            tileDisabled={() => false}
+                            selectRange={false}
+                            allowPartialRange={false}
                             locale="fr-FR"
                           />
                         </div>
@@ -1859,7 +1924,7 @@ export default function Membres() {
                           {member.picture ? (
                             <img
                               className="h-10 w-10 rounded-full object-cover"
-                              src={`https://api.ujecc.org${member.picture}`}
+                              src={`https://ujecc-backend.onrender.com${member.picture}`}
                               alt={`${member.firstname} ${member.lastname}`}
                             />
                           ) : (
@@ -1901,98 +1966,67 @@ export default function Membres() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <Menu as="div" className="relative inline-block text-left">
-                        <Menu.Button 
-                          className="flex items-center p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100"
-                          onClick={(e) => e.stopPropagation()}
+                      <div className="flex items-center justify-end space-x-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditMember(member);
+                          }}
+                          className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors group relative"
+                          title="Modifier"
                         >
-                          <EllipsisVerticalIcon className="h-5 w-5" />
-                        </Menu.Button>
-                        <Transition
-                          as={Fragment}
-                          enter="transition ease-out duration-100"
-                          enterFrom="transform opacity-0 scale-95"
-                          enterTo="transform opacity-100 scale-100"
-                          leave="transition ease-in duration-75"
-                          leaveFrom="transform opacity-100 scale-100"
-                          leaveTo="transform opacity-0 scale-95"
+                          <PencilIcon className="h-5 w-5" />
+                          <span className="absolute bottom-full right-0 mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">Modifier</span>
+                        </button>
+                        
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleChangeRole(member);
+                          }}
+                          className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-full transition-colors group relative"
+                          title="Changer rôle"
                         >
-                          <Menu.Items className="absolute right-0 z-10 mt-2 w-48 origin-top-right bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                            <div className="py-1">
-                              <Menu.Item>
-                                {({ active }) => (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleEditMember(member);
-                                    }}
-                                    className={`${active ? 'bg-gray-100' : ''} group flex items-center px-4 py-2 text-sm text-gray-700 w-full text-left`}
-                                  >
-                                    <PencilIcon className="mr-3 h-4 w-4 text-gray-400" />
-                                    Modifier
-                                  </button>
-                                )}
-                              </Menu.Item>
-                              <Menu.Item>
-                                {({ active }) => (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleChangeRole(member);
-                                    }}
-                                    className={`${active ? 'bg-gray-100' : ''} group flex items-center px-4 py-2 text-sm text-blue-700 w-full text-left`}
-                                  >
-                                    <UserIcon className="mr-3 h-4 w-4 text-blue-400" />
-                                    Changer rôle
-                                  </button>
-                                )}
-                              </Menu.Item>
-                              <Menu.Item>
-                                {({ active }) => (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleCreateBadge(member);
-                                    }}
-                                    className={`${active ? 'bg-gray-100' : ''} group flex items-center px-4 py-2 text-sm text-green-700 w-full text-left`}
-                                  >
-                                    <IdentificationIcon className="mr-3 h-4 w-4 text-green-400" />
-                                    Créer badge
-                                  </button>
-                                )}
-                              </Menu.Item>
-                              <Menu.Item>
-                                {({ active }) => (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleTransferMember(member);
-                                    }}
-                                    className={`${active ? 'bg-gray-100' : ''} group flex items-center px-4 py-2 text-sm text-purple-700 w-full text-left`}
-                                  >
-                                    <ArrowRightIcon className="mr-3 h-4 w-4 text-purple-400" />
-                                    Transférer
-                                  </button>
-                                )}
-                              </Menu.Item>
-                              <Menu.Item>
-                                {({ active }) => (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleDeleteMember(member);
-                                    }}
-                                    className={`${active ? 'bg-gray-100' : ''} group flex items-center px-4 py-2 text-sm text-red-700 w-full text-left`}
-                                  >
-                                    <TrashIcon className="mr-3 h-4 w-4 text-red-400" />
-                                    Supprimer
-                                  </button>
-                                )}
-                              </Menu.Item>
-                            </div>
-                          </Menu.Items>
-                        </Transition>
-                      </Menu>
+                          <UserIcon className="h-5 w-5" />
+                          <span className="absolute bottom-full right-0 mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">Changer rôle</span>
+                        </button>
+                        
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCreateBadge(member);
+                          }}
+                          className="p-1.5 text-green-500 hover:text-green-700 hover:bg-green-50 rounded-full transition-colors group relative"
+                          title="Créer badge"
+                        >
+                          <IdentificationIcon className="h-5 w-5" />
+                          <span className="absolute bottom-full right-0 mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">Créer badge</span>
+                        </button>
+                        
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleTransferMember(member);
+                          }}
+                          className="p-1.5 text-purple-500 hover:text-purple-700 hover:bg-purple-50 rounded-full transition-colors group relative"
+                          title="Transférer"
+                        >
+                          <ArrowRightIcon className="h-5 w-5" />
+                          <span className="absolute bottom-full right-0 mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">Transférer</span>
+                        </button>
+                        
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteMember(member);
+                          }}
+                          className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full transition-colors group relative"
+                          title="Supprimer"
+                        >
+                          <TrashIcon className="h-5 w-5" />
+                          <span className="absolute bottom-full right-0 mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">Supprimer</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))

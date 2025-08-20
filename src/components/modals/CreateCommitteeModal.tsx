@@ -125,8 +125,9 @@ export default function CreateCommitteeModal({ isOpen, onClose, churchId, onSucc
                 type="text"
                 id="comiteeName"
                 value={comiteeName}
+                placeholder="Nom du comité"
                 onChange={(e) => setComiteeName(e.target.value)}
-                className={`mt-1 py-2 px-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm ${errors.comiteeName ? 'border-red-500' : ''}`}
+                className={`mt-1 py-2 outline-none px-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm ${errors.comiteeName ? 'border-red-500' : ''}`}
               />
               {errors.comiteeName && <p className="mt-1 text-sm text-red-600">{errors.comiteeName}</p>}
             </div>
@@ -139,8 +140,9 @@ export default function CreateCommitteeModal({ isOpen, onClose, churchId, onSucc
                 id="description"
                 rows={3}
                 value={description}
+                placeholder="Description"
                 onChange={(e) => setDescription(e.target.value)}
-                className="mt-1 px-2 py-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm"
+                className="mt-1 outline-none px-2 py-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm"
               />
             </div>
 
@@ -153,7 +155,7 @@ export default function CreateCommitteeModal({ isOpen, onClose, churchId, onSucc
                   id="meetingDay"
                   value={meetingDay}
                   onChange={(e) => setMeetingDay(e.target.value)}
-                  className={`mt-1 px-2 block py-2 w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm ${errors.meetingDay ? 'border-red-500' : ''}`}
+                  className={`mt-1 px-2 outline-none block py-2 w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm ${errors.meetingDay ? 'border-red-500' : ''}`}
                 >
                   <option value="">Sélectionner un jour</option>
                   {daysOfWeek.map((day) => (
@@ -172,7 +174,7 @@ export default function CreateCommitteeModal({ isOpen, onClose, churchId, onSucc
                   id="meetingTime"
                   value={meetingTime}
                   onChange={(e) => setMeetingTime(e.target.value)}
-                  className={`mt-1 px-2 block w-full rounded-md border-gray-300 shadow-sm py-2 focus:border-teal-500 focus:ring-teal-500 sm:text-sm ${errors.meetingTime ? 'border-red-500' : ''}`}
+                  className={`mt-1 outline-none px-2 block w-full rounded-md border-gray-300 shadow-sm py-2 focus:border-teal-500 focus:ring-teal-500 sm:text-sm ${errors.meetingTime ? 'border-red-500' : ''}`}
                 />
                 {errors.meetingTime && <p className="mt-1 text-sm text-red-600">{errors.meetingTime}</p>}
               </div>

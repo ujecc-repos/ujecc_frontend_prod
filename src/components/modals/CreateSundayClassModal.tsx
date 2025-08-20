@@ -157,7 +157,7 @@ export default function CreateSundayClassModal({ isOpen, onClose, onSuccess }: C
             </Dialog.Title>
             <button
               type="button"
-              className="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+              className="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
               onClick={handleClose}
             >
               <span className="sr-only">Fermer</span>
@@ -178,7 +178,7 @@ export default function CreateSundayClassModal({ isOpen, onClose, onSuccess }: C
                   name="nom"
                   value={formData.nom}
                   onChange={handleChange}
-                  className={`block w-full rounded-md border ${errors.nom ? 'border-red-300' : 'border-gray-300'} shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
+                  className={`block w-full rounded-md border ${errors.nom ? 'border-red-300' : 'border-gray-300'} shadow-sm py-2 px-3 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm`}
                   placeholder="Ex: Classe des petits"
                 />
                 {errors.nom && <p className="mt-1 text-sm text-red-600">{errors.nom}</p>}
@@ -195,7 +195,7 @@ export default function CreateSundayClassModal({ isOpen, onClose, onSuccess }: C
                   name="teacher"
                   value={formData.teacher}
                   onChange={handleChange}
-                  className={`block w-full rounded-md border ${errors.teacher ? 'border-red-300' : 'border-gray-300'} shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
+                  className={`block w-full rounded-md border ${errors.teacher ? 'border-red-300' : 'border-gray-300'} shadow-sm py-2 px-3 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm`}
                   placeholder="Nom Du Moniteur"
                 />
                 {errors.teacher && <p className="mt-1 text-sm text-red-600">{errors.teacher}</p>}
@@ -211,7 +211,7 @@ export default function CreateSundayClassModal({ isOpen, onClose, onSuccess }: C
                   name="ageGroup"
                   value={formData.ageGroup}
                   onChange={handleChange}
-                  className={`block w-full rounded-md border ${errors.ageGroup ? 'border-red-300' : 'border-gray-300'} shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
+                  className={`block w-full rounded-md border ${errors.ageGroup ? 'border-red-300' : 'border-gray-300'} shadow-sm py-2 px-3 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm`}
                 >
                   <option value="">Sélectionner un groupe d'âge</option>
                   {ageGroups.map((group) => (
@@ -233,7 +233,7 @@ export default function CreateSundayClassModal({ isOpen, onClose, onSuccess }: C
                   min="1"
                   value={formData.maxStudents}
                   onChange={handleChange}
-                  className={`block w-full rounded-md border ${errors.maxStudents ? 'border-red-300' : 'border-gray-300'} shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
+                  className={`block w-full rounded-md border ${errors.maxStudents ? 'border-red-300' : 'border-gray-300'} shadow-sm py-2 px-3 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm`}
                 />
                 {errors.maxStudents && <p className="mt-1 text-sm text-red-600">{errors.maxStudents}</p>}
               </div>
@@ -254,7 +254,7 @@ export default function CreateSundayClassModal({ isOpen, onClose, onSuccess }: C
                       name="startTime"
                       value={formData.startTime}
                       onChange={handleChange}
-                      className={`block w-full rounded-md border ${errors.startTime ? 'border-red-300' : 'border-gray-300'} shadow-sm pl-10 py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
+                      className={`block w-full rounded-md border ${errors.startTime ? 'border-red-300' : 'border-gray-300'} shadow-sm pl-10 py-2 px-3 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm`}
                     />
                   </div>
                   {errors.startTime && <p className="mt-1 text-sm text-red-600">{errors.startTime}</p>}
@@ -273,7 +273,7 @@ export default function CreateSundayClassModal({ isOpen, onClose, onSuccess }: C
                       name="endTime"
                       value={formData.endTime}
                       onChange={handleChange}
-                      className={`block w-full rounded-md border ${errors.endTime ? 'border-red-300' : 'border-gray-300'} shadow-sm pl-10 py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
+                      className={`block w-full rounded-md border ${errors.endTime ? 'border-red-300' : 'border-gray-300'} shadow-sm pl-10 py-2 px-3 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm`}
                     />
                   </div>
                   {errors.endTime && <p className="mt-1 text-sm text-red-600">{errors.endTime}</p>}
@@ -291,7 +291,7 @@ export default function CreateSundayClassModal({ isOpen, onClose, onSuccess }: C
                   name="location"
                   value={formData.location}
                   onChange={handleChange}
-                  className="block w-full rounded-md border border-gray-300 shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  className="block w-full rounded-md border border-gray-300 shadow-sm py-2 px-3 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm"
                   placeholder="Salle, bâtiment, etc."
                 />
               </div>
@@ -307,7 +307,7 @@ export default function CreateSundayClassModal({ isOpen, onClose, onSuccess }: C
                   name="book"
                   value={formData.book}
                   onChange={handleChange}
-                  className="block w-full rounded-md border border-gray-300 shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  className="block w-full rounded-md border border-gray-300 shadow-sm py-2 px-3 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm"
                   placeholder="Titre du livre ou matériel utilisé"
                 />
               </div>
@@ -324,7 +324,7 @@ export default function CreateSundayClassModal({ isOpen, onClose, onSuccess }: C
                 rows={4}
                 value={formData.description}
                 onChange={handleChange}
-                className={`block w-full rounded-md border ${errors.description ? 'border-red-300' : 'border-gray-300'} shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
+                className={`block w-full rounded-md border ${errors.description ? 'border-red-300' : 'border-gray-300'} shadow-sm py-2 px-3 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm`}
                 placeholder="Décrivez brièvement cette classe et son contenu..."
               />
               {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description}</p>}
@@ -335,14 +335,14 @@ export default function CreateSundayClassModal({ isOpen, onClose, onSuccess }: C
               <button
                 type="button"
                 onClick={handleClose}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
               >
                 Annuler
               </button>
               <button
                 type="submit"
                 disabled={isLoading}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <>

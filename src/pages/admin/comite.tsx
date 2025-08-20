@@ -5,16 +5,15 @@ import {
   FunnelIcon,
   ArrowDownTrayIcon,
   PlusIcon,
-  EllipsisVerticalIcon,
-  PencilIcon,
   TrashIcon,
   XMarkIcon,
   CalendarIcon,
   ClockIcon,
-  UsersIcon
+  UsersIcon,
+  ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
-import { Menu, Transition } from '@headlessui/react';
-import { Fragment } from 'react';
+// import { Menu, Transition } from '@headlessui/react';
+// import { Fragment } from 'react';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 import { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, AlignmentType, HeadingLevel } from 'docx';
@@ -194,6 +193,9 @@ export default function Comite() {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [committeeToDelete, setCommitteeToDelete] = useState<Committee | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -241,20 +243,35 @@ export default function Comite() {
   };
 
   // Handle committee actions
-  const handleEditCommittee = (committee: Committee) => {
-    navigate(`/admin/comite/details/${committee.id}`);
+  // const handleEditCommittee = (committee: Committee) => {
+  //   navigate(`/admin/comite/details/${committee.id}`);
+  // };
+
+  const handleDeleteCommittee = (committee: Committee) => {
+    setCommitteeToDelete(committee);
+    setIsDeleteModalOpen(true);
   };
 
-  const handleDeleteCommittee = async (committee: Committee) => {
-    if (window.confirm(`Êtes-vous sûr de vouloir supprimer le comité ${committee.comiteeName}?`)) {
-      try {
-        await deleteCommittee(committee.id).unwrap();
-        alert('Comité supprimé avec succès');
-      } catch (error) {
-        console.error('Failed to delete committee:', error);
-        alert('Erreur lors de la suppression du comité');
-      }
+  const confirmDeleteCommittee = async () => {
+    if (!committeeToDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      await deleteCommittee(committeeToDelete.id).unwrap();
+      setIsDeleteModalOpen(false);
+      setCommitteeToDelete(null);
+      // Optional: Show success toast instead of alert
+    } catch (error) {
+      console.error('Failed to delete committee:', error);
+      // Optional: Show error toast instead of alert
+    } finally {
+      setIsDeleting(false);
     }
+  };
+
+  const cancelDeleteCommittee = () => {
+    setIsDeleteModalOpen(false);
+    setCommitteeToDelete(null);
   };
 
   const handleRowClick = (committee: Committee) => {
@@ -621,56 +638,28 @@ export default function Comite() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <Menu as="div" className="relative inline-block text-left">
-                        <Menu.Button 
-                          className="flex items-center p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100"
-                          onClick={(e) => e.stopPropagation()}
+                      <div className="flex items-center justify-end space-x-2">
+                        {/* <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditCommittee(committee);
+                          }}
+                          className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
                         >
-                          <EllipsisVerticalIcon className="h-5 w-5" />
-                        </Menu.Button>
-                        <Transition
-                          as={Fragment}
-                          enter="transition ease-out duration-100"
-                          enterFrom="transform opacity-0 scale-95"
-                          enterTo="transform opacity-100 scale-100"
-                          leave="transition ease-in duration-75"
-                          leaveFrom="transform opacity-100 scale-100"
-                          leaveTo="transform opacity-0 scale-95"
+                          <PencilIcon className="h-4 w-4 mr-1" />
+                          Modifier
+                        </button> */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteCommittee(committee);
+                          }}
+                          className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
                         >
-                          <Menu.Items className="absolute right-0 z-10 mt-2 w-48 origin-top-right bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                            <div className="py-1">
-                              <Menu.Item>
-                                {({ active }) => (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleEditCommittee(committee);
-                                    }}
-                                    className={`${active ? 'bg-gray-100' : ''} group flex items-center px-4 py-2 text-sm text-gray-700 w-full text-left`}
-                                  >
-                                    <PencilIcon className="mr-3 h-4 w-4 text-gray-400" />
-                                    Modifier
-                                  </button>
-                                )}
-                              </Menu.Item>
-                              <Menu.Item>
-                                {({ active }) => (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleDeleteCommittee(committee);
-                                    }}
-                                    className={`${active ? 'bg-gray-100' : ''} group flex items-center px-4 py-2 text-sm text-red-700 w-full text-left`}
-                                  >
-                                    <TrashIcon className="mr-3 h-4 w-4 text-red-400" />
-                                    Supprimer
-                                  </button>
-                                )}
-                              </Menu.Item>
-                            </div>
-                          </Menu.Items>
-                        </Transition>
-                      </Menu>
+                          <TrashIcon className="h-4 w-4 mr-1" />
+                          Supprimer
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -735,6 +724,72 @@ export default function Comite() {
         onSuccess={() => refetch()}
         churchId={churchId || ''}
       />
+      
+      {/* Delete Confirmation Modal */}
+      {isDeleteModalOpen && committeeToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg w-full max-w-md mx-4">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">Confirmer la suppression</h3>
+              <button onClick={cancelDeleteCommittee} className="text-gray-400 hover:text-gray-600">
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+            
+            <div className="p-6">
+              <div className="flex items-start mb-4">
+                <div className="flex-shrink-0">
+                  <ExclamationTriangleIcon className="h-6 w-6 text-red-600" />
+                </div>
+                <div className="ml-3">
+                  <h4 className="text-sm font-medium text-gray-900 mb-2">
+                    Supprimer le comité "{committeeToDelete.comiteeName}"
+                  </h4>
+                  <p className="text-sm text-gray-500">
+                    Cette action est irréversible. Tous les membres et données associés à ce comité seront définitivement supprimés.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex items-center">
+                  <ExclamationTriangleIcon className="h-5 w-5 text-red-400 mr-2" />
+                  <p className="text-sm text-red-800">
+                    <strong>Attention :</strong> Cette action ne peut pas être annulée.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200">
+              <button
+                onClick={cancelDeleteCommittee}
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={confirmDeleteCommittee}
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              >
+                {isDeleting ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Suppression...
+                  </>
+                ) : (
+                  'Supprimer'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

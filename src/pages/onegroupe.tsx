@@ -93,7 +93,7 @@ export default function Onegroupe() {
           <div className="w-full md:w-1/4 flex-shrink-0">
             {group.picture ? (
               <img 
-                src={`https://api.ujecc.org${group.picture}`} 
+                src={`https://ujecc-backend.onrender.com${group.picture}`} 
                 alt={group.name} 
                 className="w-full h-48 object-cover rounded-lg shadow-sm"
               />
@@ -266,7 +266,7 @@ export default function Onegroupe() {
                             <div className="flex items-center">
                               <div className="flex-shrink-0 h-10 w-10">
                                 {member.picture ? (
-                                  <img className="h-10 w-10 rounded-full object-cover" src={`https://api.ujecc.org${member.picture}`} alt="" />
+                                  <img className="h-10 w-10 rounded-full object-cover" src={`https://ujecc-backend.onrender.com${member.picture}`} alt="" />
                                 ) : (
                                   <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
                                     <UserIcon className="h-6 w-6 text-gray-400" />

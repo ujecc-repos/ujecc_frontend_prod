@@ -184,7 +184,7 @@ const GroupTransferModal: React.FC<GroupTransferModalProps> = ({
                 <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
                   {selectedUser.picture ? (
                     <img
-                      src={`https://api.ujecc.org${selectedUser.picture}`}
+                      src={`https://ujecc-backend.onrender.com${selectedUser.picture}`}
                       alt={selectedUser.label}
                       className="w-12 h-12 rounded-full object-cover"
                     />

@@ -9,11 +9,15 @@ import {
   ClockIcon,
   ArrowPathIcon,
   ExclamationCircleIcon,
-  InformationCircleIcon
+  InformationCircleIcon,
+  TrashIcon,
+  ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
+import { Dialog } from '@headlessui/react';
+import { toast } from 'react-toastify';
 // Import API hooks
 import { useGetUserByTokenQuery } from '../../store/services/authApi';
-import { useGetPresentationsByChurchQuery } from '../../store/services/presentationApi';
+import { useGetPresentationsByChurchQuery, useDeletePresentationMutation } from '../../store/services/presentationApi';
 
 // Types
 interface Presentation {
@@ -38,6 +42,8 @@ export default function Presentation() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [presentationToDelete, setPresentationToDelete] = useState<Presentation | null>(null);
   
   // Get user token to get church ID
   const { data: userToken } = useGetUserByTokenQuery();
@@ -50,6 +56,9 @@ export default function Presentation() {
     isError,
     refetch 
   } = useGetPresentationsByChurchQuery(churchId);
+
+  // Delete mutation
+  const [deletePresentation, { isLoading: isDeleting }] = useDeletePresentationMutation();
 
   // Filter buttons
   const filterButtons = [
@@ -106,6 +115,32 @@ export default function Presentation() {
     // Navigate to presentation details page
     // This will be implemented later
     console.log('Navigate to presentation details:', presentation.id);
+  };
+
+  // Handle delete presentation
+  const handleDeleteClick = (presentation: Presentation, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent row click
+    setPresentationToDelete(presentation);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!presentationToDelete) return;
+    
+    try {
+      await deletePresentation(presentationToDelete.id).unwrap();
+      toast.success('Présentation supprimée avec succès');
+      setShowDeleteModal(false);
+      setPresentationToDelete(null);
+    } catch (error) {
+      toast.error('Erreur lors de la suppression de la présentation');
+      console.error('Delete error:', error);
+    }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setPresentationToDelete(null);
   };
 
   // Handle add new presentation
@@ -203,7 +238,7 @@ export default function Presentation() {
                 ? "Essayez de modifier vos critères de recherche"
                 : "Ajoutez votre première présentation au temple"}
             </p>
-            {!(searchQuery || selectedFilter !== 'all') && (
+            {!searchQuery && selectedFilter === 'all' && (
               <button
                 onClick={handleAddPresentation}
                 className="flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
@@ -218,21 +253,24 @@ export default function Presentation() {
             <table className="min-w-full divide-y divide-gray-300">
               <thead className="bg-gray-50">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Enfant
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Parents
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Dates
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Officiant
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Statut
-                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Enfant
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Parents
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Dates
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Officiant
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Statut
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -296,6 +334,15 @@ export default function Presentation() {
                         )}
                       </span>
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <button
+                        onClick={(e) => handleDeleteClick(presentation, e)}
+                        className="text-red-600 hover:text-red-900 transition-colors p-2 rounded-full hover:bg-red-50"
+                        title="Supprimer la présentation"
+                      >
+                        <TrashIcon className="h-5 w-5" />
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -303,6 +350,45 @@ export default function Presentation() {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <Dialog open={showDeleteModal} onClose={cancelDelete} className="relative z-50">
+        <div className="fixed inset-0 bg-black/25" aria-hidden="true" />
+        <div className="fixed inset-0 flex items-center justify-center p-4">
+          <Dialog.Panel className="mx-auto max-w-sm rounded bg-white p-6">
+            <div className="flex items-center mb-4">
+              <ExclamationTriangleIcon className="h-6 w-6 text-red-600 mr-3" />
+              <Dialog.Title className="text-lg font-medium text-gray-900">
+                Confirmer la suppression
+              </Dialog.Title>
+            </div>
+            <p className="text-sm text-gray-500 mb-6">
+              Êtes-vous sûr de vouloir supprimer la présentation de{' '}
+              <span className="font-medium text-gray-900">
+                {presentationToDelete?.childName}
+              </span>{' '}?
+              Cette action est irréversible.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                type="button"
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+                onClick={cancelDelete}
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={confirmDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? 'Suppression...' : 'Supprimer'}
+              </button>
+            </div>
+          </Dialog.Panel>
+        </div>
+      </Dialog>
     </div>
   );
 }

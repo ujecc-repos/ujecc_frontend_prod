@@ -1,18 +1,16 @@
-import { useState, Fragment } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   MagnifyingGlassIcon,
   PlusIcon,
-  EllipsisVerticalIcon,
   PencilIcon,
   TrashIcon,
-  EyeIcon,
   ArrowPathIcon,
   DocumentArrowDownIcon,
   UsersIcon,
   FunnelIcon
 } from '@heroicons/react/24/outline';
-import { Menu, Transition } from '@headlessui/react';
+
 import { useGetGroupsByChurchQuery, useDeleteGroupMutation, useCreateGroupMutation, useTransferUserBetweenGroupsMutation, useUpdateGroupMutation } from '../../store/services/groupApi';
 import { useGetUserByTokenQuery } from '../../store/services/authApi';
 import CreateGroupModal from '../../components/CreateGroupModal';
@@ -111,9 +109,9 @@ export default function Groupe() {
     setIsEditGroupModalOpen(true);
   };
 
-  const handleViewMembers = (group: Group) => {
-    navigate(`/tableau-de-bord/admin/groupe/${group.id}/members`);
-  };
+  // const handleViewMembers = (group: Group) => {
+  //   navigate(`/tableau-de-bord/admin/groupe/${group.id}/members`);
+  // };
 
   const handleRowClick = (group: Group) => {
     navigate(`/tableau-de-bord/admin/groupe/${group.id}`);
@@ -415,7 +413,7 @@ export default function Groupe() {
                             {group.picture ? (
                               <img
                                 className="h-10 w-10 rounded-full object-cover"
-                                src={`https://api.ujecc.org${group.picture}`}
+                                src={`https://ujecc-backend.onrender.com${group.picture}`}
                                 alt={group.name}
                               />
                             ) : (
@@ -465,71 +463,43 @@ export default function Groupe() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <Menu as="div" className="relative inline-block text-left">
-                          <Menu.Button 
-                            className="flex items-center p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100"
-                            onClick={(e) => e.stopPropagation()}
+                        <div className="flex items-center justify-end space-x-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditGroup(group);
+                            }}
+                            className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors group relative"
+                            title="Modifier"
                           >
-                            <EllipsisVerticalIcon className="h-5 w-5" />
-                          </Menu.Button>
-                          <Transition
-                            as={Fragment}
-                            enter="transition ease-out duration-100"
-                            enterFrom="transform opacity-0 scale-95"
-                            enterTo="transform opacity-100 scale-100"
-                            leave="transition ease-in duration-75"
-                            leaveFrom="transform opacity-100 scale-100"
-                            leaveTo="transform opacity-0 scale-95"
+                            <PencilIcon className="h-5 w-5" />
+                            <span className="absolute bottom-full right-0 mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">Modifier</span>
+                          </button>
+                          
+                          {/* <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleViewMembers(group);
+                            }}
+                            className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-full transition-colors group relative"
+                            title="Voir membres"
                           >
-                            <Menu.Items className="absolute right-0 z-10 mt-2 w-48 origin-top-right bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                              <div className="py-1">
-                                <Menu.Item>
-                                  {({ active }) => (
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleEditGroup(group);
-                                      }}
-                                      className={`${active ? 'bg-gray-100' : ''} group flex items-center px-4 py-2 text-sm text-gray-700 w-full text-left`}
-                                    >
-                                      <PencilIcon className="mr-3 h-4 w-4 text-gray-400" />
-                                      Modifier
-                                    </button>
-                                  )}
-                                </Menu.Item>
-                                <Menu.Item>
-                                  {({ active }) => (
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleViewMembers(group);
-                                      }}
-                                      className={`${active ? 'bg-gray-100' : ''} group flex items-center px-4 py-2 text-sm text-blue-700 w-full text-left`}
-                                    >
-                                      <EyeIcon className="mr-3 h-4 w-4 text-blue-400" />
-                                      Voir membres
-                                    </button>
-                                  )}
-                                </Menu.Item>
-            
-                                <Menu.Item>
-                                  {({ active }) => (
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleDeleteGroup(group);
-                                      }}
-                                      className={`${active ? 'bg-gray-100' : ''} group flex items-center px-4 py-2 text-sm text-red-700 w-full text-left`}
-                                    >
-                                      <TrashIcon className="mr-3 h-4 w-4 text-red-400" />
-                                      Supprimer
-                                    </button>
-                                  )}
-                                </Menu.Item>
-                              </div>
-                            </Menu.Items>
-                          </Transition>
-                        </Menu>
+                            <EyeIcon className="h-5 w-5" />
+                            <span className="absolute bottom-full right-0 mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">Voir membres</span>
+                          </button>
+                           */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteGroup(group);
+                            }}
+                            className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full transition-colors group relative"
+                            title="Supprimer"
+                          >
+                            <TrashIcon className="h-5 w-5" />
+                            <span className="absolute bottom-full right-0 mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">Supprimer</span>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))

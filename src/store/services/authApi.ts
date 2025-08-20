@@ -46,6 +46,8 @@ export interface User {
   church: church;
   facebook?: string
   plainPassword?: string;
+  nif?: string;
+  groupeSanguin?: string;
 }
 
 interface LoginRequest {
@@ -99,7 +101,7 @@ export const authApi = createApi({
 
     },
   }),
-  tagTypes: ['User', "Pasteur", "Sanction", "Transfer", "Moisson", "Ministry", "Mission", "SundayClass", "Appointment", "Church", "Event", "Group", "Baptism", "Expense", "Funeral", "Committee", "Death", "Donation", "Offering", "Marriage", "Presentation", "Tithe"],
+  tagTypes: ['User', "Pasteur", "Sanction", "Transfer", "Moisson", "Ministry", "Mission", "SundayClass", "Appointment", "Church", "Event", "Group", "Baptism", "Expense", "Funeral", "Committee", "Death", "Donation", "Offering", "Marriage", "Presentation", "Tithe", "Presence", "Service"],
   endpoints: (builder) => ({
     login: builder.mutation<LoginResponse, LoginRequest>({
       query: (credentials) => ({

@@ -125,7 +125,7 @@ const TransferMemberModal: React.FC<TransferMemberModalProps> = ({
             <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
               {member.picture ? (
                 <img
-                  src={`https://api.ujecc.org${member.picture}`}
+                  src={`https://ujecc-backend.onrender.com${member.picture}`}
                   alt={`${member.firstname} ${member.lastname}`}
                   className="w-16 h-16 rounded-full object-cover"
                 />

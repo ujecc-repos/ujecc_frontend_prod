@@ -1,17 +1,15 @@
 
 
-import { useState, Fragment } from 'react';
+import { useState } from 'react';
 import {
   MagnifyingGlassIcon,
   PlusIcon,
-  EllipsisVerticalIcon,
   PencilIcon,
   TrashIcon,
   DocumentArrowDownIcon,
   FunnelIcon,
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
-import { Menu, Transition } from '@headlessui/react';
 import { useGetUserByTokenQuery } from '../../store/services/authApi';
 import {
   useGetSanctionsByChurchQuery,
@@ -202,7 +200,7 @@ export default function Sanction() {
           <button
             type="button"
             onClick={() => setIsCreateModalOpen(true)}
-            className="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto"
+            className="inline-flex items-center justify-center rounded-md border border-transparent bg-teal-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 sm:w-auto"
           >
             <PlusIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
             Ajouter une sanction
@@ -220,7 +218,7 @@ export default function Sanction() {
               type="text"
               name="search"
               id="search"
-              className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 py-2 sm:text-sm border-gray-300 rounded-md"
+              className="focus:ring-teal-500 focus:border-teal-500 block w-full pl-10 py-2 sm:text-sm border-gray-300 rounded-md"
               placeholder="Rechercher..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -231,7 +229,7 @@ export default function Sanction() {
         <div className="relative">
           <button
             type="button"
-            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
             onClick={() => setFilterVisible(!filterVisible)}
           >
             <FunnelIcon className="-ml-1 mr-2 h-5 w-5 text-gray-400" aria-hidden="true" />
@@ -313,50 +311,22 @@ export default function Sanction() {
                           </span>
                         </td>
                         <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                          <Menu as="div" className="relative inline-block text-left">
-                            <div>
-                              <Menu.Button className="inline-flex w-full justify-center rounded-md bg-white px-2 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-100">
-                                <EllipsisVerticalIcon className="h-5 w-5" aria-hidden="true" />
-                              </Menu.Button>
-                            </div>
-
-                            <Transition
-                              as={Fragment}
-                              enter="transition ease-out duration-100"
-                              enterFrom="transform opacity-0 scale-95"
-                              enterTo="transform opacity-100 scale-100"
-                              leave="transition ease-in duration-75"
-                              leaveFrom="transform opacity-100 scale-100"
-                              leaveTo="transform opacity-0 scale-95"
+                          <div className="flex items-center justify-end space-x-2">
+                            <button
+                              onClick={() => handleEditSanction(sanction)}
+                              className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
                             >
-                              <Menu.Items className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                                <div className="py-1">
-                                  <Menu.Item>
-                                    {({ active }) => (
-                                      <button
-                                        onClick={() => handleEditSanction(sanction)}
-                                        className={`${active ? 'bg-gray-100 text-gray-900' : 'text-gray-700'} flex w-full px-4 py-2 text-sm`}
-                                      >
-                                        <PencilIcon className="mr-3 h-5 w-5 text-gray-400" aria-hidden="true" />
-                                        Modifier
-                                      </button>
-                                    )}
-                                  </Menu.Item>
-                                  <Menu.Item>
-                                    {({ active }) => (
-                                      <button
-                                        onClick={() => handleDeleteSanction(sanction)}
-                                        className={`${active ? 'bg-gray-100 text-gray-900' : 'text-gray-700'} flex w-full px-4 py-2 text-sm`}
-                                      >
-                                        <TrashIcon className="mr-3 h-5 w-5 text-gray-400" aria-hidden="true" />
-                                        Supprimer
-                                      </button>
-                                    )}
-                                  </Menu.Item>
-                                </div>
-                              </Menu.Items>
-                            </Transition>
-                          </Menu>
+                              <PencilIcon className="h-4 w-4 mr-1" />
+                              Modifier
+                            </button>
+                            <button
+                              onClick={() => handleDeleteSanction(sanction)}
+                              className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
+                            >
+                              <TrashIcon className="h-4 w-4 mr-1" />
+                              Supprimer
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))

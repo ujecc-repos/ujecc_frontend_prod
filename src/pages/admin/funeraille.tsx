@@ -5,15 +5,11 @@ import {
   useDeleteFuneralMutation,
 } from '../../store/services/funeralApi';
 import { useGetUserByTokenQuery } from '../../store/services/authApi';
-import { Menu } from '@headlessui/react';
 import {
   PlusIcon,
   MagnifyingGlassIcon,
   ArrowDownTrayIcon,
   TrashIcon,
-  PencilSquareIcon,
-  EllipsisVerticalIcon,
-  EyeIcon,
 } from '@heroicons/react/24/outline';
 import { UserCircleIcon } from '@heroicons/react/24/solid';
 
@@ -141,14 +137,14 @@ export default function Funeraille() {
         <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none space-x-2">
           <button
             onClick={() => setShowExportModal(true)}
-            className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
           >
             <ArrowDownTrayIcon className="-ml-0.5 mr-2 h-4 w-4" aria-hidden="true" />
             Exporter
           </button>
           <Link
             to="/tableau-de-bord/admin/funerailles/creation"
-            className="inline-flex items-center rounded-md border border-transparent bg-indigo-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            className="inline-flex items-center rounded-md border border-transparent bg-teal-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
           >
             <PlusIcon className="-ml-0.5 mr-2 h-4 w-4" aria-hidden="true" />
             Ajouter une funéraille
@@ -164,7 +160,7 @@ export default function Funeraille() {
           </div>
           <input
             type="text"
-            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 p-2.5"
+            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg outline-none focus:ring-teal-500 focus:border-teal-500 block w-full pl-10 p-2.5"
             placeholder="Rechercher une funéraille..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -224,7 +220,7 @@ export default function Funeraille() {
                     {currentPageFunerals.map((funeral) => (
                       <tr key={funeral.id}>
                         <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
-                          <Link to={`/tableau-de-bord/admin/funeraille/${funeral.id}`} className="text-indigo-600 hover:text-indigo-900">
+                          <Link to={`/tableau-de-bord/admin/funeraille/${funeral.id}`} className="text-teal-600 hover:text-teal-900">
                             {funeral.fullname}
                           </Link>
                         </td>
@@ -248,50 +244,34 @@ export default function Funeraille() {
                           </span>
                         </td>
                         <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                          <Menu as="div" className="relative inline-block text-left">
-                            <div>
-                              <Menu.Button className="inline-flex w-full justify-center rounded-md bg-white px-2 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-100">
-                                <EllipsisVerticalIcon className="h-5 w-5" aria-hidden="true" />
-                              </Menu.Button>
-                            </div>
-                            <Menu.Items className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                              <div className="py-1">
-                                <Menu.Item>
-                                  {({ active }) => (
-                                    <Link
-                                      to={`/tableau-de-bord/admin/funeraille/modifier/${funeral.id}`}
-                                      className={`${active ? 'bg-gray-100' : ''} group flex items-center px-4 py-2 text-sm text-yellow-700 w-full text-left`}
-                                    >
-                                      <PencilSquareIcon className="mr-3 h-5 w-5 text-yellow-400" aria-hidden="true" />
-                                      Modifier
-                                    </Link>
-                                  )}
-                                </Menu.Item>
-                                <Menu.Item>
-                                  {({ active }) => (
-                                    <Link
-                                      to={`/tableau-de-bord/admin/funeraille/${funeral.id}`}
-                                      className={`${active ? 'bg-gray-100' : ''} group flex items-center px-4 py-2 text-sm text-blue-700 w-full text-left`}
-                                    >
-                                      <EyeIcon className="mr-3 h-5 w-5 text-blue-400" aria-hidden="true" />
-                                      Voir les détails
-                                    </Link>
-                                  )}
-                                </Menu.Item>
-                                <Menu.Item>
-                                  {({ active }) => (
-                                    <button
-                                      onClick={() => handleDeleteClick(funeral)}
-                                      className={`${active ? 'bg-gray-100' : ''} group flex items-center px-4 py-2 text-sm text-red-700 w-full text-left`}
-                                    >
-                                      <TrashIcon className="mr-3 h-5 w-5 text-red-400" aria-hidden="true" />
-                                      Supprimer
-                                    </button>
-                                  )}
-                                </Menu.Item>
-                              </div>
-                            </Menu.Items>
-                          </Menu>
+                          <div className="flex items-center justify-end space-x-2">
+                            {/* <Link
+                              to={`/tableau-de-bord/admin/funeraille/modifier/${funeral.id}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="inline-flex items-center px-2 py-1 text-xs font-medium text-indigo-700 bg-indigo-100 rounded-md hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                            >
+                              <PencilSquareIcon className="h-3 w-3 mr-1" />
+                              Modifier
+                            </Link>
+                            <Link
+                              to={`/tableau-de-bord/admin/funeraille/${funeral.id}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-md hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                            >
+                              <EyeIcon className="h-3 w-3 mr-1" />
+                              Voir les détails
+                            </Link> */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteClick(funeral);
+                              }}
+                              className="inline-flex items-center px-2 py-1 text-xs font-medium text-red-700 bg-red-100 rounded-md hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                            >
+                              <TrashIcon className="h-3 w-3 mr-1" />
+                              Supprimer
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}

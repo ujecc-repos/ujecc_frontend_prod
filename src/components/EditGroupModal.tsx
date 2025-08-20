@@ -97,7 +97,7 @@ const EditGroupModal: React.FC<EditGroupModalProps> = ({ isOpen, onClose, onSubm
 
       // Set image preview if group has a picture
       if (group.picture) {
-        setImagePreview(group.picture);
+        setImagePreview(`https://ujecc-backend.onrender.com${group.picture}`);
       }
     }
   }, [group]);

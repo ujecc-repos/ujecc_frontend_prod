@@ -93,7 +93,7 @@ const UserProfile: React.FC = () => {
       });
 
       if (user.picture) {
-        setImagePreview(`https://api.ujecc.org${user.picture}`);
+        setImagePreview(`https://ujecc-backend.onrender.com${user.picture}`);
       }
     }
   }, [user]);
@@ -175,7 +175,7 @@ const UserProfile: React.FC = () => {
       });
 
       if (user.picture) {
-        setImagePreview(`https://api.ujecc.org${user.picture}`);
+        setImagePreview(`https://ujecc-backend.onrender.com${user.picture}`);
       } else {
         setImagePreview(null);
       }

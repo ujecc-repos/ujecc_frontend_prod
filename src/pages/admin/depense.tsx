@@ -7,7 +7,8 @@ import {
   useGetExpensesByChurchQuery, 
   useGetMonthlyExpenseSummaryQuery, 
   useGetQuarterlyExpenseSummaryQuery, 
-  useGetExpensesByCategoryQuery 
+  useGetExpensesByCategoryQuery,
+  useDeleteExpenseMutation 
 } from '../../store/services/expenseApi';
 import { ExportModal } from '../../components/ExportModal';
 import { FilterModal } from '../../components/FilterModal';
@@ -33,6 +34,9 @@ const Depense = () => {
     { churchId: `${churchId}`, type: "GLOBAL" },
     { skip: !churchId }
   );
+
+  // Delete expense mutation
+  const [deleteExpense, { isLoading: isDeleting }] = useDeleteExpenseMutation();
 
   // Fetch monthly summary data
   const { data: monthlyData, isLoading: isLoadingMonthly } = useGetMonthlyExpenseSummaryQuery(
@@ -141,6 +145,20 @@ const Depense = () => {
     refetchExpenses();
   };
 
+  const handleDeleteExpense = async (expenseId: string) => {
+    if (window.confirm('Êtes-vous sûr de vouloir supprimer cette dépense ?')) {
+      try {
+        await deleteExpense(expenseId).unwrap();
+        refetchExpenses();
+        // Optional: Show success message
+        console.log('Dépense supprimée avec succès');
+      } catch (error) {
+        console.error('Erreur lors de la suppression de la dépense:', error);
+        // Optional: Show error message
+      }
+    }
+  };
+
   const categories = categoryData?.categories?.map(item => item.category) || [];
 
   return (
@@ -160,7 +178,7 @@ const Depense = () => {
             </button>
             <button
               onClick={() => setIsFilterModalOpen(true)}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
             >
               <svg className="-ml-1 mr-2 h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z" clipRule="evenodd" />
@@ -169,7 +187,7 @@ const Depense = () => {
             </button>
             <button
               onClick={() => setIsExportModalOpen(true)}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
             >
               <svg className="-ml-1 mr-2 h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -190,7 +208,7 @@ const Depense = () => {
                 </div>
                 <input
                   type="text"
-                  className="focus:ring-indigo-500 py-3 focus:border-indigo-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
+                  className="focus:ring-teal-500 py-3 focus:border-teal-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
                   placeholder="Rechercher une dépense..."
                   value={searchTerm}
                   onChange={handleSearch}
@@ -300,8 +318,14 @@ const Depense = () => {
                                 <div className="text-sm text-gray-500 max-w-xs truncate">{expense.description}</div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <button className="text-indigo-600 hover:text-indigo-900 mr-3">Modifier</button>
-                                <button className="text-red-600 hover:text-red-900">Supprimer</button>
+                                {/* <button className="text-teal-600 hover:text-teal-900 mr-3">Modifier</button> */}
+                                <button 
+                                  onClick={() => handleDeleteExpense(expense.id)}
+                                  disabled={isDeleting}
+                                  className="text-red-600 hover:text-red-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  {isDeleting ? 'Suppression...' : 'Supprimer'}
+                                </button>
                               </td>
                             </tr>
                           ))}
@@ -352,7 +376,7 @@ const Depense = () => {
                                 onClick={() => handlePageChange(page)}
                                 className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
                                   currentPage === page
-                                    ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600'
+                                    ? 'z-10 bg-teal-50 border-teal-500 text-teal-600'
                                     : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
                                 }`}
                               >

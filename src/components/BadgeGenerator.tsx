@@ -113,7 +113,7 @@ const BadgeGenerator: React.FC<BadgeGeneratorProps> = ({
           <div className="w-32 h-32 rounded-full border-4 overflow-hidden" style={{ borderColor: '#1e40af', backgroundColor: '#e5e7eb' }}>
             {member.picture ? (
               <img 
-                src={`https://api.ujecc.org${member.picture}`} 
+                src={`https://ujecc-backend.onrender.com${member.picture}`} 
                 alt={`${member.firstname} ${member.lastname}`}
                 className="w-full h-full object-cover"
               />

@@ -9,11 +9,14 @@ import {
   MapPinIcon,
   DocumentTextIcon,
   ArrowRightIcon,
+  TrashIcon,
+  ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 import { useGetUserByTokenQuery } from '../../store/services/authApi';
 import { 
-  useGetBaptismsByChurchQuery, 
+  useGetBaptismsByChurchQuery,
+  useDeleteBaptismMutation,
 } from '../../store/services/baptismApi';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
@@ -21,6 +24,8 @@ import { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, Ali
 import { saveAs } from 'file-saver';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { Dialog } from '@headlessui/react';
+import { toast } from 'react-toastify';
 
 interface Baptism {
   id: string;
@@ -50,6 +55,8 @@ export default function Bapteme() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [baptismToDelete, setBaptismToDelete] = useState<Baptism | null>(null);
   
   // Get current user and church ID
   const { data: userData } = useGetUserByTokenQuery();
@@ -59,6 +66,9 @@ export default function Bapteme() {
   const { data: baptisms = [], isLoading} = useGetBaptismsByChurchQuery(churchId, {
     skip: !churchId,
   });
+
+  // Delete mutation
+  const [deleteBaptism, { isLoading: isDeleting }] = useDeleteBaptismMutation();
 
 
   // Filter baptisms based on search query and filter type
@@ -108,6 +118,32 @@ export default function Bapteme() {
   // Handle row click to view details
   const handleRowClick = (baptism: Baptism) => {
     navigate(`/tableau-de-bord/admin/bapteme/${baptism.id}`);
+  };
+
+  // Handle delete baptism
+  const handleDeleteClick = (baptism: Baptism, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent row click
+    setBaptismToDelete(baptism);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!baptismToDelete) return;
+    
+    try {
+      await deleteBaptism(baptismToDelete.id).unwrap();
+      toast.success('Baptême supprimé avec succès');
+      setShowDeleteModal(false);
+      setBaptismToDelete(null);
+    } catch (error) {
+      toast.error('Erreur lors de la suppression du baptême');
+      console.error('Delete error:', error);
+    }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setBaptismToDelete(null);
   };
 
   // Export functions
@@ -198,11 +234,12 @@ export default function Bapteme() {
               alignment: AlignmentType.CENTER,
             }),
             
-            userData?.church?.name ? 
+            ...(userData?.church?.name ? [
               new Paragraph({
                 text: `Église: ${userData?.church.name}`,
                 alignment: AlignmentType.CENTER,
-              }) : new Paragraph({}),
+              })
+            ] : []),
             
             new Paragraph({
               text: `Date: ${new Date().toLocaleDateString('fr-FR')}`,
@@ -379,8 +416,8 @@ export default function Bapteme() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Statut
                 </th>
-                <th className="relative px-6 py-3">
-                  <span className="sr-only">Actions</span>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
                 </th>
               </tr>
             </thead>
@@ -403,8 +440,10 @@ export default function Bapteme() {
                       <p className="text-gray-500 mb-4">
                         {searchQuery ? 
                           'Aucun résultat pour cette recherche. Essayez avec d\'autres termes.' :
-                          selectedFilter !== 'all' ? 
-                            `Aucun baptême avec le statut "${selectedFilter === 'pending' ? 'En attente' : 'Complété'}".` :
+                          selectedFilter === 'pending' ? 
+                            'Aucun baptême avec le statut "En attente".' :
+                          selectedFilter === 'completed' ?
+                            'Aucun baptême avec le statut "Complété".' :
                             'Ajoutez des baptêmes pour les voir apparaître ici.'}
                       </p>
                       <button
@@ -459,7 +498,15 @@ export default function Bapteme() {
                         {getStatus(baptism)}
                       </span>
                     </td>
-        
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <button
+                        onClick={(e) => handleDeleteClick(baptism, e)}
+                        className="text-red-600 hover:text-red-900 p-2 rounded-full hover:bg-red-50 transition-colors"
+                        title="Supprimer"
+                      >
+                        <TrashIcon className="h-5 w-5" />
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}
@@ -518,7 +565,41 @@ export default function Bapteme() {
         </div>
       )}
 
-      {/* Export Modal */}
+      {/* Delete Confirmation Modal */}
+      <Dialog open={showDeleteModal} onClose={cancelDelete} className="relative z-50">
+        <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+        <div className="fixed inset-0 flex items-center justify-center p-4">
+          <Dialog.Panel className="mx-auto max-w-sm rounded bg-white p-6">
+            <div className="flex items-center mb-4">
+              <ExclamationTriangleIcon className="h-6 w-6 text-red-600 mr-3" />
+              <Dialog.Title className="text-lg font-medium text-gray-900">
+                Confirmer la suppression
+              </Dialog.Title>
+            </div>
+            <p className="text-sm text-gray-500 mb-6">
+              Êtes-vous sûr de vouloir supprimer le baptême de{' '}
+              <span className="font-medium">{baptismToDelete?.fullName}</span> ?
+              Cette action est irréversible.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={cancelDelete}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 disabled:opacity-50"
+              >
+                {isDeleting ? 'Suppression...' : 'Supprimer'}
+              </button>
+            </div>
+          </Dialog.Panel>
+        </div>
+      </Dialog>
+
       {showExportModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg max-w-md w-full mx-4">

@@ -107,7 +107,7 @@ export default function CreateSanctionModal({ isOpen, onClose, onSubmit, isLoadi
             </Dialog.Title>
             <button
               type="button"
-              className="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+              className="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
               onClick={handleClose}
             >
               <span className="sr-only">Fermer</span>
@@ -141,7 +141,7 @@ export default function CreateSanctionModal({ isOpen, onClose, onSubmit, isLoadi
                 rows={3}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 sm:text-sm ${errors.description ? 'border-red-500' : ''}`}
+                className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 p-2 sm:text-sm ${errors.description ? 'border-red-500' : ''}`}
               />
               {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description}</p>}
             </div>
@@ -156,7 +156,7 @@ export default function CreateSanctionModal({ isOpen, onClose, onSubmit, isLoadi
                   id="startDate"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 px-2 focus:ring-indigo-500 sm:text-sm py-2 ${errors.startDate ? 'border-red-500' : ''}`}
+                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 px-2 focus:ring-teal-500 sm:text-sm py-2 ${errors.startDate ? 'border-red-500' : ''}`}
                 />
                 {errors.startDate && <p className="mt-1 text-sm text-red-600">{errors.startDate}</p>}
               </div>
@@ -171,7 +171,7 @@ export default function CreateSanctionModal({ isOpen, onClose, onSubmit, isLoadi
                   value={endDate}
                   min={startDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2 px-2 ${errors.endDate ? 'border-red-500' : ''}`}
+                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm py-2 px-2 ${errors.endDate ? 'border-red-500' : ''}`}
                 />
                 {errors.endDate && <p className="mt-1 text-sm text-red-600">{errors.endDate}</p>}
               </div>
@@ -185,7 +185,7 @@ export default function CreateSanctionModal({ isOpen, onClose, onSubmit, isLoadi
                 id="status"
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm py-2"
               >
                 <option value="active">Active</option>
                 <option value="pending">En cours</option>
@@ -198,14 +198,14 @@ export default function CreateSanctionModal({ isOpen, onClose, onSubmit, isLoadi
               <button
                 type="submit"
                 disabled={isLoading}
-                className="inline-flex w-full justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:col-start-2 sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex w-full justify-center rounded-md border border-transparent bg-teal-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 sm:col-start-2 sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? 'Création en cours...' : 'Créer'}
               </button>
               <button
                 type="button"
                 onClick={handleClose}
-                className="mt-3 inline-flex w-full justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:col-start-1 sm:mt-0 sm:text-sm"
+                className="mt-3 inline-flex w-full justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 sm:col-start-1 sm:mt-0 sm:text-sm"
               >
                 Annuler
               </button>

@@ -4,7 +4,12 @@ import {
   PlusIcon,
   ArrowDownTrayIcon,
   XMarkIcon,
-  FunnelIcon
+  FunnelIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  PencilIcon,
+  TrashIcon,
+  ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
@@ -14,10 +19,10 @@ import FinanceModal from '../../components/modals/FinanceModal';
 
 // Import API hooks
 import { useGetUserByTokenQuery } from '../../store/services/authApi';
-import { useGetOfferingsByChurchQuery, useGetOfferingsByDateRangeQuery } from '../../store/services/offeringApi';
-import { useGetTithesByChurchQuery, useGetTithesByDateRangeQuery } from '../../store/services/titheApi';
-import { useGetDonationsByChurchQuery, useGetDonationsByDateRangeQuery } from '../../store/services/donationApi';
-import { useGetMoissonsByChurchQuery, useGetMoissonsByDateRangeQuery } from '../../store/services/moissonApi';
+import { useGetOfferingsByChurchQuery, useGetOfferingsByDateRangeQuery, useDeleteOfferingMutation } from '../../store/services/offeringApi';
+import { useGetTithesByChurchQuery, useGetTithesByDateRangeQuery,  useDeleteTitheMutation } from '../../store/services/titheApi';
+import { useGetDonationsByChurchQuery, useGetDonationsByDateRangeQuery, useDeleteDonationMutation } from '../../store/services/donationApi';
+import { useGetMoissonsByChurchQuery, useGetMoissonsByDateRangeQuery, useDeleteMoissonMutation } from '../../store/services/moissonApi';
 
 // Define interfaces for financial data
 interface FinanceItem {
@@ -26,7 +31,7 @@ interface FinanceItem {
   amount: number;
   date: string;
   status: string;
-  statusType?: string;
+  statusType?: 'offering' | 'tithe' | 'donation' | 'moisson';
 }
 
 interface FilterState {
@@ -221,6 +226,10 @@ const Finance: React.FC = () => {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [isFinanceModalOpen, setIsFinanceModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<FinanceItem | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [filters, setFilters] = useState<FilterState>({
     startDate: '',
     endDate: '',
@@ -229,12 +238,16 @@ const Finance: React.FC = () => {
     status: ''
   });
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   // Get user data to access churchId
   const { data: userData } = useGetUserByTokenQuery();
   const churchId = userData?.church?.id || '';
 
   // Fetch financial data based on churchId and filters
-  const { data: offeringData, isLoading: isOfferingLoading } = 
+  const { data: offeringData, isLoading: isOfferingLoading, refetch: refetchOfferings } = 
     filters.startDate && filters.endDate
       ? useGetOfferingsByDateRangeQuery({
           churchId,
@@ -243,7 +256,7 @@ const Finance: React.FC = () => {
         }, { skip: !churchId })
       : useGetOfferingsByChurchQuery(churchId, { skip: !churchId });
 
-  const { data: titheData, isLoading: isTitheLoading } = 
+  const { data: titheData, isLoading: isTitheLoading, refetch: refetchTithes } = 
     filters.startDate && filters.endDate
       ? useGetTithesByDateRangeQuery({
           churchId,
@@ -252,7 +265,7 @@ const Finance: React.FC = () => {
         }, { skip: !churchId })
       : useGetTithesByChurchQuery(churchId, { skip: !churchId });
 
-  const { data: donationData, isLoading: isDonationLoading } = 
+  const { data: donationData, isLoading: isDonationLoading, refetch: refetchDonations } = 
     filters.startDate && filters.endDate
       ? useGetDonationsByDateRangeQuery({
           churchId,
@@ -261,7 +274,7 @@ const Finance: React.FC = () => {
         }, { skip: !churchId })
       : useGetDonationsByChurchQuery(churchId, { skip: !churchId });
 
-  const { data: moissonData, isLoading: isMoissonLoading } = 
+  const { data: moissonData, isLoading: isMoissonLoading, refetch: refetchMoissons } = 
     filters.startDate && filters.endDate
       ? useGetMoissonsByDateRangeQuery({
           churchId,
@@ -274,7 +287,7 @@ const Finance: React.FC = () => {
   const isLoading = isOfferingLoading || isTitheLoading || isDonationLoading || isMoissonLoading;
 
   // Process and filter data based on active tab
-  const getFilteredData = (): { data: FinanceItem[], totalAmount: number } => {
+  const getFilteredData = (): { data: FinanceItem[], totalAmount: number, totalItems: number, paginatedData: FinanceItem[] } => {
     let data: FinanceItem[] = [];
     let totalAmount = 0;
     
@@ -286,7 +299,7 @@ const Finance: React.FC = () => {
           amount: offering.amount,
           date: new Date(offering.date).toLocaleDateString(),
           status: offering.status || 'service',
-          statusType: 'offrande'
+          statusType: 'offering'
         })) || [];
         totalAmount = offeringData?.totalAmount || 0;
         break;
@@ -296,7 +309,8 @@ const Finance: React.FC = () => {
           contributor: tithe.contributorName,
           amount: tithe.amount,
           date: new Date(tithe.date).toLocaleDateString(),
-          status: 'completed'
+          status: 'completed',
+          statusType: 'tithe'
         })) || [];
         totalAmount = titheData?.totalAmount || 0;
         break;
@@ -306,7 +320,8 @@ const Finance: React.FC = () => {
           contributor: donation.contributorName,
           amount: donation.amount,
           date: new Date(donation.date).toLocaleDateString(),
-          status: 'completed'
+          status: 'completed',
+          statusType: 'donation'
         })) || [];
         totalAmount = donationData?.totalAmount || 0;
         break;
@@ -345,10 +360,128 @@ const Finance: React.FC = () => {
       data = data.filter(item => item.status === filters.status);
     }
 
-    return { data, totalAmount };
+    const totalItems = data.length;
+    
+    // Apply pagination
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedData = data.slice(startIndex, endIndex);
+
+    return { data, totalAmount, totalItems, paginatedData };
   };
 
-  const { data: filteredData, totalAmount } = getFilteredData();
+  const { data: filteredData, totalAmount, totalItems, paginatedData } = getFilteredData();
+
+  // Pagination calculations
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startItem = (currentPage - 1) * itemsPerPage + 1;
+  const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+
+  // Reset to first page when filters change
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    setCurrentPage(1);
+  };
+
+  const handleSearchChange = (query: string) => {
+    setSearchQuery(query);
+    setCurrentPage(1);
+  };
+
+  const handleFiltersChange = (newFilters: FilterState) => {
+    setFilters(newFilters);
+    setCurrentPage(1);
+  };
+
+  // Pagination handlers
+  const goToPage = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const goToPreviousPage = () => {
+    setCurrentPage(prev => Math.max(prev - 1, 1));
+  };
+
+  const goToNextPage = () => {
+    setCurrentPage(prev => Math.min(prev + 1, totalPages));
+  };
+
+  // Initialize mutation hooks
+  // const [updateOffering] = useUpdateOfferingMutation();
+  const [deleteOffering] = useDeleteOfferingMutation();
+  // const [updateTithe] = useUpdateTitheMutation();
+  const [deleteTithe] = useDeleteTitheMutation();
+  // const [updateDonation] = useUpdateDonationMutation();
+  const [deleteDonation] = useDeleteDonationMutation();
+  // const [updateMoisson] = useUpdateMoissonMutation();
+  const [deleteMoisson] = useDeleteMoissonMutation();
+
+  // Action handlers for edit and delete
+  const handleEditItem = (item: FinanceItem) => {
+    setSelectedItem(item);
+    setIsEditModalOpen(true);
+  };
+
+  const handleDeleteItem = (item: FinanceItem) => {
+    setSelectedItem(item);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDeleteItem = async () => {
+    if (!selectedItem) return;
+    
+    setIsDeleting(true);
+    try {
+      switch (selectedItem.statusType) {
+        case 'offering':
+          await deleteOffering(selectedItem.id).unwrap();
+          break;
+        case 'tithe':
+          await deleteTithe(selectedItem.id).unwrap();
+          break;
+        case 'donation':
+          await deleteDonation(selectedItem.id).unwrap();
+          break;
+        case 'moisson':
+          await deleteMoisson(selectedItem.id).unwrap();
+          break;
+        default:
+          console.error('Unknown status type:', selectedItem.statusType);
+          return;
+      }
+      // Refetch data based on active tab
+      refetchData();
+      setIsDeleteModalOpen(false);
+      setSelectedItem(null);
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const cancelDelete = () => {
+    setIsDeleteModalOpen(false);
+    setSelectedItem(null);
+  };
+
+  const refetchData = () => {
+    // Refetch based on active tab
+    switch (activeTab) {
+      case 'offrandes':
+        refetchOfferings();
+        break;
+      case 'dimes':
+        refetchTithes();
+        break;
+      case 'dons':
+        refetchDonations();
+        break;
+      case 'moissons':
+        refetchMoissons();
+        break;
+    }
+  };
 
   // Export functions
   const handleExport = (type: 'xlsx' | 'pdf' | 'docx') => {
@@ -585,7 +718,7 @@ const Finance: React.FC = () => {
               className="focus:ring-teal-500 py-3 focus:border-teal-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
               placeholder="Rechercher par nom ou date..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
             />
           </div>
         </div>
@@ -601,7 +734,7 @@ const Finance: React.FC = () => {
             ].map((tab) => (
               <button
                 key={tab.name}
-                onClick={() => setActiveTab(tab.name)}
+                onClick={() => handleTabChange(tab.name)}
                 className={`${activeTab === tab.name
                   ? 'border-teal-500 text-teal-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -622,7 +755,7 @@ const Finance: React.FC = () => {
           ) : (
             <>
               {/* Total amount card */}
-              {filteredData.length > 0 && (
+              {totalItems > 0 && (
                 <div className="bg-teal-600 text-white rounded-lg p-4 mb-6 flex justify-between items-center">
                   <span className="text-lg font-semibold">Total:</span>
                   <span className="text-xl font-bold">{totalAmount.toFixed(2)} HTG</span>
@@ -630,31 +763,143 @@ const Finance: React.FC = () => {
               )}
 
               {/* Data table */}
-              {filteredData.length > 0 ? (
-                <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-                  <table className="min-w-full divide-y divide-gray-300">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">Contributeur</th>
-                        <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Montant</th>
-                        <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Date</th>
-                        <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Statut</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200 bg-white">
-                      {filteredData.map((item) => (
-                        <tr key={item.id}>
-                          <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">{item.contributor}</td>
-                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{item.amount} HTG</td>
-                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{item.date}</td>
-                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                            {renderStatusBadge(item.status, item.statusType)}
-                          </td>
+              {totalItems > 0 ? (
+                <>
+                  <div className="overflow-hidden shadow md:rounded-lg">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">Contributeur</th>
+                          <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Montant</th>
+                          <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Date</th>
+                          <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Statut</th>
+                          <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Actions</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 bg-white">
+                        {paginatedData.map((item) => (
+                          <tr key={item.id} className="hover:bg-gray-50 transition-colors duration-150">
+                            <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">{item.contributor}</td>
+                            <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{item.amount} HTG</td>
+                            <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{item.date}</td>
+                            <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                              {renderStatusBadge(item.status, item.statusType)}
+                            </td>
+                            <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                              <div className="flex items-center space-x-2">
+                                {/* Edit Button with Tooltip */}
+                                <div className="relative group">
+                                  <button
+                                    onClick={() => handleEditItem(item)}
+                                    className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-full transition-colors duration-200"
+                                  >
+                                    <PencilIcon className="h-4 w-4" />
+                                  </button>
+                                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
+                                    Modifier
+                                  </div>
+                                </div>
+                                
+                                {/* Delete Button with Tooltip */}
+                                <div className="relative group">
+                                  <button
+                                    onClick={() => handleDeleteItem(item)}
+                                    className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-full transition-colors duration-200"
+                                  >
+                                    <TrashIcon className="h-4 w-4" />
+                                  </button>
+                                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
+                                    Supprimer
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Pagination */}
+                  {/* {totalPages > 1 && ( */}
+                    <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 mt-4 rounded-lg shadow">
+                      <div className="flex-1 flex justify-between sm:hidden">
+                        <button
+                          onClick={goToPreviousPage}
+                          disabled={currentPage === 1}
+                          className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Précédent
+                        </button>
+                        <button
+                          onClick={goToNextPage}
+                          disabled={currentPage === totalPages}
+                          className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Suivant
+                        </button>
+                      </div>
+                      <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                        <div>
+                          <p className="text-sm text-gray-700">
+                            Affichage de <span className="font-medium">{startItem}</span> à{' '}
+                            <span className="font-medium">{endItem}</span> sur{' '}
+                            <span className="font-medium">{totalItems}</span> résultats
+                          </p>
+                        </div>
+                        <div>
+                          <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                            <button
+                              onClick={goToPreviousPage}
+                              disabled={currentPage === 1}
+                              className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <span className="sr-only">Précédent</span>
+                              <ChevronLeftIcon className="h-5 w-5" aria-hidden="true" />
+                            </button>
+                            {Array.from({ length: totalPages }, (_, i) => i + 1)
+                              .filter(page => {
+                                if (totalPages <= 7) return true;
+                                if (page === 1 || page === totalPages) return true;
+                                if (page >= currentPage - 1 && page <= currentPage + 1) return true;
+                                return false;
+                              })
+                              .map((page, index, array) => {
+                                const showEllipsis = index > 0 && page - array[index - 1] > 1;
+                                return (
+                                  <div key={page} className="flex">
+                                    {showEllipsis && (
+                                      <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                                        ...
+                                      </span>
+                                    )}
+                                    <button
+                                      onClick={() => goToPage(page)}
+                                      className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                                        currentPage === page
+                                          ? 'z-10 bg-teal-50 border-teal-500 text-teal-600'
+                                          : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                                      }`}
+                                    >
+                                      {page}
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                            <button
+                              onClick={goToNextPage}
+                              disabled={currentPage === totalPages}
+                              className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <span className="sr-only">Suivant</span>
+                              <ChevronRightIcon className="h-5 w-5" aria-hidden="true" />
+                            </button>
+                          </nav>
+                        </div>
+                      </div>
+                    </div>
+                  {/* )} */}
+                </>
               ) : (
                 <div className="text-center py-12 bg-white shadow rounded-lg">
                   <p className="text-gray-500 text-lg">Aucune donnée disponible</p>
@@ -678,7 +923,7 @@ const Finance: React.FC = () => {
         isOpen={isFilterModalOpen}
         onClose={() => setIsFilterModalOpen(false)}
         filters={filters}
-        onApplyFilters={setFilters}
+        onApplyFilters={handleFiltersChange}
         onClear={handleClearFilters}
       />
       
@@ -688,6 +933,127 @@ const Finance: React.FC = () => {
         activeTab={activeTab}
         churchId={churchId}
       />
+
+      {/* Edit Modal - Simple implementation for now */}
+      {isEditModalOpen && selectedItem && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              {/* Header */}
+              <div className="flex items-center justify-between pb-3">
+                <h3 className="text-lg font-medium text-gray-900">Modifier l'entrée</h3>
+                <button
+                  onClick={() => {
+                    setIsEditModalOpen(false);
+                    setSelectedItem(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+              
+              {/* Content */}
+              <div className="mt-2 px-7 py-3">
+                <p className="text-sm text-gray-500 mb-4">
+                  La fonctionnalité d'édition sera bientôt disponible.
+                </p>
+                {selectedItem && (
+                  <div className="text-sm text-gray-700">
+                    <p><strong>Contributeur:</strong> {selectedItem.contributor}</p>
+                    <p><strong>Montant:</strong> {selectedItem.amount} HTG</p>
+                    <p><strong>Date:</strong> {selectedItem.date}</p>
+                    <p><strong>Type:</strong> {selectedItem.statusType}</p>
+                  </div>
+                )}
+              </div>
+              
+              {/* Actions */}
+              <div className="flex items-center justify-end px-4 py-3">
+                <button
+                  onClick={() => {
+                    setIsEditModalOpen(false);
+                    setSelectedItem(null);
+                  }}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 text-base font-medium rounded-md shadow-sm hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 transition-colors"
+                >
+                  Fermer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              {/* Header */}
+              <div className="flex items-center justify-between pb-3">
+                <h3 className="text-lg font-medium text-gray-900">Confirmer la suppression</h3>
+                <button
+                  onClick={cancelDelete}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+              
+              {/* Content */}
+              <div className="mt-2 px-7 py-3">
+                <div className="flex items-center mb-4">
+                  <ExclamationTriangleIcon className="h-12 w-12 text-red-600 mr-4" />
+                  <div>
+                    <p className="text-sm text-gray-500 mb-2">
+                      Êtes-vous sûr de vouloir supprimer cette entrée ?
+                    </p>
+                    {selectedItem && (
+                      <div className="text-sm text-gray-700">
+                        <p><strong>Contributeur:</strong> {selectedItem.contributor}</p>
+                        <p><strong>Montant:</strong> {selectedItem.amount} HTG</p>
+                        <p><strong>Date:</strong> {selectedItem.date}</p>
+                      </div>
+                    )}
+                    <p className="text-sm text-red-600 mt-2 font-medium">
+                      Cette action est irréversible.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Actions */}
+              <div className="flex items-center justify-end px-4 py-3 space-x-3">
+                <button
+                  onClick={cancelDelete}
+                  disabled={isDeleting}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 text-base font-medium rounded-md shadow-sm hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={confirmDeleteItem}
+                  disabled={isDeleting}
+                  className="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
+                >
+                  {isDeleting ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Suppression...
+                    </>
+                  ) : (
+                    'Supprimer définitivement'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

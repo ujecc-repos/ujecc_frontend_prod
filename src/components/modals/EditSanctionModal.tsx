@@ -116,7 +116,7 @@ export default function EditSanctionModal({ isOpen, onClose, onSubmit, isLoading
             </Dialog.Title>
             <button
               type="button"
-              className="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+              className="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
               onClick={handleClose}
             >
               <span className="sr-only">Fermer</span>
@@ -133,7 +133,7 @@ export default function EditSanctionModal({ isOpen, onClose, onSubmit, isLoading
                 id="status"
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm py-2"
               >
                 <option value="active">Active</option>
                 <option value="pending">En cours</option>
@@ -146,7 +146,7 @@ export default function EditSanctionModal({ isOpen, onClose, onSubmit, isLoading
               <button
                 type="submit"
                 disabled={isLoading}
-                className="inline-flex w-full justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:col-start-2 sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex w-full justify-center rounded-md border border-transparent bg-teal-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:col-start-2 sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? 'Mise à jour en cours...' : 'Mettre à jour'}
               </button>

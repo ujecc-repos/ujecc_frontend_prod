@@ -103,11 +103,16 @@ const navigation = {
       icon: BanknotesIcon,
     },
      {
-      name: 'Dépenses',
-      href: '/tableau-de-bord/admin/depense',
-      icon: CurrencyDollarIcon,
-    },
-  ],
+       name: 'Dépenses',
+       href: '/tableau-de-bord/admin/depense',
+       icon: CurrencyDollarIcon,
+     },
+     {
+       name: 'Services & Présences',
+       href: '/tableau-de-bord/admin/serviceandpresence',
+       icon: UserGroupIcon,
+     },
+   ],
   SuperAdmin: [
     { name: 'Tableau de bord', href: '/tableau-de-bord', icon: TfiStatsUp },
     { name: 'Missions', href: '/tableau-de-bord/super-admin/missions', icon: UserIcon },
@@ -144,7 +149,6 @@ const DashboardLayout = ({ userRole }: {userRole: UserRole}) => {
       // Force navigation to root page and refresh
       window.location.href = '/';
     } catch (error) {
-      console.error('Logout error:', error);
       // Fallback navigation
       navigate('/');
     }
@@ -195,7 +199,7 @@ const DashboardLayout = ({ userRole }: {userRole: UserRole}) => {
                   {/* user profile section */}
                   <div className='px-3 border-b border-gray-200'>
                   <div className="flex  items-center space-x-4 px-2 pb-4 ">
-                    <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center ring-2 ring-white relative">
+                    <div className="h-10 w-10 rounded-full bg-teal-100 flex items-center justify-center ring-2 ring-white relative">
                       <img
                         className="h-10 w-auto rounded-full"
                         src="https://goodnewsmission.eu/wp-content/uploads/2017/03/p_posp.jpg?189db0"
@@ -218,10 +222,10 @@ const DashboardLayout = ({ userRole }: {userRole: UserRole}) => {
                             <li key={item.name}>
                               <Link
                                 to={item.href}
-                                className={`group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold ${location.pathname === item.href ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700 hover:text-indigo-600 hover:bg-gray-50'}`}
+                                className={`group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold ${location.pathname === item.href ? 'bg-teal-50 text-teal-600' : 'text-gray-700 hover:text-teal-600 hover:bg-gray-50'}`}
                               >
                                 <item.icon
-                                  className={`h-6 w-6 shrink-0 ${location.pathname === item.href ? 'text-indigo-600' : 'text-gray-400 group-hover:text-indigo-600'}`}
+                                  className={`h-6 w-6 shrink-0 ${location.pathname === item.href ? 'text-teal-600' : 'text-gray-400 group-hover:text-teal-600'}`}
                                   aria-hidden="true"
                                 />
                                 {!sidebarCollapsed && (
@@ -280,7 +284,7 @@ const DashboardLayout = ({ userRole }: {userRole: UserRole}) => {
           {/* User Profile Section */}
           <div className="px-3 border-b border-gray-200">
           <div className="flex items-center space-x-4 px-2 pb-4 pt-1">
-            <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center ring-2 ring-white relative">
+            <div className="h-10 w-10 rounded-full bg-teal-100 flex items-center justify-center ring-2 ring-white relative">
               <img
                 className="h-10 w-10 rounded-full object-cover"
                 src={"https://goodnewsmission.eu/wp-content/uploads/2017/03/p_posp.jpg?189db0"}
@@ -306,10 +310,10 @@ const DashboardLayout = ({ userRole }: {userRole: UserRole}) => {
                         <li key={item.name}>
                           <Link
                             to={item.href}
-                            className={`group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold ${location.pathname === item.href ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700 hover:text-indigo-600 hover:bg-gray-50'}`}
+                            className={`group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold ${location.pathname === item.href ? 'bg-teal-50 text-teal-600' : 'text-gray-700 hover:text-teal-600 hover:bg-gray-50'}`}
                           >
                             <item.icon
-                              className={`h-6 w-6 shrink-0 ${location.pathname === item.href ? 'text-indigo-600' : 'text-gray-400 group-hover:text-indigo-600'}`}
+                              className={`h-6 w-6 shrink-0 ${location.pathname === item.href ? 'text-teal-600' : 'text-gray-400 group-hover:text-teal-600'}`}
                               aria-hidden="true"
                             />
                             {!sidebarCollapsed && (
@@ -379,7 +383,7 @@ const DashboardLayout = ({ userRole }: {userRole: UserRole}) => {
             <motion.button
               type="button"
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="hidden mt-[12px] lg:flex items-center justify-center w-10 h-10 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 transition-colors duration-200"
+              className="hidden mt-[12px] lg:flex items-center justify-center w-10 h-10 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-teal-500 transition-colors duration-200"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               animate={{
@@ -403,7 +407,7 @@ const DashboardLayout = ({ userRole }: {userRole: UserRole}) => {
                 </div>
                 <input
                   id="search-field"
-                  className="block rounded-[20px] h-9 w-[30%] border-0 bg-gray-50 py-0 pl-10 pr-3 text-gray-900 placeholder:text-gray-400 focus:ring-1 outline-none focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 mt-[12px]"
+                  className="block rounded-[20px] h-9 w-[30%] border-0 bg-gray-50 py-0 pl-10 pr-3 text-gray-900 placeholder:text-gray-400 focus:ring-1 outline-none focus:ring-inset focus:ring-teal-600 sm:text-sm sm:leading-6 mt-[12px]"
                   placeholder="Search..."
                   type="search"
                   name="search"

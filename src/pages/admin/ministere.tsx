@@ -1,14 +1,12 @@
-import React, { useState, Fragment } from 'react';
-import { Menu, Transition } from '@headlessui/react';
+import React, { useState } from 'react';
+// import { Menu, Transition } from '@headlessui/react';
 import {
   PlusIcon,
   MagnifyingGlassIcon,
   FunnelIcon,
-  EllipsisVerticalIcon,
   PencilIcon,
   TrashIcon,
   DocumentArrowDownIcon,
-  EyeIcon,
 } from '@heroicons/react/24/outline';
 import {
   useDeleteMinistryMutation,
@@ -187,7 +185,7 @@ export default function Ministere() {
               <span className="text-gray-600">{filteredMinistries.length} ministère(s)</span>
               <button
                 onClick={() => setShowExportModal(true)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center space-x-1"
+                className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-colors flex items-center space-x-1"
               >
                 <DocumentArrowDownIcon className="h-5 w-5" />
                 <span>Exporter</span>
@@ -198,7 +196,7 @@ export default function Ministere() {
           <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
             <button
               onClick={() => setIsCreateMinistryModalOpen(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center space-x-1"
+              className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-colors flex items-center space-x-1"
             >
               <PlusIcon className="h-5 w-5" />
               <span>Nouveau ministère</span>
@@ -285,7 +283,7 @@ export default function Ministere() {
                       <tr key={ministry.id} className="hover:bg-gray-50 cursor-pointer">
                         <td className="px-6 py-4 whitespace-nowrap" onClick={() => handleRowClick(ministry)}>
                           <div className="flex items-center">
-                            <div className="flex-shrink-0 h-10 w-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
+                            <div className="flex-shrink-0 h-10 w-10 bg-gradient-to-r from-teal-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
                               {ministry.name.charAt(0).toUpperCase()}
                             </div>
                             <div className="ml-4">
@@ -308,62 +306,34 @@ export default function Ministere() {
                             : 'Date inconnue'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <Menu as="div" className="relative inline-block text-left">
-                            <div>
-                              <Menu.Button className="bg-white rounded-full flex items-center text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                                <span className="sr-only">Open options</span>
-                                <EllipsisVerticalIcon className="h-5 w-5" aria-hidden="true" />
-                              </Menu.Button>
-                            </div>
-
-                            <Transition
-                              as={Fragment}
-                              enter="transition ease-out duration-100"
-                              enterFrom="transform opacity-0 scale-95"
-                              enterTo="transform opacity-100 scale-100"
-                              leave="transition ease-in duration-75"
-                              leaveFrom="transform opacity-100 scale-100"
-                              leaveTo="transform opacity-0 scale-95"
+                          <div className="flex items-center justify-end space-x-2">
+                            <button
+                              onClick={() => handleEditMinistry(ministry)}
+                              className="p-1.5 text-purple-500 hover:text-purple-700 hover:bg-purple-50 rounded-full transition-colors group relative"
+                              title="Modifier"
                             >
-                              <Menu.Items className="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
-                                <div className="py-1">
-                                  <Menu.Item>
-                                    {({ active }) => (
-                                      <button
-                                        onClick={() => handleEditMinistry(ministry)}
-                                        className={`${active ? 'bg-gray-100' : ''} group flex items-center px-4 py-2 text-sm text-purple-700 w-full text-left`}
-                                      >
-                                        <PencilIcon className="mr-3 h-5 w-5 text-purple-400" aria-hidden="true" />
-                                        Modifier
-                                      </button>
-                                    )}
-                                  </Menu.Item>
-                                  <Menu.Item>
-                                    {({ active }) => (
-                                      <button
-                                        onClick={() => handleRowClick(ministry)}
-                                        className={`${active ? 'bg-gray-100' : ''} group flex items-center px-4 py-2 text-sm text-blue-700 w-full text-left`}
-                                      >
-                                        <EyeIcon className="mr-3 h-5 w-5 text-blue-400" aria-hidden="true" />
-                                        Voir les détails
-                                      </button>
-                                    )}
-                                  </Menu.Item>
-                                  <Menu.Item>
-                                    {({ active }) => (
-                                      <button
-                                        onClick={() => handleDeleteMinistry(ministry)}
-                                        className={`${active ? 'bg-gray-100' : ''} group flex items-center px-4 py-2 text-sm text-red-700 w-full text-left`}
-                                      >
-                                        <TrashIcon className="mr-3 h-5 w-5 text-red-400" aria-hidden="true" />
-                                        Supprimer
-                                      </button>
-                                    )}
-                                  </Menu.Item>
-                                </div>
-                              </Menu.Items>
-                            </Transition>
-                          </Menu>
+                              <PencilIcon className="h-5 w-5" />
+                              <span className="absolute bottom-full right-0 mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">Modifier</span>
+                            </button>
+                            
+                            {/* <button
+                              onClick={() => handleRowClick(ministry)}
+                              className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-full transition-colors group relative"
+                              title="Voir les détails"
+                            >
+                              <EyeIcon className="h-5 w-5" />
+                              <span className="absolute bottom-full right-0 mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">Voir les détails</span>
+                            </button> */}
+                            
+                            <button
+                              onClick={() => handleDeleteMinistry(ministry)}
+                              className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full transition-colors group relative"
+                              title="Supprimer"
+                            >
+                              <TrashIcon className="h-5 w-5" />
+                              <span className="absolute bottom-full right-0 mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">Supprimer</span>
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -404,7 +374,7 @@ export default function Ministere() {
                       onClick={() => handlePageChange(page)}
                       className={`px-3 py-2 text-sm font-medium rounded-md ${
                         currentPage === page
-                          ? 'bg-purple-600 text-white'
+                          ? 'bg-teal-600 text-white'
                           : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'
                       }`}
                     >

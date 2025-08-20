@@ -37,6 +37,8 @@ interface Member {
   personToContact?: string;
   facebook?: string;
   membreActif?: boolean;
+  nif?: string;
+  groupeSanguin?: string;
 }
 
 interface EditMemberFormData {
@@ -65,6 +67,8 @@ interface EditMemberFormData {
   facebook: string;
   profileImage: File | null;
   isActiveMember: boolean;
+  nif?: string;
+  groupeSanguin?: string;
 }
 
 interface EditMemberModalProps {
@@ -101,7 +105,9 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
     personToContact: '',
     facebook: '',
     profileImage: null,
-    isActiveMember: true
+    isActiveMember: true,
+    nif: '',
+    groupeSanguin: ''
   });
 
   const [activeTab, setActiveTab] = useState('personal');
@@ -155,12 +161,14 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
         personToContact: member.personToContact || '',
         facebook: member.facebook || '',
         profileImage: null,
-        isActiveMember: member.membreActif ?? true
+        isActiveMember: member.membreActif ?? true,
+        nif: member.nif || '',
+        groupeSanguin: member.groupeSanguin || ''
       });
       
       // Set image preview if member has a picture
       if (member.picture) {
-        setImagePreview(`https://api.ujecc.org${member.picture}`);
+        setImagePreview(`https://ujecc-backend.onrender.com${member.picture}`);
       } else {
         setImagePreview(null);
       }
@@ -230,7 +238,9 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
       personToContact: '',
       facebook: '',
       profileImage: null,
-      isActiveMember: true
+      isActiveMember: true,
+      nif: '',
+      groupeSanguin: ''
     });
     setImagePreview(null);
     setErrors({});
@@ -446,7 +456,7 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
                     <div className="relative">
                       <input
                         type="text"
-                        value={formData.birthDate ? new Date(formData.birthDate).toLocaleDateString('fr-FR') : ''}
+                        value={formData.birthDate ? formData.birthDate.split('-').reverse().join('/') : ''}
                         onClick={() => setShowBirthCalendar(!showBirthCalendar)}
                         readOnly
                         data-calendar-trigger
@@ -461,12 +471,17 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
                                if (date) {
                                  const selectedDate = Array.isArray(date) ? date[0] : date;
                                  if (selectedDate) {
-                                   setFormData(prev => ({ ...prev, birthDate: selectedDate.toISOString().split('T')[0] }));
+                                   // Format date as YYYY-MM-DD without timezone issues
+                                   const year = selectedDate.getFullYear();
+                                   const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+                                   const day = String(selectedDate.getDate()).padStart(2, '0');
+                                   const dateString = `${year}-${month}-${day}`;
+                                   setFormData(prev => ({ ...prev, birthDate: dateString }));
                                    setShowBirthCalendar(false);
                                  }
                                }
                              }}
-                            value={formData.birthDate ? new Date(formData.birthDate) : null}
+                            value={formData.birthDate ? new Date(formData.birthDate + 'T00:00:00') : null}
                             className="react-calendar"
                           />
                         </div>
@@ -526,6 +541,38 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                       placeholder="Profession"
                     />
+                  </div>
+
+                  {/* NIF */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">NIF (Numéro d'Identification Fiscale)</label>
+                    <input
+                      type="text"
+                      value={formData.nif}
+                      onChange={(e) => setFormData(prev => ({ ...prev, nif: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      placeholder="NIF"
+                    />
+                  </div>
+
+                  {/* Groupe Sanguin */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Groupe Sanguin</label>
+                    <select
+                      value={formData.groupeSanguin}
+                      onChange={(e) => setFormData(prev => ({ ...prev, groupeSanguin: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    >
+                      <option value="">Sélectionner groupe sanguin</option>
+                      <option value="A+">A+</option>
+                      <option value="A-">A-</option>
+                      <option value="B+">B+</option>
+                      <option value="B-">B-</option>
+                      <option value="AB+">AB+</option>
+                      <option value="AB-">AB-</option>
+                      <option value="O+">O+</option>
+                      <option value="O-">O-</option>
+                    </select>
                   </div>
                 </div>
               </div>
@@ -656,7 +703,7 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
                     <div className="relative">
                       <input
                         type="text"
-                        value={formData.joinDate ? new Date(formData.joinDate).toLocaleDateString('fr-FR') : ''}
+                        value={formData.joinDate ? formData.joinDate.split('-').reverse().join('/') : ''}
                         onClick={() => setShowJoinCalendar(!showJoinCalendar)}
                         readOnly
                         data-calendar-trigger
@@ -671,12 +718,17 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
                               if (date) {
                                 const selectedDate = Array.isArray(date) ? date[0] : date;
                                 if (selectedDate) {
-                                  setFormData(prev => ({ ...prev, joinDate: selectedDate.toISOString().split('T')[0] }));
+                                  // Format date as YYYY-MM-DD without timezone issues
+                                  const year = selectedDate.getFullYear();
+                                  const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+                                  const day = String(selectedDate.getDate()).padStart(2, '0');
+                                  const dateString = `${year}-${month}-${day}`;
+                                  setFormData(prev => ({ ...prev, joinDate: dateString }));
                                   setShowJoinCalendar(false);
                                 }
                               }
                             }}
-                            value={formData.joinDate ? new Date(formData.joinDate) : null}
+                            value={formData.joinDate ? new Date(formData.joinDate + 'T00:00:00') : null}
                             className="react-calendar"
                           />
                         </div>
@@ -690,7 +742,7 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
                     <div className="relative">
                       <input
                         type="text"
-                        value={formData.baptismDate ? new Date(formData.baptismDate).toLocaleDateString('fr-FR') : ''}
+                        value={formData.baptismDate ? formData.baptismDate.split('-').reverse().join('/') : ''}
                         onClick={() => setShowBaptismCalendar(!showBaptismCalendar)}
                         readOnly
                         data-calendar-trigger
@@ -705,12 +757,17 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
                               if (date) {
                                 const selectedDate = Array.isArray(date) ? date[0] : date;
                                 if (selectedDate) {
-                                  setFormData(prev => ({ ...prev, baptismDate: selectedDate.toISOString().split('T')[0] }));
+                                  // Format date as YYYY-MM-DD without timezone issues
+                                  const year = selectedDate.getFullYear();
+                                  const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+                                  const day = String(selectedDate.getDate()).padStart(2, '0');
+                                  const dateString = `${year}-${month}-${day}`;
+                                  setFormData(prev => ({ ...prev, baptismDate: dateString }));
                                   setShowBaptismCalendar(false);
                                 }
                               }
                             }}
-                            value={formData.baptismDate ? new Date(formData.baptismDate) : null}
+                            value={formData.baptismDate ? new Date(formData.baptismDate + 'T00:00:00') : null}
                             className="react-calendar"
                           />
                         </div>

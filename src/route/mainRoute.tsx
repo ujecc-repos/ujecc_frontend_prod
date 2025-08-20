@@ -35,6 +35,8 @@ import MainPage from "../pages/mainPage";
 import PasteurPage from "../pages/director/pasteurs";
 import App from "../App";
 import AllChurches from "../pages/super-admin/allChurches";
+import ServiceAndPresence from "../pages/admin/serviceandpresence";
+import ServiceDetails from "../pages/admin/service-details";
 
 
 const router = createBrowserRouter([
@@ -145,7 +147,8 @@ const router = createBrowserRouter([
                     // 
                     { path: "/tableau-de-bord/pasteurs", element: <PasteurPage/> },
                     { path: "/tableau-de-bord/super-admin/allchurches", element: <AllChurches/> },
-
+                    { path: "/tableau-de-bord/admin/serviceandpresence", element: <ServiceAndPresence/> },
+                    { path: "/tableau-de-bord/admin/service-details/:serviceId", element: <ServiceDetails/> },
                     
                 ]
             }

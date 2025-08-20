@@ -92,7 +92,7 @@ const DeleteMemberModal: React.FC<DeleteMemberModalProps> = ({
                     <div className="flex-shrink-0">
                       {member.picture ? (
                         <img
-                          src={`https://api.ujecc.org${member.picture}`}
+                          src={`https://ujecc-backend.onrender.com${member.picture}`}
                           alt={`${member.firstname} ${member.lastname}`}
                           className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
                         />

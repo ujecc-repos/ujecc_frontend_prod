@@ -1,14 +1,13 @@
-import { useState, useMemo, Fragment} from 'react';
+import { useState, useMemo} from 'react';
 import { jsPDF } from 'jspdf';
 import { useGetTransfersByChurchQuery } from '../../store/services/transferApi';
 import { useGetUserByTokenQuery } from '../../store/services/authApi';
-import { Menu, Transition, Dialog } from '@headlessui/react';
+import { Dialog } from '@headlessui/react';
 import { format } from 'date-fns';
 import { 
   MagnifyingGlassIcon, 
   DocumentIcon, 
   UserIcon,
-  EllipsisVerticalIcon,
   FunnelIcon,
   ArrowDownTrayIcon,
   XMarkIcon,
@@ -591,39 +590,15 @@ const Transfert = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <Menu as="div" className="relative inline-block text-left">
-                        <div>
-                          <Menu.Button className="inline-flex items-center justify-center p-2 rounded-full text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none">
-                            <span className="sr-only">Options</span>
-                            <EllipsisVerticalIcon className="h-5 w-5" aria-hidden="true" />
-                          </Menu.Button>
-                        </div>
-                        <Transition
-                          as={Fragment}
-                          enter="transition ease-out duration-100"
-                          enterFrom="transform opacity-0 scale-95"
-                          enterTo="transform opacity-100 scale-100"
-                          leave="transition ease-in duration-75"
-                          leaveFrom="transform opacity-100 scale-100"
-                          leaveTo="transform opacity-0 scale-95"
+                      <div className="flex items-center justify-end space-x-2">
+                        <button
+                          onClick={() => generateTransferLetter(transfer)}
+                          className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
                         >
-                          <Menu.Items className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                            <div className="py-1">
-                              <Menu.Item>
-                                {({ active }) => (
-                                  <button
-                                    onClick={() => generateTransferLetter(transfer)}
-                                    className={`${active ? 'bg-gray-100 text-gray-900' : 'text-gray-700'} flex w-full items-center px-4 py-2 text-sm`}
-                                  >
-                                    <DocumentIcon className="mr-3 h-5 w-5 text-gray-400" aria-hidden="true" />
-                                    Générer une lettre
-                                  </button>
-                                )}
-                              </Menu.Item>
-                            </div>
-                          </Menu.Items>
-                        </Transition>
-                      </Menu>
+                          <DocumentIcon className="h-4 w-4 mr-1" />
+                          Générer une lettre
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
