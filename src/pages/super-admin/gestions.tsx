@@ -516,13 +516,13 @@ const GestionPage: React.FC = () => {
   }, [churches]);
 
   // Transform TTIs for react-select
-  const ttiOptions = useMemo(() => {
-    if (!ttis) return [];
-    return ttis.map(tti => ({
-      value: tti.id,
-      label: `${tti.nom} (Timothee Training Institute)`
-    }));
-  }, [ttis]);
+  // const ttiOptions = useMemo(() => {
+  //   if (!ttis) return [];
+  //   return ttis.map(tti => ({
+  //     value: tti.id,
+  //     label: `${tti.nom} (Timothee Training Institute)`
+  //   }));
+  // }, [ttis]);
 
   // Get the single TTI ID automatically
   const singleTtiId = useMemo(() => {
@@ -533,12 +533,12 @@ const GestionPage: React.FC = () => {
   }, [ttis]);
 
   // Get the single TTI name for display
-  const singleTtiName = useMemo(() => {
-    if (ttis && ttis.length === 1) {
-      return `${ttis[0].nom} (Timothee Training Institute)`;
-    }
-    return null;
-  }, [ttis]);
+  // const singleTtiName = useMemo(() => {
+  //   if (ttis && ttis.length === 1) {
+  //     return `${ttis[0].nom} (Timothee Training Institute)`;
+  //   }
+  //   return null;
+  // }, [ttis]);
 
   return (
     <div className="container mx-auto py-2">

@@ -90,7 +90,7 @@ interface ExportModalProps {
 
 const FilterModal: React.FC<FilterModalProps> = ({ isOpen, onClose, filters, onApplyFilters, onClear }) => {
   const [localFilters, setLocalFilters] = useState<FilterState>(filters);
-  const [activeSection, setActiveSection] = useState<string>('searchType');
+  // const [activeSection, setActiveSection] = useState<string>('searchType');
   
   useEffect(() => {
     if (isOpen) {

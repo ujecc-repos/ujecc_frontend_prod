@@ -8,7 +8,7 @@ import {
   EnvelopeIcon,
   PhoneIcon,
   MapPinIcon,
-  CalendarIcon,
+  
 } from '@heroicons/react/24/outline';
 import {
   useGetUserByIdQuery,
@@ -34,23 +34,6 @@ interface TimotheeUser {
   joinDate?: string;
   membreActif?: boolean;
   churchRole?: string;
-}
-
-interface Timothee {
-  id: string;
-  firstname: string;
-  lastname: string;
-  email?: string;
-  mobilePhone?: string;
-  picture?: string;
-  role?: string;
-  sex?: string;
-  birthDate?: string;
-  etatCivil?: string;
-  profession?: string;
-  city?: string;
-  country?: string;
-  addressLine?: string;
 }
 
 export default function TimotheeTithes() {

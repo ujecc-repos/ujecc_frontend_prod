@@ -89,11 +89,6 @@ const BadgeGenerator: React.FC<BadgeGeneratorProps> = ({
     return `${prefix}-${id}`;
   };
 
-  // Generate NIF/NINU (mock data)
-  const generateNifNinu = () => {
-    return `00${member.id.slice(-8).padStart(8, '0')}`;
-  };
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
       {/* Badge Preview */}
