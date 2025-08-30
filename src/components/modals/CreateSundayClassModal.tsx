@@ -281,7 +281,7 @@ export default function CreateSundayClassModal({ isOpen, onClose, onSuccess }: C
               </div>
 
               {/* Location */}
-              <div>
+              {/* <div>
                 <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
                   Lieu
                 </label>
@@ -294,7 +294,7 @@ export default function CreateSundayClassModal({ isOpen, onClose, onSuccess }: C
                   className="block w-full rounded-md border border-gray-300 shadow-sm py-2 px-3 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm"
                   placeholder="Salle, bâtiment, etc."
                 />
-              </div>
+              </div> */}
 
               {/* Book */}
               <div>

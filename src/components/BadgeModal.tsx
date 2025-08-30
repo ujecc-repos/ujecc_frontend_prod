@@ -9,6 +9,7 @@ interface Member {
   lastname: string;
   email?: string;
   role?: string;
+  nif?: string;
   picture?: string;
 }
 

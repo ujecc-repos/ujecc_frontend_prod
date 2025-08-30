@@ -112,6 +112,11 @@ const navigation = {
        href: '/tableau-de-bord/admin/serviceandpresence',
        icon: UserGroupIcon,
      },
+     {
+       name: 'TTI(Timothee training institute)',
+       href: '/tableau-de-bord/admin/tti',
+       icon: UserGroupIcon,
+     },
    ],
   SuperAdmin: [
     { name: 'Tableau de bord', href: '/tableau-de-bord', icon: TfiStatsUp },
@@ -121,7 +126,7 @@ const navigation = {
   ],
   Directeur: [
     { name: 'Tableau de bord', href: '/tableau-de-bord', icon: TfiStatsUp },
-    { name: 'Église', href: "/tableau-de-bord/eglise", icon: BuildingLibraryIcon},
+    { name: 'Église', href: "/tableau-de-bord/directeur/eglises", icon: BuildingLibraryIcon},
     { name: "pasteurs", href: "/tableau-de-bord/pasteurs", icon: UserIcon}
   ],
 };
@@ -218,7 +223,13 @@ const DashboardLayout = ({ userRole }: {userRole: UserRole}) => {
                     <ul role="list" className="flex flex-1 flex-col gap-y-7">
                       <li>
                         <ul role="list" className="-mx-2 space-y-1">
-                          {navigation[userRole].map((item) => (
+                          {navigation[userRole].filter(item => {
+                            // Hide TTI section if user's church doesn't have a TTI ID
+                            if (item.name === 'TTI(Timothee training institute)') {
+                              return userToken?.church?.ttiId;
+                            }
+                            return true;
+                          }).map((item) => (
                             <li key={item.name}>
                               <Link
                                 to={item.href}
@@ -306,7 +317,15 @@ const DashboardLayout = ({ userRole }: {userRole: UserRole}) => {
                 <ul role="list" className="flex flex-col gap-y-7">
                   <li>
                     <ul role="list" className="-mx-2 space-y-1">
-                      {navigation[userRole].filter(item => item.name !== 'Logout').map((item) => (
+                      {navigation[userRole].filter(item => {
+                        // Filter out Logout and conditionally hide TTI section
+                        if (item.name === 'Logout') return false;
+                        if (item.name === 'TTI(Timothee training institute)') {
+                          // Hide TTI if church doesn't have a TTI ID
+                          return userToken?.church?.ttiId;
+                        }
+                        return true;
+                      }).map((item) => (
                         <li key={item.name}>
                           <Link
                             to={item.href}
@@ -509,6 +528,9 @@ const DashboardLayout = ({ userRole }: {userRole: UserRole}) => {
                     <Menu.Item>
                       {({ active }) => (
                         <button
+                          onClick={() => {
+                            window.location.href = '/'
+                          }}
                           className={`flex w-full items-center px-3 py-2 text-sm leading-6 ${active ? 'bg-gray-50' : ''}`}
                         >
                           <ArrowPathIcon className="h-5 w-5 mr-3 text-gray-400" />

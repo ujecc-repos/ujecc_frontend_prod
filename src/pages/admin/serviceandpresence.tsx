@@ -57,7 +57,7 @@ export default function ServiceAndPresence() {
   
   // Mutations
   const [createService] = useCreateServiceMutation();
-  const [deleteService] = useDeleteServiceMutation();
+  const [deleteService, { isLoading: isDeletingService }] = useDeleteServiceMutation();
   const [updateService] = useUpdateServiceMutation();
   const [createPresence] = useCreatePresenceMutation();
   
@@ -512,17 +512,26 @@ export default function ServiceAndPresence() {
                     <div className="flex justify-end space-x-3">
                       <button
                         type="button"
-                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={() => setShowDeleteModal(false)}
+                        disabled={isDeletingService}
                       >
                         Annuler
                       </button>
                       <button
                         type="button"
-                        className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                        className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                         onClick={handleDeleteService}
+                        disabled={isDeletingService}
                       >
-                        Supprimer
+                        {isDeletingService ? (
+                          <>
+                            <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                            <span>Suppression...</span>
+                          </>
+                        ) : (
+                          <span>Supprimer</span>
+                        )}
                       </button>
                     </div>
                   </Dialog.Panel>

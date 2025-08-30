@@ -29,7 +29,7 @@ const MetricCard = ({ title, value, subtitle, subtitleValue, icon, color }: Metr
         </div>
         <span className="text-gray-600 text-sm">{title}</span>
       </div>
-      <div className="text-2xl font-bold mb-2">{value}</div>
+      <div className="px-3 text-2xl font-bold mb-2">{value}</div>
       {subtitle && (
         <div className="flex items-center mt-2">
           <span className="text-gray-500 text-xs mr-1">{subtitle}</span>
@@ -109,7 +109,7 @@ export const StatistiqueForDirecteur = () => {
   }, [missionData]);
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto">
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
@@ -122,14 +122,14 @@ export const StatistiqueForDirecteur = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-            {totalChurches > 0 && (
+           
               <MetricCard
                 title="Églises"
-                value={totalChurches}
+                value={totalChurches || `0`}
                 icon={<BuildingLibraryIcon className="h-6 w-6 text-teal-500" />}
                 color="text-teal-500"
               />
-            )}
+          
             {totalMembers > 0 && (
               <MetricCard
                 title="Membres"
@@ -138,62 +138,52 @@ export const StatistiqueForDirecteur = () => {
                 color="text-red-400"
               />
             )}
-            {totalPastors > 0 && (
+           
               <MetricCard
                 title="Pasteurs"
-                value={totalPastors}
+                value={totalPastors || "0"}
                 icon={<UserIcon className="h-6 w-6 text-teal-400" />}
                 color="text-teal-400"
               />
-            )}
-            {baptismsCount > 0 && (
+
               <MetricCard
                 title="Baptêmes"
-                value={baptismsCount}
+                value={baptismsCount || "0"}
                 icon={<BuildingLibraryIcon className="h-6 w-6 text-yellow-400" />}
                 color="text-yellow-400"
               />
-            )}
-            {funeralsCount > 0 && (
               <MetricCard
                 title="Décès"
-                value={funeralsCount}
+                value={funeralsCount || "0"}
                 icon={<BuildingLibraryIcon className="h-6 w-6 text-indigo-500" />}
                 color="text-indigo-500"
               />
-            )}
-            {transfersCount > 0 && (
               <MetricCard
                 title="Transferts"
-                value={transfersCount}
+                value={transfersCount || "0"}
                 icon={<ArrowsRightLeftIcon className="h-6 w-6 text-indigo-700" />}
                 color="text-indigo-700"
               />
-            )}
-            {totalRevenue > 0 && (
               <MetricCard
                 title="Revenue"
-                value={`${totalRevenue.toLocaleString()}`}
+                value={`${totalRevenue.toLocaleString()}` || "0"}
                 icon={<BanknotesIcon className="h-6 w-6 text-green-500" />}
                 color="text-green-500"
               />
-            )}
-            {totalExpenses > 0 && (
               <MetricCard
                 title="Dépense"
-                value={`${totalExpenses.toLocaleString()}`}
+                value={`${totalExpenses.toLocaleString()}` || "0"}
                 icon={<CurrencyDollarIcon className="h-6 w-6 text-red-500" />}
                 color="text-red-500"
               />
-            )}
-            {marriagesCount > 0 && (
+            
               <MetricCard
                 title="Mariages"
-                value={marriagesCount}
+                value={marriagesCount || "0"}
                 icon={<HeartIcon className="h-6 w-6 text-pink-500" />}
                 color="text-pink-500"
               />
-            )}
+
           </div>
 
           <div className="mb-8">
@@ -204,31 +194,6 @@ export const StatistiqueForDirecteur = () => {
               <div className="text-sm opacity-80">Membres actifs dans {totalChurches} églises</div>
             </div>
           </div>
-
-          {missionData?.churches && missionData.churches.length > 0 && (
-            <div className="mb-8">
-              <h3 className="text-xl font-semibold mb-4">Églises de la Mission</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {missionData.churches.map((church) => (
-                  <div key={church.id} className="bg-white rounded-lg shadow-md p-6">
-                    <h4 className="font-semibold text-lg mb-2">{church.name}</h4>
-                    <div className="text-gray-600 mb-1">{church.address}</div>
-                    <div className="text-gray-600 mb-4">{church.phone}</div>
-                    <div className="flex justify-between text-sm">
-                      <div>
-                        <span className="font-medium">{church.statistics?.membership?.totalMembers || 0}</span>
-                        <span className="text-gray-500 ml-1">membres</span>
-                      </div>
-                      <div>
-                        <span className="font-medium">{church.statistics?.leadership?.totalPastors || 0}</span>
-                        <span className="text-gray-500 ml-1">pasteurs</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       )}
     </div>

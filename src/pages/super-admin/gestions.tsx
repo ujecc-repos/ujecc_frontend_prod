@@ -7,19 +7,23 @@ import 'react-calendar/dist/Calendar.css';
 import Select from 'react-select';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { Country, State, City } from 'country-state-city';
 
 // API Imports
 import { useRegisterMutation, useGetUsersQuery } from '../../store/services/authApi';
-import { useCreateChurchMutation, useGetChurchesQuery, useAddUserToChurchMutation } from '../../store/services/churchApi';
+import { useCreateChurchMutation, useGetChurchesQuery, useAddUserToChurchMutation, useGetAllTtisQuery, useConnectTtiToChurchMutation } from '../../store/services/churchApi';
 import { useGetMissionsQuery } from '../../store/services/mission';
 import { useGetDepartementCommunesQuery } from '../../store/services/churchApi';
 import Creatable from 'react-select/creatable';
 // Types
 interface CreateChurchFormData {
   name: string;
+  country: string;
   departement: string;
   commune: string;
   sectionCommunale: string;
+  rue?: string;
+  telephone?: string;
   missionId: string;
   longitude: string;
   latitude: string;
@@ -72,6 +76,11 @@ interface AddUserToChurchFormData {
   churchId: string;
 }
 
+interface ConnectTtiFormData {
+  churchId: string;
+  ttiId: string;
+}
+
 const GestionPage: React.FC = () => {
   // State for active tab
   const [activeTab, setActiveTab] = useState<string>('church');
@@ -122,42 +131,92 @@ const GestionPage: React.FC = () => {
   };
   
   // Location selector state
+  const [selectedCountry, setSelectedCountry] = useState<SelectOption | null>(null);
   const [departement, setDepartement] = useState<SelectOption | null>(null);
   const [commune, setCommune] = useState<SelectOption | null>(null);
   const [sectionCommunale, setSectionCommunale] = useState<SelectOption | null>(null);
   
-  // Transform location data for react-select
-  const departementOptions: SelectOption[] = Object.keys(data).map((dept) => ({
-    value: dept,
-    label: dept,
+  // Check if Haiti is selected
+  const isHaitiSelected = selectedCountry?.value === 'HT';
+  
+  // Transform data for react-select
+  const countryOptions: SelectOption[] = Country.getAllCountries().map((country) => ({
+    value: country.isoCode,
+    label: country.name,
   }));
   
-  const communeOptions: SelectOption[] = departement
-    ? Object.keys(data[departement.value].communes).map((commune) => ({
+  // Location options based on selected country
+  const departementOptions: SelectOption[] = useMemo(() => {
+    if (isHaitiSelected) {
+      return Object.keys(data).map((dept) => ({
+        value: dept,
+        label: dept,
+      }));
+    } else if (selectedCountry) {
+      return State.getStatesOfCountry(selectedCountry.value).map((state) => ({
+        value: state.isoCode,
+        label: state.name,
+      }));
+    }
+    return [];
+  }, [isHaitiSelected, selectedCountry, data]);
+  
+  const communeOptions: SelectOption[] = useMemo(() => {
+    if (isHaitiSelected && departement) {
+      return Object.keys(data[departement.value].communes).map((commune) => ({
         value: commune,
         label: commune,
-      }))
-    : [];
+      }));
+    } else if (!isHaitiSelected && selectedCountry && departement) {
+      return City.getCitiesOfState(selectedCountry.value, departement.value).map((city) => ({
+        value: city.name,
+        label: city.name,
+      }));
+    }
+    return [];
+  }, [isHaitiSelected, selectedCountry, departement, data]);
   
-  const sectionCommunaleOptions: SelectOption[] = departement && commune
-    ? data[departement.value].communes[commune.value].map((section) => ({
+  const sectionCommunaleOptions: SelectOption[] = useMemo(() => {
+    if (isHaitiSelected && departement && commune) {
+      return data[departement.value].communes[commune.value].map((section) => ({
         value: section,
         label: section,
-      }))
-    : [];
+      }));
+    }
+    return [];
+  }, [isHaitiSelected, departement, commune, data]);
 
   // Church form state
   const [churchFormData, setChurchFormData] = useState<CreateChurchFormData>({
     name: '',
+    country: '',
     departement: '',
     commune: '',
     sectionCommunale: '',
+    rue: '',
+    telephone: '',
     missionId: '',
     longitude: '',
     latitude: ''
   });
   
   // Handle location selection changes
+  const handleCountryChange = (selectedOption: SelectOption | null) => {
+    setSelectedCountry(selectedOption);
+    setDepartement(null);
+    setCommune(null);
+    setSectionCommunale(null);
+    
+    // Update church form data
+    setChurchFormData(prev => ({
+      ...prev,
+      country: selectedOption?.value || '',
+      departement: '',
+      commune: '',
+      sectionCommunale: ''
+    }));
+  };
+  
   const handleDepartementChange = (selectedOption: SelectOption | null) => {
     setDepartement(selectedOption);
     setCommune(null);
@@ -227,9 +286,11 @@ const GestionPage: React.FC = () => {
   const { data: missions } = useGetMissionsQuery();
   const { data: users } = useGetUsersQuery();
   const { data: churches } = useGetChurchesQuery();
+  const { data: ttis } = useGetAllTtisQuery();
   const [createChurch] = useCreateChurchMutation();
   const [registerUser] = useRegisterMutation();
   const [addUserToChurch] = useAddUserToChurchMutation();
+  const [connectTtiToChurch] = useConnectTtiToChurchMutation();
   
   // Add User To Church form state
   const [addUserToChurchFormData, setAddUserToChurchFormData] = useState<AddUserToChurchFormData>({
@@ -242,6 +303,18 @@ const GestionPage: React.FC = () => {
   
   // Form errors for add user to church
   const [addUserToChurchErrors, setAddUserToChurchErrors] = useState<Record<string, string>>({});
+
+  // Connect TTI to Church form state
+  const [connectTtiFormData, setConnectTtiFormData] = useState<ConnectTtiFormData>({
+    churchId: '',
+    ttiId: ''
+  });
+
+  // Loading state for connect TTI
+  const [isConnectTtiLoading, setIsConnectTtiLoading] = useState<boolean>(false);
+
+  // Form errors for connect TTI
+  const [connectTtiErrors, setConnectTtiErrors] = useState<Record<string, string>>({});
 
   // Transform missions for react-select
   const missionOptions = useMemo(() => {
@@ -256,8 +329,13 @@ const GestionPage: React.FC = () => {
   const validateChurchForm = () => {
     const errors: Record<string, string> = {};
     if (!churchFormData.name.trim()) errors.name = 'Le nom de l\'église est requis';
-    if (!churchFormData.departement) errors.departement = 'Le département est requis';
-    if (!churchFormData.commune) errors.commune = 'La commune est requise';
+    if (!churchFormData.country) errors.country = 'Le pays est requis';
+    if (!churchFormData.departement) {
+      errors.departement = isHaitiSelected ? 'Le département est requis' : 'L\'état est requis';
+    }
+    if (!churchFormData.commune) {
+      errors.commune = isHaitiSelected ? 'La commune est requise' : 'La ville est requise';
+    }
     // if (!churchFormData.missionId) errors.missionId = 'La mission est requise';
     
     setChurchErrors(errors);
@@ -295,13 +373,21 @@ const GestionPage: React.FC = () => {
       // Reset form
       setChurchFormData({
         name: '',
+        country: '',
         departement: '',
         commune: '',
         sectionCommunale: '',
+        rue: '',
+        telephone: '',
         missionId: '',
         longitude: '',
         latitude: ''
       });
+      // Reset location states
+      setSelectedCountry(null);
+      setDepartement(null);
+      setCommune(null);
+      setSectionCommunale(null);
     } catch (error) {
       console.error('Error creating church:', error);
       toast.error('Erreur lors de la création de l\'église');
@@ -369,6 +455,46 @@ const GestionPage: React.FC = () => {
       setIsAddUserToChurchLoading(false);
     }
   };
+
+  // Validate connect TTI form
+  const validateConnectTtiForm = () => {
+    const errors: Record<string, string> = {};
+    if (!connectTtiFormData.churchId) errors.churchId = 'L\'église est requise';
+    // TTI validation is no longer needed as we use the single TTI automatically
+    setConnectTtiErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Handle connect TTI to church form submission
+  const handleConnectTtiSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateConnectTtiForm()) return;
+    
+    // Use the single TTI ID automatically
+    if (!singleTtiId) {
+      toast.error('Aucun TTI disponible');
+      return;
+    }
+    
+    setIsConnectTtiLoading(true);
+    try {
+      const { churchId } = connectTtiFormData;
+      const ttiId = singleTtiId;
+      console.log("data : ", churchId, ttiId)
+      await connectTtiToChurch({ churchId, ttiId }).unwrap();
+      toast.success('TTI connecté à l\'église avec succès!');
+      // Reset form
+      setConnectTtiFormData({
+        churchId: '',
+        ttiId: ''
+      });
+    } catch (error) {
+      console.error('Error connecting TTI to church:', error);
+      toast.error('Erreur lors de la connexion du TTI à l\'église');
+    } finally {
+      setIsConnectTtiLoading(false);
+    }
+  };
   
   // Transform users for react-select
   const userOptions = useMemo(() => {
@@ -388,6 +514,31 @@ const GestionPage: React.FC = () => {
       label: church.name
     }));
   }, [churches]);
+
+  // Transform TTIs for react-select
+  const ttiOptions = useMemo(() => {
+    if (!ttis) return [];
+    return ttis.map(tti => ({
+      value: tti.id,
+      label: `${tti.nom} (Timothee Training Institute)`
+    }));
+  }, [ttis]);
+
+  // Get the single TTI ID automatically
+  const singleTtiId = useMemo(() => {
+    if (ttis && ttis.length === 1) {
+      return ttis[0].id;
+    }
+    return null;
+  }, [ttis]);
+
+  // Get the single TTI name for display
+  const singleTtiName = useMemo(() => {
+    if (ttis && ttis.length === 1) {
+      return `${ttis[0].nom} (Timothee Training Institute)`;
+    }
+    return null;
+  }, [ttis]);
 
   return (
     <div className="container mx-auto py-2">
@@ -419,6 +570,14 @@ const GestionPage: React.FC = () => {
           >
             Ajouter un Utilisateur à une Église
           </Tab>
+          <Tab
+            className={({ selected }) =>
+              `w-full py-3 text-sm font-medium rounded-lg transition-all duration-200 ${selected ? 'bg-teal-600 text-white shadow' : 'text-gray-700 hover:bg-teal-100'}`
+            }
+            onClick={() => setActiveTab('connectTti')}
+          >
+            Connecter à TTI
+          </Tab>
         </Tab.List>
         
         <Tab.Panels className="mt-2">
@@ -445,30 +604,51 @@ const GestionPage: React.FC = () => {
                   {churchErrors.name && <p className="mt-1 text-sm text-red-600">{churchErrors.name}</p>}
                 </div>
                 
-                {/* Department */}
+                {/* Country */}
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Pays</label>
+                  <Select
+                    value={selectedCountry}
+                    onChange={handleCountryChange}
+                    options={countryOptions}
+                    placeholder="Sélectionner un pays"
+                    isClearable
+                    isSearchable
+                    className="react-select-container"
+                    classNamePrefix="react-select"
+                  />
+                  {churchErrors.country && <p className="mt-1 text-sm text-red-600">{churchErrors.country}</p>}
+                </div>
+                
+                {/* Department/State */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Département</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {isHaitiSelected ? 'Département' : 'État'}
+                  </label>
                   <Select
                     value={departement}
                     onChange={handleDepartementChange}
                     options={departementOptions}
-                    placeholder="Sélectionner un département"
+                    placeholder={isHaitiSelected ? 'Sélectionner un département' : 'Sélectionner un état'}
                     isClearable
                     isSearchable
+                    isDisabled={!selectedCountry}
                     className="react-select-container"
                     classNamePrefix="react-select"
                   />
                   {churchErrors.departement && <p className="mt-1 text-sm text-red-600">{churchErrors.departement}</p>}
                 </div>
                 
-                {/* Commune */}
+                {/* Commune/City */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Commune</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {isHaitiSelected ? 'Commune' : 'Ville'}
+                  </label>
                   <Select
                     value={commune}
                     onChange={handleCommuneChange}
                     options={communeOptions}
-                    placeholder="Sélectionner une commune"
+                    placeholder={isHaitiSelected ? 'Sélectionner une commune' : 'Sélectionner une ville'}
                     isClearable
                     isSearchable
                     isDisabled={!departement}
@@ -478,21 +658,51 @@ const GestionPage: React.FC = () => {
                   {churchErrors.commune && <p className="mt-1 text-sm text-red-600">{churchErrors.commune}</p>}
                 </div>
                 
-                {/* Section Communale */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Section Communale</label>
-                  <Select
-                    value={sectionCommunale}
-                    onChange={handleSectionCommunaleChange}
-                    options={sectionCommunaleOptions}
-                    placeholder="Sélectionner une section communale"
-                    isClearable
-                    isSearchable
-                    isDisabled={!commune}
-                    className="react-select-container"
-                    classNamePrefix="react-select"
-                  />
-                </div>
+                {/* Section Communale - Only for Haiti */}
+                {isHaitiSelected && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Section Communale</label>
+                    <Select
+                      value={sectionCommunale}
+                      onChange={handleSectionCommunaleChange}
+                      options={sectionCommunaleOptions}
+                      placeholder="Sélectionner une section communale"
+                      isClearable
+                      isSearchable
+                      isDisabled={!commune}
+                      className="react-select-container"
+                      classNamePrefix="react-select"
+                    />
+                  </div>
+                )}
+                
+                {/* Rue - Only for non-Haiti countries */}
+                {!isHaitiSelected && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Rue</label>
+                    <input
+                      type="text"
+                      value={churchFormData.rue || ''}
+                      onChange={(e) => setChurchFormData(prev => ({ ...prev, rue: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      placeholder="Entrer l'adresse de la rue"
+                    />
+                  </div>
+                )}
+                
+                {/* Telephone - Only for non-Haiti countries */}
+                {!isHaitiSelected && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Numéro</label>
+                    <input
+                      type="number"
+                      value={churchFormData.telephone || ''}
+                      onChange={(e) => setChurchFormData(prev => ({ ...prev, telephone: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      placeholder="Entrer le numéro"
+                    />
+                  </div>
+                )}
                 
                 {/* Mission */}
                 <div>
@@ -1080,6 +1290,60 @@ const GestionPage: React.FC = () => {
                     </>
                   ) : (
                     'Ajouter l\'Utilisateur à l\'Église'
+                  )}
+                </button>
+              </div>
+            </form>
+          </Tab.Panel>
+          
+          {/* Connect TTI to Church Panel */}
+          <Tab.Panel className="bg-white rounded-xl shadow-lg p-6 ring-1 ring-teal-500/5">
+            <h2 className="text-2xl font-semibold text-gray-800 mb-6">Connecter une Église à un tti</h2>
+            
+            <form onSubmit={handleConnectTtiSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
+                {/* Church Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Église</label>
+                  <Select
+                    value={churchOptions.find(option => option.value === connectTtiFormData.churchId)}
+                    onChange={(selectedOption: any) => setConnectTtiFormData(prev => ({ ...prev, churchId: selectedOption?.value || '' }))}
+                    options={churchOptions}
+                    placeholder="Sélectionner une église"
+                    isClearable
+                    isSearchable
+                    className="react-select-container"
+                    classNamePrefix="react-select"
+                  />
+                  {connectTtiErrors.churchId && <p className="mt-1 text-sm text-red-600">{connectTtiErrors.churchId}</p>}
+                </div>
+                
+                {/* TTI Display */}
+                {/* <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">TTI (Timothee Training Institute)</label>
+                  <div className="px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700">
+                    {singleTtiName || 'Aucun TTI disponible'}
+                  </div>
+                  <p className="mt-1 text-sm text-gray-500">TTI sélectionné automatiquement</p>
+                </div> */}
+              </div>
+              
+              <div className="flex justify-end mt-6">
+                <button
+                  type="submit"
+                  disabled={isConnectTtiLoading}
+                  className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                >
+                  {isConnectTtiLoading ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Connexion en cours...
+                    </>
+                  ) : (
+                    'Connecter le TTI à l\'Église'
                   )}
                 </button>
               </div>

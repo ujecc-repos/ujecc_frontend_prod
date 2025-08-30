@@ -192,7 +192,7 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
     
     if (!formData.firstname.trim()) newErrors.firstname = 'Le nom est obligatoire';
     if (!formData.lastname.trim()) newErrors.lastname = 'Le prénom est obligatoire';
-    if (!formData.email.trim()) newErrors.email = "L'adresse électronique est obligatoire";
+    // if (!formData.email.trim()) newErrors.email = "L'adresse électronique est obligatoire";
     if (!formData.role.trim()) newErrors.role = 'Le rôle est obligatoire';
     
     // Email validation
@@ -490,7 +490,7 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
                   </div>
 
                   {/* Age */}
-                  <div>
+                  {/* <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Âge</label>
                     <input
                       type="number"
@@ -499,7 +499,7 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                       placeholder="Âge"
                     />
-                  </div>
+                  </div> */}
 
                   {/* Civil State */}
                   <div>

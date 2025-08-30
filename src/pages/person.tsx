@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeftIcon,
@@ -7,16 +7,23 @@ import {
   PhoneIcon,
   MapPinIcon,
   HomeIcon,
-  GlobeAltIcon
+  GlobeAltIcon,
+  IdentificationIcon,
+  StarIcon
 } from '@heroicons/react/24/outline';
-import { useGetUserByIdQuery } from '../store/services/authApi';
+import { useGetUserByIdQuery, useMakeTimotheeMutation, useRemoveTimotheeMutation } from '../store/services/authApi';
 
 const PersonDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [isUpdatingTimothee, setIsUpdatingTimothee] = useState(false);
   
   // Fetch member data by ID
-  const { data: member, isLoading, error } = useGetUserByIdQuery(id as string, { skip: !id });
+  const { data: member, isLoading, error, refetch } = useGetUserByIdQuery(id as string, { skip: !id });
+  
+  // Timothee mutations
+  const [makeTimothee] = useMakeTimotheeMutation();
+  const [removeTimothee] = useRemoveTimotheeMutation();
 
   const calculateAge = (birthDate: string | undefined): number => {
     if (!birthDate) return 0;
@@ -40,6 +47,31 @@ const PersonDetail: React.FC = () => {
       month: 'long',
       day: 'numeric'
     });
+  };
+
+  const handleTimotheeToggle = async () => {
+    if (!id || isUpdatingTimothee) return;
+    
+    setIsUpdatingTimothee(true);
+    
+    try {
+      if (member?.istimothee) {
+        // Remove Timothee status
+        await removeTimothee(id).unwrap();
+      } else {
+        // Make Timothee
+        await makeTimothee(id).unwrap();
+      }
+      
+      // Refetch member data to update UI
+      await refetch();
+    } catch (error) {
+      console.error('Error updating Timothee status:', error);
+      // You could add a toast notification here
+      alert('Erreur lors de la mise à jour du statut Timothée');
+    } finally {
+      setIsUpdatingTimothee(false);
+    }
   };
 
   if (isLoading) {
@@ -92,7 +124,7 @@ const PersonDetail: React.FC = () => {
                 Profil de {member.firstname} {member.lastname}
               </h1>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-3">
               <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                  member.membreActif 
                    ? 'bg-green-100 text-green-800' 
@@ -100,6 +132,27 @@ const PersonDetail: React.FC = () => {
                }`}>
                  {member.membreActif ? 'Membre actif' : 'Membre inactif'}
                </span>
+               
+               {/* Timothee Button */}
+               <button
+                 onClick={handleTimotheeToggle}
+                 disabled={isUpdatingTimothee}
+                 className={`flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                   member.timothee
+                     ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
+                     : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                 } ${isUpdatingTimothee ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+               >
+                 <StarIcon className="h-4 w-4" />
+                 <span>
+                   {isUpdatingTimothee 
+                     ? 'Mise à jour...' 
+                     : member.istimothee
+                       ? 'Retirer Timothée'
+                       : 'Devenir Timothée'
+                   }
+                 </span>
+               </button>
             </div>
           </div>
         </div>
@@ -172,6 +225,42 @@ const PersonDetail: React.FC = () => {
 
           {/* Details Cards */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Identification Information */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                  <IdentificationIcon className="h-5 w-5 mr-2 text-orange-600" />
+                  Informations d'identification
+                </h3>
+              </div>
+              <div className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500 mb-1">NIF/NINU</label>
+                    <p className="text-gray-900 font-mono bg-gray-50 px-3 py-2 rounded-md">{member.nif || 'Non renseigné'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500 mb-1">Groupe sanguin</label>
+                    <p className="text-gray-900">
+                      <span className={`px-2 py-1 rounded-full text-sm font-medium ${
+                        member.groupeSanguin 
+                          ? 'bg-red-100 text-red-800' 
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {member.groupeSanguin || 'Non renseigné'}
+                      </span>
+                    </p>
+                  </div>
+                  {member.age && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500 mb-1">Âge déclaré</label>
+                      <p className="text-gray-900">{member.age} ans</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
             {/* Personal Information */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200">
               <div className="px-6 py-4 border-b border-gray-200">
@@ -270,12 +359,20 @@ const PersonDetail: React.FC = () => {
                     <label className="block text-sm font-medium text-gray-500 mb-1">Lieu de baptême</label>
                     <p className="text-gray-900">{member.baptismLocation || 'Non renseigné'}</p>
                   </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500 mb-1">École du dimanche</label>
+                    <p className="text-gray-900">{member.sundayClass || 'Non renseigné'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500 mb-1">Numéro d'enveloppe</label>
+                    <p className="text-gray-900 font-mono bg-gray-50 px-3 py-2 rounded-md">{member.envelopeNumber || 'Non renseigné'}</p>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Contact Information */}
-            {(member.personToContact || member.facebook) && (
+            {(member.personToContact || member.facebook || member.instagram) && (
               <div className="bg-white rounded-xl shadow-sm border border-gray-200">
                 <div className="px-6 py-4 border-b border-gray-200">
                   <h3 className="text-lg font-semibold text-gray-900 flex items-center">
@@ -295,6 +392,12 @@ const PersonDetail: React.FC = () => {
                       <div>
                         <label className="block text-sm font-medium text-gray-500 mb-1">Facebook</label>
                         <p className="text-gray-900">{member.facebook}</p>
+                      </div>
+                    )}
+                    {member.instagram && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-500 mb-1">Instagram</label>
+                        <p className="text-gray-900">{member.instagram}</p>
                       </div>
                     )}
                   </div>

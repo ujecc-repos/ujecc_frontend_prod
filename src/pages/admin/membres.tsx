@@ -24,7 +24,7 @@ import 'react-calendar/dist/Calendar.css';
 import {useGetDepartementCommunesQuery} from '../../store/services/churchApi';
 
 // Import API hooks (adjust based on your actual API structure)
-import { useGetUserByTokenQuery, useGetUsersByChurchQuery, useRegisterMutation, useUpdateUserMutation } from '../../store/services/authApi';
+import { useGetUserByTokenQuery, useGetUsersByChurchQuery, useRegisterMutation, useUpdateUserMutation, useDeleteUserMutation } from '../../store/services/authApi';
 import { useGetMinistriesByChurchQuery } from '../../store/services/ministryApi';
 import { useCreateTransferMutation } from '../../store/services/transferApi';
 
@@ -1252,6 +1252,9 @@ export default function Membres() {
   // Update user mutation for editing members
   const [updateUser] = useUpdateUserMutation();
   
+  // Delete user mutation for deleting members
+  const [deleteUser] = useDeleteUserMutation();
+  
   // Create transfer mutation for transferring members
   const [createTransfer] = useCreateTransferMutation();
 
@@ -1415,15 +1418,16 @@ export default function Membres() {
 
   const handleConfirmDelete = async (memberId: string) => {
     try {
-      // TODO: Implement API call to delete member
-      console.log(`Deleting member with ID: ${memberId}`);
+      // Call the delete user API
+      await deleteUser(memberId).unwrap();
+      console.log(`Successfully deleted member with ID: ${memberId}`);
       
       // Close modal and reset selected member
       setIsDeleteModalOpen(false);
       setSelectedMemberForAction(null);
       
-      // Optionally refetch data
-      // refetch();
+      // Refetch data to update the list
+      refetch();
     } catch (error) {
       console.error('Error deleting member:', error);
       throw error; // Re-throw to let the modal handle the error
@@ -1440,14 +1444,50 @@ export default function Membres() {
     
     setIsEditingMember(true);
     try {
-      // Prepare the update data with the member ID
-      const updateData = {
-        id: selectedMemberForAction.id,
-        ...formData
+      // Map frontend field names to backend field names
+      const mappedFormData = {
+        ...formData,
+        sex: formData.gender, // Map gender to sex
+        membreActif: formData.isActiveMember, // Map isActiveMember to membreActif
       };
       
-      // Call the API to update the member
-      await updateUser(updateData).unwrap();
+      // Remove the old field names
+      delete mappedFormData.gender;
+      delete mappedFormData.isActiveMember;
+      
+      // If there's a profile image, use FormData to handle the multipart request
+      if (formData.profileImage) {
+        const formDataObj = new FormData();
+        
+        // Add the member ID
+        formDataObj.append('id', selectedMemberForAction.id);
+        
+        // Add the image file
+        formDataObj.append('profileImage', formData.profileImage);
+        
+        // Add all other form fields with proper mapping
+        Object.keys(mappedFormData).forEach(key => {
+          if (key !== 'profileImage') {
+            const value = mappedFormData[key];
+            // Include all values except null and undefined
+            if (value !== null && value !== undefined) {
+              formDataObj.append(key, String(value));
+            }
+          }
+        });
+        
+        await updateUser(formDataObj).unwrap();
+      } else {
+        // No image, use regular JSON request
+        const updateData = {
+          id: selectedMemberForAction.id,
+          ...mappedFormData,
+          profileImage: undefined
+        };
+        delete updateData.profileImage;
+        
+        await updateUser(updateData).unwrap();
+      }
       
       // Close modal and reset selected member
       setIsEditModalOpen(false);
@@ -1455,9 +1495,11 @@ export default function Membres() {
       
       // Refetch data to show updated information
       refetch();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating member:', error);
-      throw error; // Re-throw to let the modal handle the error
+      const errorMessage = error?.data?.message || error?.message || 'Erreur lors de la mise à jour de l\'utilisateur';
+      console.log("error : ", error);
+      alert(`Erreur de mise à jour: ${errorMessage}`);
     } finally {
       setIsEditingMember(false);
     }
@@ -1718,8 +1760,12 @@ export default function Membres() {
         
         // Add all other form fields
         Object.keys(formData).forEach(key => {
-          if (key !== 'profileImage' && formData[key as keyof AddMemberFormData]) {
-            formDataObj.append(key, formData[key as keyof AddMemberFormData] as string);
+          if (key !== 'profileImage') {
+            const value = formData[key as keyof AddMemberFormData];
+            // Include all values except null and undefined
+            if (value !== null && value !== undefined) {
+              formDataObj.append(key, String(value));
+            }
           }
         });
         
@@ -1749,6 +1795,7 @@ export default function Membres() {
     } catch (error: any) {
       console.error('Error adding member:', error);
       const errorMessage = error?.data?.message || error?.message || 'Erreur lors de l\'ajout du membre';
+      console.log("error : ", error)
       alert(`Erreur d'enregistrement: ${errorMessage}`);
     } finally {
       setIsAddingMember(false);
@@ -1851,7 +1898,7 @@ export default function Membres() {
           {/* Quick Navigation */}
           <div className="flex items-center space-x-2">
             <button
-              onClick={() => window.location.href = '/admin/groupes'}
+              onClick={() => window.location.href = '/tableau-de-bord/admin/groupes'}
               className="flex items-center px-3 py-1 text-sm text-teal-600 border border-teal-600 rounded-md hover:bg-teal-50 transition-colors"
             >
               Groupes
@@ -1888,8 +1935,8 @@ export default function Membres() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Rôle
                 </th>
-                <th className="relative px-6 py-3">
-                  <span className="sr-only">Actions</span>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
                 </th>
               </tr>
             </thead>
@@ -1925,6 +1972,7 @@ export default function Membres() {
                             <img
                               className="h-10 w-10 rounded-full object-cover"
                               src={`https://ujecc-backend.onrender.com${member.picture}`}
+                              // src={`http://localhost:4000${member.picture}`}
                               alt={`${member.firstname} ${member.lastname}`}
                             />
                           ) : (

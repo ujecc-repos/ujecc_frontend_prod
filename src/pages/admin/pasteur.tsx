@@ -66,9 +66,9 @@ export default function Pasteur() {
   );
   
   // Mutations pour les opérations CRUD
-  const [createPasteur] = useCreatePasteurMutation();
-  const [updatePasteur] = useUpdatePasteurMutation();
-  const [deletePasteur] = useDeletePasteurMutation();
+  const [createPasteur, { isLoading: isCreating }] = useCreatePasteurMutation()
+  const [updatePasteur, { isLoading: isUpdating }] = useUpdatePasteurMutation()
+  const [deletePasteur, { isLoading: isDeleting }] = useDeletePasteurMutation();
   
   // Filtrage des pasteurs
   const filteredPasteurs = pasteurs ? pasteurs.filter(pasteur => {
@@ -554,9 +554,17 @@ export default function Pasteur() {
               </button>
               <button
                 onClick={handleCreatePasteur}
-                className="px-4 py-2 text-sm text-white bg-teal-600 rounded-md hover:bg-teal-700 transition-colors"
+                disabled={isCreating}
+                className="px-4 py-2 text-sm text-white bg-teal-600 rounded-md hover:bg-teal-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               >
-                Ajouter
+                {isCreating ? (
+                  <>
+                    <ArrowPathIcon className="w-4 h-4 mr-2 animate-spin" />
+                    Ajout en cours...
+                  </>
+                ) : (
+                  'Ajouter'
+                )}
               </button>
             </div>
           </Dialog.Panel>
@@ -656,9 +664,17 @@ export default function Pasteur() {
               </button>
               <button
                 onClick={handleUpdatePasteur}
-                className="px-4 py-2 text-sm text-white bg-teal-600 rounded-md hover:bg-teal-700 transition-colors"
+                disabled={isUpdating}
+                className="px-4 py-2 text-sm text-white bg-teal-600 rounded-md hover:bg-teal-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               >
-                Enregistrer
+                {isUpdating ? (
+                  <>
+                    <ArrowPathIcon className="w-4 h-4 mr-2 animate-spin" />
+                    Enregistrement...
+                  </>
+                ) : (
+                  'Enregistrer'
+                )}
               </button>
             </div>
           </Dialog.Panel>
@@ -679,15 +695,24 @@ export default function Pasteur() {
                   setIsDeleteModalOpen(false);
                   setSelectedPasteur(null);
                 }}
-                className="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Annuler
               </button>
               <button
                 onClick={confirmDeletePasteur}
-                className="px-4 py-2 text-sm text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors"
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               >
-                Supprimer
+                {isDeleting ? (
+                  <>
+                    <ArrowPathIcon className="w-4 h-4 mr-2 animate-spin" />
+                    Suppression...
+                  </>
+                ) : (
+                  'Supprimer'
+                )}
               </button>
             </div>
           </Dialog.Panel>

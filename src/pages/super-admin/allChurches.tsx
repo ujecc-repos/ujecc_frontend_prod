@@ -40,6 +40,8 @@ interface Church {
   facebook?: string;
   instagram?: string;
   whatsapp?: string;
+  longitude?: string;
+  latitude?: string;
   users?: any[];
   groups?: any[];
   events?: any[];
@@ -279,11 +281,8 @@ const EditChurchModal: React.FC<EditChurchModalProps> = ({ isOpen, onClose, chur
   const [formData, setFormData] = useState<any>({
     name: '',
     address: '',
-    phone: '',
-    email: '',
-    facebook: '',
-    instagram: '',
-    whatsapp: ''
+    longitude: '',
+    latitude: ''
   });
 
   useEffect(() => {
@@ -291,11 +290,8 @@ const EditChurchModal: React.FC<EditChurchModalProps> = ({ isOpen, onClose, chur
       setFormData({
         name: church.name || '',
         address: church.address || '',
-        phone: church.phone || '',
-        email: church.email || '',
-        facebook: church.facebook || '',
-        instagram: church.instagram || '',
-        whatsapp: church.whatsapp || ''
+        longitude: church.longitude || '',
+        latitude: church.latitude || ''
       });
     }
   }, [church]);
@@ -356,73 +352,31 @@ const EditChurchModal: React.FC<EditChurchModalProps> = ({ isOpen, onClose, chur
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                    Téléphone
-                  </label>
-                  <input
-                    type="tel"
-                    id="phone"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label htmlFor="facebook" className="block text-sm font-medium text-gray-700 mb-1">
-                    Facebook
+                  <label htmlFor="longitude" className="block text-sm font-medium text-gray-700 mb-1">
+                    Longitude
                   </label>
                   <input
                     type="text"
-                    id="facebook"
-                    name="facebook"
-                    value={formData.facebook}
+                    id="longitude"
+                    name="longitude"
+                    value={formData.longitude}
                     onChange={handleChange}
+                    placeholder="Ex: -72.2895"
                     className="w-full p-2 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="instagram" className="block text-sm font-medium text-gray-700 mb-1">
-                    Instagram
+                  <label htmlFor="latitude" className="block text-sm font-medium text-gray-700 mb-1">
+                    Latitude
                   </label>
                   <input
                     type="text"
-                    id="instagram"
-                    name="instagram"
-                    value={formData.instagram}
+                    id="latitude"
+                    name="latitude"
+                    value={formData.latitude}
                     onChange={handleChange}
-                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="whatsapp" className="block text-sm font-medium text-gray-700 mb-1">
-                    WhatsApp
-                  </label>
-                  <input
-                    type="text"
-                    id="whatsapp"
-                    name="whatsapp"
-                    value={formData.whatsapp}
-                    onChange={handleChange}
+                    placeholder="Ex: 18.5392"
                     className="w-full p-2 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500"
                   />
                 </div>

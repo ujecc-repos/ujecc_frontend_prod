@@ -566,7 +566,8 @@ export default function Comite() {
             <h3 className="text-lg font-medium text-gray-900 mb-2">Aucun comité trouvé</h3>
             <p className="text-gray-500 mb-4">Ajoutez des comités ou modifiez vos filtres pour voir des résultats</p>
             <button
-              onClick={() => navigate('/admin/comite/create')}
+              // onClick={() => navigate('/admin/comite/create')}
+              onClick={() => setIsCreateModalOpen(true)}
               className="flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors mx-auto"
             >
               <PlusIcon className="h-5 w-5 mr-2" />

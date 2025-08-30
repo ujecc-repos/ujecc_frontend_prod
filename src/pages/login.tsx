@@ -31,6 +31,13 @@ export default function Login() {
       setServerError(null);
       
       const result = await loginMutation(data).unwrap();
+      
+      // Check if user role is 'Membre' and deny access
+      if (result.user.role === 'Membre') {
+        setServerError('Seuls les administrateurs et directeurs sont autorisés à accéder à cette application.');
+        return;
+      }
+      
       // Use the login function from AuthContext to update both localStorage and context state
       login(result.user, result.token);
       localStorage.setItem("role", result.user.role)

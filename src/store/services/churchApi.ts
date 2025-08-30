@@ -60,6 +60,17 @@ interface DepartementCommunesResponse {
   [communeName: string]: string[];
 }
 
+interface Tti {
+  id: string;
+  church?: Church;
+  [key: string]: any;
+}
+
+interface ConnectTtiResponse {
+  message: string;
+  tti: Tti;
+}
+
 export const churchApi = authApi.injectEndpoints({
   endpoints: (builder) => ({
     createChurch: builder.mutation<createChurchResponse, CreateChurchRequest>({
@@ -121,6 +132,24 @@ export const churchApi = authApi.injectEndpoints({
       query: (departementName) => `/departement/${departementName}`,
       providesTags: ['Church'],
     }),
+
+    connectTtiToChurch: builder.mutation<ConnectTtiResponse, { churchId: string, ttiId: string }>({
+      query: ({ churchId, ttiId }) => ({
+        url: `/churches/church/${churchId}/connect-tti/${ttiId}`,
+        method: 'PUT',
+      }),
+      invalidatesTags: ['Church'],
+    }),
+
+    getTtisByChurch: builder.query<Tti[], string>({
+      query: (churchId) => `/churches/church/${churchId}/ttis`,
+      providesTags: ['Church'],
+    }),
+
+    getAllTtis: builder.query<Tti[], void>({
+      query: () => '/churches/ttis/all-tti',
+      providesTags: ['Church'],
+    }),
   }),
 });
 
@@ -132,4 +161,7 @@ export const {
   useDeleteChurchMutation,
   useAddUserToChurchMutation,
   useGetDepartementCommunesQuery,
+  useConnectTtiToChurchMutation,
+  useGetTtisByChurchQuery,
+  useGetAllTtisQuery,
 } = churchApi;

@@ -139,7 +139,7 @@ const EditMinistryModal: React.FC<EditMinistryModalProps> = ({
                         name="name"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${errors.name ? 'border-red-500' : ''}`}
+                        className={`mt-1 p-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${errors.name ? 'border-red-500' : ''}`}
                         placeholder="Ex: Ministère de la Jeunesse"
                       />
                       {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
@@ -155,7 +155,7 @@ const EditMinistryModal: React.FC<EditMinistryModalProps> = ({
                         rows={4}
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
-                        className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${errors.description ? 'border-red-500' : ''}`}
+                        className={`mt-1 p-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${errors.description ? 'border-red-500' : ''}`}
                         placeholder="Décrivez le but et les activités de ce ministère"
                       />
                       {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description}</p>}
@@ -172,7 +172,7 @@ const EditMinistryModal: React.FC<EditMinistryModalProps> = ({
                     </button>
                     <button
                       type="submit"
-                      className="inline-flex justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                      className="inline-flex justify-center rounded-md border border-transparent bg-teal-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                       disabled={isLoading}
                     >
                       {isLoading ? (

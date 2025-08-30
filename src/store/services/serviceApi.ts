@@ -49,7 +49,7 @@ export const serviceApi = authApi.injectEndpoints({
 
     deleteService: builder.mutation<{ message: string }, string>({
       query: (id) => ({
-        url: `/evenements/${id}`,
+        url: `/services/${id}`,
         method: 'DELETE',
       }),
       invalidatesTags: ['Service'],

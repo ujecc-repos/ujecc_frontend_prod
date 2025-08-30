@@ -169,11 +169,11 @@ export default function PasteurPage() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
           <div className="flex items-center space-x-4">
             <button
-              onClick={() => setIsCreateModalOpen(true)}
+              // onClick={() => setIsCreateModalOpen(true)}
               className="flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
             >
               <PlusIcon className="h-5 w-5 mr-2" />
-              Nouveau pasteur
+              Tous les pasteurs
             </button>
             
             <button
@@ -303,8 +303,8 @@ export default function PasteurPage() {
                         onClick={() => setIsCreateModalOpen(true)}
                         className="flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
                       >
-                        <PlusIcon className="h-5 w-5 mr-2" />
-                        Ajouter le premier pasteur
+                        {/* <PlusIcon className="h-5 w-5 mr-2" /> */}
+                        Pas de pasteur enregistrer
                       </button>
                     </div>
                   </td>

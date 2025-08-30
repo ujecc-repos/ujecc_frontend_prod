@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
 import html2canvas from 'html2canvas';
+import _ from "lodash"
 
 interface Member {
   id: string;
@@ -7,6 +8,7 @@ interface Member {
   lastname: string;
   email?: string;
   role?: string;
+  nif?: string;
   picture?: string;
 }
 
@@ -41,11 +43,15 @@ const BadgeGenerator: React.FC<BadgeGeneratorProps> = ({
       const canvas = await html2canvas(badgeRef.current, {
         scale: 1,
         backgroundColor: '#ffffff',
-        useCORS: false,
-        allowTaint: false,
-        logging: true,
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
         foreignObjectRendering: false,
-        removeContainer: true
+        removeContainer: true,
+        // ignoreElements: (element) => {
+        //   // Skip elements that might have unsupported CSS
+        //   return element.tagName === 'STYLE' || element.tagName === 'SCRIPT';
+        // }
       });
 
       console.log('Canvas generated successfully:', canvas);
@@ -89,12 +95,19 @@ const BadgeGenerator: React.FC<BadgeGeneratorProps> = ({
   };
 
   return (
-    <div className="flex flex-col items-center space-y-4">
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
       {/* Badge Preview */}
       <div 
         ref={badgeRef}
-        className="bg-white border-2 border-gray-300 rounded-lg overflow-hidden relative"
-        style={{ width: '400px', height: '600px' }}
+        style={{ 
+          width: '400px', 
+          height: '600px',
+          backgroundColor: '#ffffff',
+          border: '2px solid #d1d5db',
+          borderRadius: '8px',
+          overflow: 'hidden',
+          position: 'relative'
+        }}
       >
         {/* Header with church info */}
         <div className="text-white p-4 text-center relative" style={{ background: 'linear-gradient(to right, #1e40af, #1e3a8a)' }}>
@@ -109,17 +122,32 @@ const BadgeGenerator: React.FC<BadgeGeneratorProps> = ({
         </div>
 
         {/* Member Photo Section */}
-        <div className="flex justify-center py-6">
-          <div className="w-32 h-32 rounded-full border-4 overflow-hidden" style={{ borderColor: '#1e40af', backgroundColor: '#e5e7eb' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0' }}>
+          <div style={{ 
+            width: '128px', 
+            height: '128px', 
+            borderRadius: '50%', 
+            border: '4px solid #1e40af', 
+            backgroundColor: '#e5e7eb',
+            overflow: 'hidden'
+          }}>
             {member.picture ? (
               <img 
                 src={`https://ujecc-backend.onrender.com${member.picture}`} 
-                alt={`${member.firstname} ${member.lastname}`}
-                className="w-full h-full object-cover"
+                // src={`http://localhost:4000${member.picture}`} 
+                alt={`${_.capitalize(member.firstname)} ${_.capitalize(member.lastname)}`}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center" style={{ color: '#9ca3af' }}>
-                <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 24 24">
+              <div style={{ 
+                width: '100%', 
+                height: '100%', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                color: '#9ca3af'
+              }}>
+                <svg style={{ width: '64px', height: '64px' }} fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                 </svg>
               </div>
@@ -128,35 +156,83 @@ const BadgeGenerator: React.FC<BadgeGeneratorProps> = ({
         </div>
 
         {/* Member Information */}
-        <div className="px-6 text-center space-y-3">
-          <h2 className="text-2xl font-bold" style={{ color: '#111827' }}>
-            {member.firstname} {member.lastname}
+        <div style={{ padding: '0 24px', textAlign: 'center' }}>
+          <h2 style={{ 
+            fontSize: '24px', 
+            fontWeight: 'bold', 
+            color: '#111827',
+            margin: '0 0 12px 0'
+          }}>
+            {_.capitalize(member.firstname)} {_.capitalize(member.lastname)}
           </h2>
           
-          <div className="space-y-1">
-            <p className="text-sm" style={{ color: '#4b5563' }}>
-              <span className="font-semibold">NIF/NINU:</span> {generateNifNinu()}
+          <div style={{ marginBottom: '16px' }}>
+            <p style={{ 
+              fontSize: '14px', 
+              color: '#4b5563',
+              margin: '4px 0'
+            }}>
+              <span style={{ fontWeight: '600' }}>NIF/NINU:</span> {member.nif}
             </p>
-            <p className="text-sm" style={{ color: '#4b5563' }}>
-              <span className="font-semibold">ID Membre:</span> {generateMemberId()}
+            <p style={{ 
+              fontSize: '14px', 
+              color: '#4b5563',
+              margin: '4px 0'
+            }}>
+              <span style={{ fontWeight: '600' }}>ID Membre:</span> {generateMemberId()}
             </p>
           </div>
 
-          <div className="rounded-lg p-3 mt-4" style={{ backgroundColor: '#dbeafe' }}>
-            <p className="text-lg font-bold" style={{ color: '#1e3a8a' }}>
+          <div style={{ 
+            backgroundColor: '#dbeafe',
+            borderRadius: '8px',
+            padding: '12px',
+            marginTop: '16px'
+          }}>
+            <p style={{ 
+              fontSize: '18px', 
+              fontWeight: 'bold', 
+              color: '#1e3a8a',
+              margin: '0'
+            }}>
               {member.role || 'Membre'}
             </p>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="absolute bottom-0 left-0 right-0 text-white p-4" style={{ background: 'linear-gradient(to right, #1e40af, #1e3a8a)' }}>
-          <div className="text-center">
-            <p className="text-sm font-semibold">{pastorName}</p>
-            <div className="flex justify-center items-center mt-2 space-x-4">
-              <span className="font-bold text-lg" style={{ color: '#ef4444' }}>2025</span>
+        <div style={{ 
+          position: 'absolute',
+          bottom: '0',
+          left: '0',
+          right: '0',
+          background: 'linear-gradient(to right, #1e40af, #1e3a8a)',
+          color: '#ffffff',
+          padding: '16px'
+        }}>
+          <div style={{ textAlign: 'center' }}>
+            <p style={{ 
+              fontSize: '14px', 
+              fontWeight: '600',
+              margin: '0 0 8px 0'
+            }}>Réverant et Pasteur : {pastorName}</p>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              alignItems: 'center', 
+              gap: '16px'
+            }}>
+              <span style={{ 
+                fontWeight: 'bold', 
+                fontSize: '18px', 
+                color: '#ef4444'
+              }}>2025</span>
               <span style={{ color: '#ffffff' }}>-</span>
-              <span className="font-bold text-lg" style={{ color: '#ef4444' }}>2028</span>
+              <span style={{ 
+                fontWeight: 'bold', 
+                fontSize: '18px', 
+                color: '#ef4444'
+              }}>2026</span>
             </div>
           </div>
         </div>
@@ -165,7 +241,18 @@ const BadgeGenerator: React.FC<BadgeGeneratorProps> = ({
       {/* Generate Button */}
       <button
         onClick={generateBadge}
-        className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+        style={{
+          padding: '12px 24px',
+          backgroundColor: '#2563eb',
+          color: '#ffffff',
+          fontWeight: '600',
+          borderRadius: '8px',
+          border: 'none',
+          cursor: 'pointer',
+          transition: 'background-color 0.2s'
+        }}
+        onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#1d4ed8'}
+        onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
       >
         Télécharger le Badge
       </button>

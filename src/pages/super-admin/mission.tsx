@@ -22,7 +22,8 @@ import {
   useUpdateMissionMutation, 
   useDeleteMissionMutation,
 } from '../../store/services/mission';
-// import Select from 'react-select';
+import { useGetUsersAndAdministratorsQuery } from '../../store/services/authApi';
+import Select from 'react-select';
 import Creatable from 'react-select/creatable';
 
 
@@ -76,6 +77,7 @@ export default function MissionPage() {
 
   // API hooks
   const { data: missions, isLoading, refetch } = useGetMissionsQuery();
+  const { data: users } = useGetUsersAndAdministratorsQuery();
   const [createMission, { isLoading: isCreating }] = useCreateMissionMutation();
   const [updateMission, { isLoading: isUpdating }] = useUpdateMissionMutation();
   const [deleteMission, { isLoading: isDeleting }] = useDeleteMissionMutation();
@@ -88,6 +90,16 @@ export default function MissionPage() {
       label: mission.missionName
     }));
   }, [missions]);
+
+  // Transform users for react-select
+  const userOptions = useMemo(() => {
+    if (!users) return [];
+    return users.map(user => ({
+      value: user.id,
+      label: `${user.firstname} ${user.lastname}`,
+      user: user
+    }));
+  }, [users]);
 
   // Filter and paginate missions
   const filteredMissions = useMemo(() => {
@@ -638,13 +650,26 @@ export default function MissionPage() {
                       <label htmlFor="presidentName" className="block text-sm font-medium text-gray-700">
                         Nom du président
                       </label>
-                      <input
-                        type="text"
-                        name="presidentName"
+                      <Select
                         id="presidentName"
-                        value={formData.presidentName}
-                        onChange={handleInputChange}
-                        className={`mt-1 p-2 block w-full rounded-md shadow-sm sm:text-sm ${errors.presidentName ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-teal-500 focus:ring-teal-500'}`}
+                        name="presidentName"
+                        value={userOptions.find(option => option.label === formData.presidentName)}
+                        onChange={(selectedOption: any) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            presidentName: selectedOption?.label || ''
+                          }));
+                          // Clear error when field is edited
+                          if (errors.presidentName) {
+                            setErrors(prev => ({ ...prev, presidentName: undefined }));
+                          }
+                        }}
+                        options={userOptions}
+                        placeholder="Sélectionner un président"
+                        isClearable
+                        isSearchable
+                        className="react-select-container"
+                        classNamePrefix="react-select"
                       />
                       {errors.presidentName && (
                         <p className="mt-1 text-sm text-red-600">{errors.presidentName}</p>
@@ -792,13 +817,26 @@ export default function MissionPage() {
                       <label htmlFor="edit-presidentName" className="block text-sm font-medium text-gray-700">
                         Nom du président
                       </label>
-                      <input
-                        type="text"
-                        name="presidentName"
+                      <Select
                         id="edit-presidentName"
-                        value={formData.presidentName}
-                        onChange={handleInputChange}
-                        className={`mt-1 p-2 block w-full rounded-md shadow-sm sm:text-sm ${errors.presidentName ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-teal-500 focus:ring-teal-500'}`}
+                        name="presidentName"
+                        value={userOptions.find(option => option.label === formData.presidentName)}
+                        onChange={(selectedOption: any) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            presidentName: selectedOption?.label || ''
+                          }));
+                          // Clear error when field is edited
+                          if (errors.presidentName) {
+                            setErrors(prev => ({ ...prev, presidentName: undefined }));
+                          }
+                        }}
+                        options={userOptions}
+                        placeholder="Sélectionner un président"
+                        isClearable
+                        isSearchable
+                        className="react-select-container"
+                        classNamePrefix="react-select"
                       />
                       {errors.presidentName && (
                         <p className="mt-1 text-sm text-red-600">{errors.presidentName}</p>

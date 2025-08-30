@@ -9,6 +9,7 @@ interface church {
   address?: string;
   mainPasteur?: string;
   phone?: string;
+  ttiId?: string;
 }
 
 export interface User {
@@ -44,10 +45,14 @@ export interface User {
   baptismLocation?: string;
   baptismDate?: string;
   church: church;
-  facebook?: string
+  facebook?: string;
+  instagram?: string;
   plainPassword?: string;
   nif?: string;
   groupeSanguin?: string;
+  istimothee?: boolean;
+  tithes?: any[];
+  timothee?: User;
 }
 
 interface LoginRequest {
@@ -217,6 +222,48 @@ export const authApi = createApi({
         }));
       },
     }),
+
+    // Connect tithe to timothee
+    connectTithe: builder.mutation<User, { titheId: string, timotheeId: string }>({      query: ({ titheId, timotheeId }) => ({
+        url: '/users/connect-tithe',
+        method: 'PUT',
+        body: { titheId, timotheeId },
+      }),
+      invalidatesTags: ['User'],
+    }),
+
+    // Get all tithes of a specific timothee
+    getTimotheeTithes: builder.query<any[], { id: string, churchId: string }>({      query: ({ id, churchId }) => `/users/timothee/${id}/tithes/${churchId}`,
+      providesTags: ['User'],
+    }),
+
+    // Get all tithes of all timothees
+    getAllTimotheesTithes: builder.query<User[], string>({      query: (churchId) => `/users/timothees/tithes/${churchId}`,
+      providesTags: ['User'],
+    }),
+
+    // Make a user a timothee
+    makeTimothee: builder.mutation<{ message: string, user: User }, string>({query: (id) => ({
+        url: `/users/user/${id}/make-timothee`,
+        method: 'PUT',
+      }),
+      invalidatesTags: ['User'],
+    }),
+
+    // Remove timothee status from a user
+    removeTimothee: builder.mutation<{ message: string, user: User }, string>({
+      query: (id) => ({
+        url: `/users/user/${id}/remove-timothee`,
+        method: 'PUT',
+      }),
+      invalidatesTags: ['User'],
+    }),
+
+    // Get all timothees by church
+    getTimotheesByChurch: builder.query<User[], string>({
+      query: (churchId) => `/users/timothees/${churchId}`,
+      providesTags: ['User'],
+    }),
   }),
 });
 
@@ -233,4 +280,10 @@ export const {
   useGetUsersAndAdministratorsQuery,
   useGetLogoutMutation,
   useChangePasswordMutation,
+  useConnectTitheMutation,
+  useGetTimotheeTithesQuery,
+  useGetAllTimotheesTithesQuery,
+  useMakeTimotheeMutation,
+  useRemoveTimotheeMutation,
+  useGetTimotheesByChurchQuery,
 } = authApi;
