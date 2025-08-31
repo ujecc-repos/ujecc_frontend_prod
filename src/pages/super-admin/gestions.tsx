@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {  Tab } from '@headlessui/react';
 import { CalendarIcon } from '@heroicons/react/24/outline';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/solid';
@@ -82,8 +83,18 @@ interface ConnectTtiFormData {
 }
 
 const GestionPage: React.FC = () => {
+  const [searchParams] = useSearchParams();
   // State for active tab
   const [activeTab, setActiveTab] = useState<string>('church');
+  
+  // Handle URL tab parameter
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && ['church', 'user', 'addUserToChurch', 'connectTti'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
+  
   console.log(activeTab)
   const {data: Ouest} = useGetDepartementCommunesQuery("Ouest")
   const {data: Nord} = useGetDepartementCommunesQuery(`Nord`)
@@ -540,43 +551,55 @@ const GestionPage: React.FC = () => {
   //   return null;
   // }, [ttis]);
 
+  // Map activeTab to index for Tab.Group
+  const getTabIndex = (tab: string) => {
+    switch (tab) {
+      case 'church': return 0;
+      case 'user': return 1;
+      case 'addUserToChurch': return 2;
+      case 'connectTti': return 3;
+      default: return 0;
+    }
+  };
+
+  const handleTabChange = (index: number) => {
+    const tabs = ['church', 'user', 'addUserToChurch', 'connectTti'];
+    setActiveTab(tabs[index]);
+  };
+
   return (
     <div className="container mx-auto py-2">
       <h1 className="text-3xl font-bold text-gray-800 mb-8">Gestion des Églises et Utilisateurs</h1>
       
-      <Tab.Group>
-        <Tab.List className="flex p-1 space-x-1 bg-teal-900/10 rounded-xl mb-8">
+      <Tab.Group selectedIndex={getTabIndex(activeTab)} onChange={handleTabChange}>
+        <Tab.List className="flex p-1 space-x-1">
           <Tab
             className={({ selected }) =>
               `w-full py-3 text-sm font-medium rounded-lg transition-all duration-200 ${selected ? 'bg-teal-600 text-white shadow' : 'text-gray-700 hover:bg-teal-100'}`
             }
-            onClick={() => setActiveTab('church')}
           >
-            Créer une Église
+            {/* Créer une Église */}
           </Tab>
           <Tab
             className={({ selected }) =>
               `w-full py-3 text-sm font-medium rounded-lg transition-all duration-200 ${selected ? 'bg-teal-600 text-white shadow' : 'text-gray-700 hover:bg-teal-100'}`
             }
-            onClick={() => setActiveTab('user')}
           >
-            Créer un Utilisateur
+            {/* Créer un Utilisateur */}
           </Tab>
           <Tab
             className={({ selected }) =>
               `w-full py-3 text-sm font-medium rounded-lg transition-all duration-200 ${selected ? 'bg-teal-600 text-white shadow' : 'text-gray-700 hover:bg-teal-100'}`
             }
-            onClick={() => setActiveTab('addUserToChurch')}
           >
-            Ajouter un Utilisateur à une Église
+            {/* Ajouter un Utilisateur à une Église */}
           </Tab>
           <Tab
             className={({ selected }) =>
               `w-full py-3 text-sm font-medium rounded-lg transition-all duration-200 ${selected ? 'bg-teal-600 text-white shadow' : 'text-gray-700 hover:bg-teal-100'}`
             }
-            onClick={() => setActiveTab('connectTti')}
           >
-            Connecter à TTI
+            {/* Connecter à TTI */}
           </Tab>
         </Tab.List>
         
@@ -621,7 +644,7 @@ const GestionPage: React.FC = () => {
                 </div>
                 
                 {/* Department/State */}
-                <div>
+                <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     {isHaitiSelected ? 'Département' : 'État'}
                   </label>
@@ -640,7 +663,7 @@ const GestionPage: React.FC = () => {
                 </div>
                 
                 {/* Commune/City */}
-                <div>
+                <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     {isHaitiSelected ? 'Commune' : 'Ville'}
                   </label>
@@ -660,7 +683,7 @@ const GestionPage: React.FC = () => {
                 
                 {/* Section Communale - Only for Haiti */}
                 {isHaitiSelected && (
-                  <div>
+                  <div className="col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Section Communale</label>
                     <Select
                       value={sectionCommunale}
@@ -678,7 +701,7 @@ const GestionPage: React.FC = () => {
                 
                 {/* Rue - Only for non-Haiti countries */}
                 {!isHaitiSelected && (
-                  <div>
+                  <div className="col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Rue</label>
                     <input
                       type="text"
@@ -692,7 +715,7 @@ const GestionPage: React.FC = () => {
                 
                 {/* Telephone - Only for non-Haiti countries */}
                 {!isHaitiSelected && (
-                  <div>
+                  <div className="col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Numéro</label>
                     <input
                       type="number"
@@ -705,7 +728,7 @@ const GestionPage: React.FC = () => {
                 )}
                 
                 {/* Mission */}
-                <div>
+                <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Mission</label>
                   <Select
                     value={missionOptions.find(option => option.value === churchFormData.missionId)}
@@ -721,7 +744,7 @@ const GestionPage: React.FC = () => {
                 </div>
                 
                 {/* Longitude */}
-                <div>
+                <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Longitude</label>
                   <input
                     type="text"
@@ -733,7 +756,7 @@ const GestionPage: React.FC = () => {
                 </div>
                 
                 {/* Latitude */}
-                <div>
+                <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Latitude</label>
                   <input
                     type="text"
