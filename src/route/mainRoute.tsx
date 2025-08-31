@@ -29,6 +29,7 @@ import Depense from "../pages/admin/depense";
 import Parametre from "../pages/parametre";
 import MissionPage from "../pages/super-admin/mission";
 import GestionPage from "../pages/super-admin/gestions";
+import GestionUtilisateursPage from "../pages/super-admin/gestion-utilisateurs";
 import UserProfile from "../pages/profile";
 import ChangePassword from "../pages/change-password";
 import MainPage from "../pages/mainPage";
@@ -149,6 +150,7 @@ const router = createBrowserRouter([
                     { path: "/tableau-de-bord/parametre", element: <Parametre/> },
                     { path: "/tableau-de-bord/super-admin/missions", element: <MissionPage/> },
                     { path: "/tableau-de-bord/super-admin/gestions", element: <GestionPage/> },
+                    { path: "/tableau-de-bord/super-admin/gestion-utilisateurs", element: <GestionUtilisateursPage/> },
                     { path: "/tableau-de-bord/admin/timothee/:timotheeId/tithes", element: <TimotheeTithes/> },
                     
                     // 
