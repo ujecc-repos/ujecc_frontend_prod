@@ -26,7 +26,7 @@ interface Mission {
   description: string;
   status: string;
   location: string;
-  presidentName: string;
+  presidentName?: string;
   church?: any;
 }
 

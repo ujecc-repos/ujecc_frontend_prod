@@ -33,7 +33,7 @@ interface Mission {
   description: string;
   status: string;
   location: string;
-  presidentName: string;
+  presidentName?: string;
   church?: any;
 }
 
@@ -47,7 +47,7 @@ interface CreateMissionFormData {
   description: string;
   status: string;
   location: string;
-  presidentName: string;
+  presidentName?: string;
 }
 
 const initialFormData: CreateMissionFormData = {
@@ -110,7 +110,7 @@ export default function MissionPage() {
         ? mission.missionName.toLowerCase().includes(filters.searchQuery.toLowerCase()) ||
           mission.description.toLowerCase().includes(filters.searchQuery.toLowerCase()) ||
           mission.location.toLowerCase().includes(filters.searchQuery.toLowerCase()) ||
-          mission.presidentName.toLowerCase().includes(filters.searchQuery.toLowerCase())
+          (mission.presidentName && mission.presidentName.toLowerCase().includes(filters.searchQuery.toLowerCase()))
         : true;
       
       const matchesStatus = filters.status
@@ -151,10 +151,6 @@ export default function MissionPage() {
     
     if (!formData.location.trim()) {
       newErrors.location = 'L\'emplacement est requis';
-    }
-    
-    if (!formData.presidentName.trim()) {
-      newErrors.presidentName = 'Le nom du président est requis';
     }
     
     setErrors(newErrors);
@@ -445,7 +441,7 @@ export default function MissionPage() {
                           {mission.missionName}
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          {mission.presidentName}
+                          {mission.presidentName || "Non assigné"}
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                           {mission.location}
@@ -648,7 +644,7 @@ export default function MissionPage() {
 
                     <div>
                       <label htmlFor="presidentName" className="block text-sm font-medium text-gray-700">
-                        Nom du président
+                        Nom du président (optionnel)
                       </label>
                       <Select
                         id="presidentName"
@@ -815,7 +811,7 @@ export default function MissionPage() {
 
                     <div>
                       <label htmlFor="edit-presidentName" className="block text-sm font-medium text-gray-700">
-                        Nom du président
+                        Nom du président (optionnel)
                       </label>
                       <Select
                         id="edit-presidentName"
@@ -912,7 +908,7 @@ export default function MissionPage() {
                         <div className="flex justify-between">
                           <div>
                             <h4 className="text-sm font-medium text-gray-500">Président</h4>
-                            <p className="mt-1 text-sm text-gray-900">{selectedMission.presidentName}</p>
+                            <p className="mt-1 text-sm text-gray-900">{selectedMission.presidentName || "Non assigné"}</p>
                           </div>
                           <div>
                             <h4 className="text-sm font-medium text-gray-500">Statut</h4>
