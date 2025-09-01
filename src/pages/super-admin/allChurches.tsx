@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect } from 'react';
-// import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   MagnifyingGlassIcon,
   FunnelIcon,
@@ -20,14 +20,23 @@ import * as XLSX from 'xlsx';
 import { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, AlignmentType } from 'docx';
 import { saveAs } from 'file-saver';
 import { toast } from 'react-toastify';
+import Select from 'react-select';
+import { Country, State, City } from 'country-state-city';
 
 // Import API hooks
 import { 
   useGetChurchesQuery, 
   useUpdateChurchMutation, 
-  useDeleteChurchMutation 
+  useDeleteChurchMutation,
+  useGetDepartementCommunesQuery 
 } from '../../store/services/churchApi';
 import { useGetUserByTokenQuery } from '../../store/services/authApi';
+
+interface SelectOption {
+  value: string;
+  label: string;
+  isoCode?: string; // For storing state/country codes when needed
+}
 
 interface Church {
   id: string;
@@ -50,6 +59,14 @@ interface Church {
   presentations?: any[];
   batism?: any[];
   death?: any[];
+  fullAddress: {
+    country?: string;
+    departement?: string;
+    commune?: string;
+    sectionCommunale?: string;
+    telephone?: string;
+    rue?: string;
+  }
 }
 
 type SearchType = 'name' | 'address' | 'email';
@@ -278,21 +295,160 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) 
 };
 
 const EditChurchModal: React.FC<EditChurchModalProps> = ({ isOpen, onClose, church, onSubmit, isLoading }) => {
-  const [formData, setFormData] = useState<any>({
+  // Fetch department communes data
+  const {data: Ouest} = useGetDepartementCommunesQuery("Ouest")
+  const {data: Nord} = useGetDepartementCommunesQuery(`Nord`)
+  const {data: NordEst} = useGetDepartementCommunesQuery("Nord-Est")
+  const {data: NordOuest} = useGetDepartementCommunesQuery("Nord-Ouest")
+  const {data: Sude} = useGetDepartementCommunesQuery("Sude")
+  const {data: SudEst} = useGetDepartementCommunesQuery("Sud-Est")
+  const {data: Artibonite} = useGetDepartementCommunesQuery("Artibonite")
+  const {data: Centre} = useGetDepartementCommunesQuery("Centre")
+  const {data: GrandAnse} = useGetDepartementCommunesQuery("Grand'Anse")
+  const {data: Nippes} = useGetDepartementCommunesQuery("Nippes")
+
+  // Data structure for Haiti departments
+  const data: Record<string, { communes: any }> = {
+    "Ouest": {
+      communes: Ouest || {}
+    },
+    "Nord": {
+      communes: Nord || {}
+    },
+    "Nord-Est": {
+      communes: NordEst || {}
+    },
+    "Nord-Ouest": {
+      communes: NordOuest || {}
+    },
+    "Sude": {
+      communes: Sude || {}
+    },
+    "Sud-Est": {
+      communes: SudEst || {}
+    },
+    "Artibonite": {
+      communes: Artibonite || {}
+    },
+    "Centre": {
+      communes: Centre || {}
+    },
+    "Grand'Anse": {
+      communes: GrandAnse || {}
+    },
+    "Nippes": {
+      communes: Nippes || {}
+    },
+  };
+
+  const [formData, setFormData] = useState({
     name: '',
-    address: '',
+    country: '',
+    departement: '',
+    commune: '',
+    sectionCommunale: '',
+    rue: '',
+    telephone: '',
     longitude: '',
     latitude: ''
   });
+
+  // Location selector state
+  const [selectedCountry, setSelectedCountry] = useState<SelectOption | null>(null);
+  const [departement, setDepartement] = useState<SelectOption | null>(null);
+  const [commune, setCommune] = useState<SelectOption | null>(null);
+  const [sectionCommunale, setSectionCommunale] = useState<SelectOption | null>(null);
+
+  // Check if Haiti is selected
+  const isHaitiSelected = selectedCountry?.value === 'Haiti';
+
+  // Transform data for react-select
+  const countryOptions: SelectOption[] = Country.getAllCountries().map((country) => ({
+    value: country.name,
+    label: country.name,
+    isoCode: country.isoCode // Keep isoCode for API calls
+  }));
+
+  // Location options based on selected country
+  const departementOptions: SelectOption[] = useMemo(() => {
+    if (isHaitiSelected) {
+      return Object.keys(data).map((dept) => ({
+        value: dept,
+        label: dept,
+      }));
+    } else if (selectedCountry) {
+      // Find the selected country's isoCode for API call
+      const countryIsoCode = selectedCountry.isoCode || Country.getAllCountries().find(country => country.name === selectedCountry.value)?.isoCode;
+      if (!countryIsoCode) return [];
+      
+      return State.getStatesOfCountry(countryIsoCode).map((state) => ({
+        value: state.name,
+        label: state.name,
+        isoCode: state.isoCode // Keep isoCode for API calls
+      }));
+    }
+    return [];
+  }, [isHaitiSelected, selectedCountry, data]);
+
+  const communeOptions: SelectOption[] = useMemo(() => {
+    if (isHaitiSelected && departement) {
+      return Object.keys(data[departement.value].communes).map((commune) => ({
+        value: commune,
+        label: commune,
+      }));
+    } else if (!isHaitiSelected && selectedCountry && departement) {
+      // Find the selected country's isoCode and state's isoCode for API call
+      const countryIsoCode = selectedCountry.isoCode || Country.getAllCountries().find(country => country.name === selectedCountry.value)?.isoCode;
+      if (!countryIsoCode) return [];
+      
+      const selectedState = State.getStatesOfCountry(countryIsoCode).find(state => state.name === departement.value);
+      const stateIsoCode = selectedState?.isoCode || departement.isoCode || departement.value;
+      
+      return City.getCitiesOfState(countryIsoCode, stateIsoCode).map((city) => ({
+        value: city.name,
+        label: city.name,
+      }));
+    }
+    return [];
+  }, [isHaitiSelected, selectedCountry, departement, data]);
+
+  const sectionCommunaleOptions: SelectOption[] = useMemo(() => {
+    if (isHaitiSelected && departement && commune) {
+      return data[departement.value].communes[commune.value].map((section: string) => ({
+        value: section,
+        label: section,
+      }));
+    }
+    return [];
+  }, [isHaitiSelected, departement, commune, data]);
 
   useEffect(() => {
     if (church) {
       setFormData({
         name: church.name || '',
-        address: church.address || '',
+        country: church.fullAddress?.country || '',
+        departement: church.fullAddress?.departement || '',
+        commune: church.fullAddress?.commune || '',
+        sectionCommunale: church.fullAddress?.sectionCommunale || '',
+        rue: church.fullAddress?.rue || '',
+        telephone: church.fullAddress?.telephone || '',
         longitude: church.longitude || '',
         latitude: church.latitude || ''
       });
+
+      // Set location selectors
+      if (church.fullAddress?.country) {
+        setSelectedCountry({ value: church.fullAddress.country, label: church.fullAddress.country });
+      }
+      if (church.fullAddress?.departement) {
+        setDepartement({ value: church.fullAddress.departement, label: church.fullAddress.departement });
+      }
+      if (church.fullAddress?.commune) {
+        setCommune({ value: church.fullAddress.commune, label: church.fullAddress.commune });
+      }
+      if (church.fullAddress?.sectionCommunale) {
+        setSectionCommunale({ value: church.fullAddress.sectionCommunale, label: church.fullAddress.sectionCommunale });
+      }
     }
   }, [church]);
 
@@ -301,6 +457,59 @@ const EditChurchModal: React.FC<EditChurchModalProps> = ({ isOpen, onClose, chur
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev: any) => ({ ...prev, [name]: value }));
+  };
+
+  // Handle location selection changes
+  const handleCountryChange = (selectedOption: SelectOption | null) => {
+    setSelectedCountry(selectedOption);
+    setDepartement(null);
+    setCommune(null);
+    setSectionCommunale(null);
+    
+    // Update form data
+    setFormData((prev: any) => ({
+      ...prev,
+      country: selectedOption?.value || '',
+      departement: '',
+      commune: '',
+      sectionCommunale: ''
+    }));
+  };
+
+  const handleDepartementChange = (selectedOption: SelectOption | null) => {
+    setDepartement(selectedOption);
+    setCommune(null);
+    setSectionCommunale(null);
+    
+    // Update form data
+    setFormData((prev: any) => ({
+      ...prev,
+      departement: selectedOption?.value || '',
+      commune: '',
+      sectionCommunale: ''
+    }));
+  };
+
+  const handleCommuneChange = (selectedOption: SelectOption | null) => {
+    setCommune(selectedOption);
+    setSectionCommunale(null);
+    
+    // Update form data
+    setFormData((prev: any) => ({
+      ...prev,
+      commune: selectedOption?.value || '',
+      sectionCommunale: ''
+    }));
+  };
+
+  const handleSectionCommunaleChange = (selectedOption: SelectOption | null) => {
+    setSectionCommunale(selectedOption);
+    
+    // Update form data
+    setFormData((prev: any) => ({
+      ...prev,
+      sectionCommunale: selectedOption?.value || ''
+    }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -336,17 +545,102 @@ const EditChurchModal: React.FC<EditChurchModalProps> = ({ isOpen, onClose, chur
                 />
               </div>
 
+              {/* Country Selection */}
               <div>
-                <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
-                  Adresse
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Pays
+                </label>
+                <Select
+                  value={selectedCountry}
+                  onChange={handleCountryChange}
+                  options={countryOptions}
+                  placeholder="Sélectionnez un pays"
+                  className="react-select-container"
+                  classNamePrefix="react-select"
+                  isClearable
+                />
+              </div>
+
+              {/* Department Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Département
+                </label>
+                <Select
+                  value={departement}
+                  onChange={handleDepartementChange}
+                  options={departementOptions}
+                  placeholder="Sélectionnez un département"
+                  className="react-select-container"
+                  classNamePrefix="react-select"
+                  isDisabled={!selectedCountry}
+                  isClearable
+                />
+              </div>
+
+              {/* Commune Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Commune
+                </label>
+                <Select
+                  value={commune}
+                  onChange={handleCommuneChange}
+                  options={communeOptions}
+                  placeholder="Sélectionnez une commune"
+                  className="react-select-container"
+                  classNamePrefix="react-select"
+                  isDisabled={!departement}
+                  isClearable
+                />
+              </div>
+
+              {/* Section Communale Selection (only for Haiti) */}
+              {isHaitiSelected && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Section Communale
+                  </label>
+                  <Select
+                    value={sectionCommunale}
+                    onChange={handleSectionCommunaleChange}
+                    options={sectionCommunaleOptions}
+                    placeholder="Sélectionnez une section communale"
+                    className="react-select-container"
+                    classNamePrefix="react-select"
+                    isDisabled={!commune}
+                    isClearable
+                  />
+                </div>
+              )}
+
+              {/* Street/Rue Input */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Rue
                 </label>
                 <input
                   type="text"
-                  id="address"
-                  name="address"
-                  value={formData.address}
+                  name="rue"
+                  value={formData.rue}
                   onChange={handleChange}
                   className="w-full p-2 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500"
+                  placeholder="Entrez l'adresse de la rue"
+                />
+              </div>
+
+              {/* Telephone Input */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Téléphone
+                </label>
+                <input
+                  type="text"
+                  name="telephone"
+                  value={formData.telephone}
+                  onChange={handleChange}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500"
+                  placeholder="Entrez le numéro de téléphone"
                 />
               </div>
 
@@ -440,10 +734,14 @@ const DeleteChurchModal: React.FC<DeleteChurchModalProps> = ({ isOpen, onClose, 
 };
 
 const ChurchCard: React.FC<{ church: Church; onEdit: (church: Church) => void; onDelete: (church: Church) => void }> = ({ church, onEdit, onDelete }) => {
-  // const navigate = useNavigate();
+  const navigate = useNavigate();
+
+  const handleCardClick = () => {
+    navigate(`/tableau-de-bord/super-admin/church/${church.id}`);
+  };
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer" onClick={handleCardClick}>
       <div className="p-6">
         <div className="flex items-start justify-between">
           <div className="flex items-center space-x-4">
@@ -452,17 +750,24 @@ const ChurchCard: React.FC<{ church: Church; onEdit: (church: Church) => void; o
             </div>
             <div>
               <h3 className="text-lg font-semibold text-gray-900">{church.name}</h3>
-              {church.address && (
+              {church.fullAddress && (
                 <div className="flex items-center text-sm text-gray-600 mt-1">
                   <MapPinIcon className="h-4 w-4 mr-1" />
-                  <span>{church.address}</span>
+                  <span>
+                    {church.fullAddress.country?.toLowerCase() == "haiti" ? 
+                    `${church.fullAddress.country}, ${church.fullAddress.departement}, ${church.fullAddress.commune}` : 
+                    `${church.fullAddress.country}, ${church.fullAddress.departement}, ${church.fullAddress.commune}, ${church.fullAddress.rue}, ${church.fullAddress.telephone}`}
+                  </span>
                 </div>
               )}
             </div>
           </div>
           
           <Menu as="div" className="relative">
-            <Menu.Button className="flex items-center text-gray-400 hover:text-gray-600 focus:outline-none">
+            <Menu.Button 
+              className="flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
+              onClick={(e) => e.stopPropagation()}
+            >
               <EllipsisVerticalIcon className="h-5 w-5" />
             </Menu.Button>
             <Transition
@@ -478,7 +783,10 @@ const ChurchCard: React.FC<{ church: Church; onEdit: (church: Church) => void; o
                 <Menu.Item>
                   {({ active }) => (
                     <button
-                      onClick={() => onEdit(church)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEdit(church);
+                      }}
                       className={`${active ? 'bg-gray-100' : ''} flex w-full items-center px-4 py-2 text-sm text-gray-700`}
                     >
                       <PencilIcon className="mr-3 h-5 w-5 text-gray-400" />
@@ -489,7 +797,10 @@ const ChurchCard: React.FC<{ church: Church; onEdit: (church: Church) => void; o
                 <Menu.Item>
                   {({ active }) => (
                     <button
-                      onClick={() => onDelete(church)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete(church);
+                      }}
                       className={`${active ? 'bg-gray-100' : ''} flex w-full items-center px-4 py-2 text-sm text-gray-700`}
                     >
                       <TrashIcon className="mr-3 h-5 w-5 text-gray-400" />
@@ -940,7 +1251,7 @@ export default function AllChurches() {
                 key={page}
                 onClick={() => setCurrentPage(page)}
                 className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${currentPage === page
-                  ? 'z-10 bg-teal-50 border-teal-500 text-teal-600'
+                  ? 'z-10 bg-teal-500 border-teal-500 text-teal-600'
                   : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
                 }`}
               >

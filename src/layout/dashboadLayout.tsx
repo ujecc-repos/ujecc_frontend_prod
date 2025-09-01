@@ -24,6 +24,11 @@ import {
   ArrowsRightLeftIcon,
   ExclamationTriangleIcon,
   PresentationChartLineIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+  PlusIcon,
+  UserPlusIcon,
+  LinkIcon,
 } from '@heroicons/react/24/outline';
 import { TfiStatsUp } from "react-icons/tfi";
 import { motion } from 'framer-motion';
@@ -121,7 +126,19 @@ const navigation = {
   SuperAdmin: [
     { name: 'Tableau de bord', href: '/tableau-de-bord', icon: TfiStatsUp },
     { name: 'Missions', href: '/tableau-de-bord/super-admin/missions', icon: UserIcon },
-    { name: 'Gestions', href: '/tableau-de-bord/super-admin/gestions', icon: BuildingLibraryIcon },
+    { 
+       name: 'Gestions', 
+       href: '/tableau-de-bord/super-admin/gestions', 
+       icon: BuildingLibraryIcon,
+       hasSubsections: true,
+       subsections: [
+         { name: 'Créer une Église', href: '/tableau-de-bord/super-admin/gestions?tab=church', icon: PlusIcon },
+         { name: 'Créer un Utilisateur', href: '/tableau-de-bord/super-admin/gestions?tab=user', icon: UserPlusIcon },
+         { name: 'Ajouter Utilisateur à Église', href: '/tableau-de-bord/super-admin/gestions?tab=addUserToChurch', icon: LinkIcon },
+         { name: 'Connecter à TTI', href: '/tableau-de-bord/super-admin/gestions?tab=connectTti', icon: ArrowsRightLeftIcon },
+         { name: 'Gestion Utilisateurs', href: '/tableau-de-bord/super-admin/gestion-utilisateurs', icon: UserGroupIcon }
+       ]
+     },
     { name: 'Toutes les églises', href: '/tableau-de-bord/super-admin/allchurches', icon: BuildingLibraryIcon },
   ],
   Directeur: [
@@ -137,6 +154,7 @@ const DashboardLayout = ({ userRole }: {userRole: UserRole}) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [notificationCount] = useState(3);
+  const [expandedSections, setExpandedSections] = useState<{[key: string]: boolean}>({});
   const [logOut] = useGetLogoutMutation()
   const {data: userToken} = useGetUserByTokenQuery()
   // const { user, logout } = useAuth();
@@ -144,6 +162,13 @@ const DashboardLayout = ({ userRole }: {userRole: UserRole}) => {
   const logout = () => Promise.resolve(); // Temporary mock logout
   const navigate = useNavigate();
   const location = useLocation();
+
+  const toggleSection = (sectionName: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [sectionName]: !prev[sectionName]
+    }));
+  };
 
   const handleLogout = async () => {
     try {
@@ -229,27 +254,56 @@ const DashboardLayout = ({ userRole }: {userRole: UserRole}) => {
                               return userToken?.church?.ttiId;
                             }
                             return true;
-                          }).map((item) => (
+                          }).map((item: any) => (
                             <li key={item.name}>
-                              <Link
-                                to={item.href}
-                                className={`group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold ${location.pathname === item.href ? 'bg-teal-50 text-teal-600' : 'text-gray-700 hover:text-teal-600 hover:bg-gray-50'}`}
-                              >
-                                <item.icon
-                                  className={`h-6 w-6 shrink-0 ${location.pathname === item.href ? 'text-teal-600' : 'text-gray-400 group-hover:text-teal-600'}`}
-                                  aria-hidden="true"
-                                />
-                                {!sidebarCollapsed && (
-                                  <motion.span
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    transition={{ duration: 0.2 }}
+                              {item.hasSubsections ? (
+                                <div>
+                                  <button
+                                    onClick={() => toggleSection(item.name)}
+                                    className={`group flex w-full gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold ${location.pathname.startsWith(item.href) ? 'bg-teal-50 text-teal-600' : 'text-gray-700 hover:text-teal-600 hover:bg-gray-50'}`}
                                   >
-                                    {item.name}
-                                  </motion.span>
-                                )}
-                              </Link>
+                                    <item.icon
+                                      className={`h-6 w-6 shrink-0 ${location.pathname.startsWith(item.href) ? 'text-teal-600' : 'text-gray-400 group-hover:text-teal-600'}`}
+                                      aria-hidden="true"
+                                    />
+                                    <span className="flex-1 text-left">{item.name}</span>
+                                    {expandedSections[item.name] ? (
+                                      <ChevronDownIcon className="h-5 w-5" />
+                                    ) : (
+                                      <ChevronRightIcon className="h-5 w-5" />
+                                    )}
+                                  </button>
+                                  {expandedSections[item.name] && (
+                                    <ul className="mt-1 ml-6 space-y-1">
+                                      {item.subsections.map((subsection: any) => (
+                                        <li key={subsection.name}>
+                                          <Link
+                                            to={subsection.href}
+                                            className={`group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-medium ${location.search.includes(subsection.href.split('?')[1]) ? 'bg-teal-50 text-teal-600' : 'text-gray-600 hover:text-teal-600 hover:bg-gray-50'}`}
+                                          >
+                                            <subsection.icon
+                                              className={`h-5 w-5 shrink-0 ${location.search.includes(subsection.href.split('?')[1]) ? 'text-teal-600' : 'text-gray-400 group-hover:text-teal-600'}`}
+                                              aria-hidden="true"
+                                            />
+                                            <span className="text-xs">{subsection.name}</span>
+                                          </Link>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  )}
+                                </div>
+                              ) : (
+                                <Link
+                                  to={item.href}
+                                  className={`group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold ${location.pathname === item.href ? 'bg-teal-50 text-teal-600' : 'text-gray-700 hover:text-teal-600 hover:bg-gray-50'}`}
+                                >
+                                  <item.icon
+                                    className={`h-6 w-6 shrink-0 ${location.pathname === item.href ? 'text-teal-600' : 'text-gray-400 group-hover:text-teal-600'}`}
+                                    aria-hidden="true"
+                                  />
+                                  <span>{item.name}</span>
+                                </Link>
+                              )}
                             </li>
                           ))}
                         </ul>
@@ -325,27 +379,83 @@ const DashboardLayout = ({ userRole }: {userRole: UserRole}) => {
                           return userToken?.church?.ttiId;
                         }
                         return true;
-                      }).map((item) => (
+                      }).map((item: any) => (
                         <li key={item.name}>
-                          <Link
-                            to={item.href}
-                            className={`group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold ${location.pathname === item.href ? 'bg-teal-50 text-teal-600' : 'text-gray-700 hover:text-teal-600 hover:bg-gray-50'}`}
-                          >
-                            <item.icon
-                              className={`h-6 w-6 shrink-0 ${location.pathname === item.href ? 'text-teal-600' : 'text-gray-400 group-hover:text-teal-600'}`}
-                              aria-hidden="true"
-                            />
-                            {!sidebarCollapsed && (
-                              <motion.span
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                transition={{ duration: 0.2 }}
+                          {item.hasSubsections ? (
+                            <div>
+                              <button
+                                onClick={() => toggleSection(item.name)}
+                                className={`group flex w-full gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold ${location.pathname.startsWith(item.href) ? 'bg-teal-50 text-teal-600' : 'text-gray-700 hover:text-teal-600 hover:bg-gray-50'}`}
                               >
-                                {item.name}
-                              </motion.span>
-                            )}
-                          </Link>
+                                <item.icon
+                                  className={`h-6 w-6 shrink-0 ${location.pathname.startsWith(item.href) ? 'text-teal-600' : 'text-gray-400 group-hover:text-teal-600'}`}
+                                  aria-hidden="true"
+                                />
+                                {!sidebarCollapsed && (
+                                  <>
+                                    <motion.span
+                                      initial={{ opacity: 0 }}
+                                      animate={{ opacity: 1 }}
+                                      exit={{ opacity: 0 }}
+                                      transition={{ duration: 0.2 }}
+                                      className="flex-1 text-left"
+                                    >
+                                      {item.name}
+                                    </motion.span>
+                                    {expandedSections[item.name] ? (
+                                      <ChevronDownIcon className="h-5 w-5" />
+                                    ) : (
+                                      <ChevronRightIcon className="h-5 w-5" />
+                                    )}
+                                  </>
+                                )}
+                              </button>
+                              {expandedSections[item.name] && !sidebarCollapsed && (
+                                <motion.ul
+                                  initial={{ opacity: 0, height: 0 }}
+                                  animate={{ opacity: 1, height: 'auto' }}
+                                  exit={{ opacity: 0, height: 0 }}
+                                  transition={{ duration: 0.2 }}
+                                  className="mt-1 ml-6 space-y-1"
+                                >
+                                  {item.subsections.map((subsection: any) => (
+                                    <li key={subsection.name}>
+                                      <Link
+                                        to={subsection.href}
+                                        className={`group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-medium ${location.search.includes(subsection.href.split('?')[1]) ? 'bg-teal-50 text-teal-600' : 'text-gray-600 hover:text-teal-600 hover:bg-gray-50'}`}
+                                      >
+                                        <subsection.icon
+                                          className={`h-5 w-5 shrink-0 ${location.search.includes(subsection.href.split('?')[1]) ? 'text-teal-600' : 'text-gray-400 group-hover:text-teal-600'}`}
+                                          aria-hidden="true"
+                                        />
+                                        <span className="text-xs">{subsection.name}</span>
+                                      </Link>
+                                    </li>
+                                  ))}
+                                </motion.ul>
+                              )}
+                            </div>
+                          ) : (
+                            <Link
+                              to={item.href}
+                              className={`group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold ${location.pathname === item.href ? 'bg-teal-50 text-teal-600' : 'text-gray-700 hover:text-teal-600 hover:bg-gray-50'}`}
+                            >
+                              <item.icon
+                                className={`h-6 w-6 shrink-0 ${location.pathname === item.href ? 'text-teal-600' : 'text-gray-400 group-hover:text-teal-600'}`}
+                                aria-hidden="true"
+                              />
+                              {!sidebarCollapsed && (
+                                <motion.span
+                                  initial={{ opacity: 0 }}
+                                  animate={{ opacity: 1 }}
+                                  exit={{ opacity: 0 }}
+                                  transition={{ duration: 0.2 }}
+                                >
+                                  {item.name}
+                                </motion.span>
+                              )}
+                            </Link>
+                          )}
                         </li>
                       ))}
                     </ul>

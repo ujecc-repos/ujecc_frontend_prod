@@ -2,14 +2,14 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { 
   ChartBarIcon, 
   UserGroupIcon, 
-  CalendarDaysIcon,
-  HeartIcon,
-  PresentationChartLineIcon,
+  // CalendarDaysIcon,
+  // HeartIcon,
+  // PresentationChartLineIcon,
   UserIcon,
-  ArrowPathIcon,
+  // ArrowPathIcon,
   DocumentArrowDownIcon,
-  AcademicCapIcon,
-  BuildingLibraryIcon
+  // AcademicCapIcon,
+  // BuildingLibraryIcon
 } from '@heroicons/react/24/outline';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
@@ -498,7 +498,7 @@ export default function StatisticsForSuperAdmin() {
 
         {/* Metrics Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
-          <MetricCard
+          {/* <MetricCard
             title="Baptêmes"
             value={baptismsCount.toString().padStart(2, '0')}
             icon={BuildingLibraryIcon}
@@ -567,7 +567,7 @@ export default function StatisticsForSuperAdmin() {
             icon={CalendarDaysIcon}
             color="text-green-600"
             bgColor="bg-green-50"
-          />
+          /> */}
           <MetricCard
             title="Pasteurs"
             value={pasteursCount.toString().padStart(2, '0')}

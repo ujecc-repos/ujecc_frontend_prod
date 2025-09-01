@@ -29,12 +29,14 @@ import Depense from "../pages/admin/depense";
 import Parametre from "../pages/parametre";
 import MissionPage from "../pages/super-admin/mission";
 import GestionPage from "../pages/super-admin/gestions";
+import GestionUtilisateursPage from "../pages/super-admin/gestion-utilisateurs";
 import UserProfile from "../pages/profile";
 import ChangePassword from "../pages/change-password";
 import MainPage from "../pages/mainPage";
 import PasteurPage from "../pages/director/pasteurs";
 import App from "../App";
 import AllChurches from "../pages/super-admin/allChurches";
+import ChurchDetails from "../pages/super-admin/churchDetails";
 import ServiceAndPresence from "../pages/admin/serviceandpresence";
 import ServiceDetails from "../pages/admin/service-details";
 import Eglise from "../pages/director/eglise";
@@ -149,11 +151,13 @@ const router = createBrowserRouter([
                     { path: "/tableau-de-bord/parametre", element: <Parametre/> },
                     { path: "/tableau-de-bord/super-admin/missions", element: <MissionPage/> },
                     { path: "/tableau-de-bord/super-admin/gestions", element: <GestionPage/> },
+                    { path: "/tableau-de-bord/super-admin/gestion-utilisateurs", element: <GestionUtilisateursPage/> },
                     { path: "/tableau-de-bord/admin/timothee/:timotheeId/tithes", element: <TimotheeTithes/> },
                     
                     // 
                     { path: "/tableau-de-bord/pasteurs", element: <PasteurPage/> },
                     { path: "/tableau-de-bord/super-admin/allchurches", element: <AllChurches/> },
+                    { path: "/tableau-de-bord/super-admin/church/:churchId", element: <ChurchDetails/> },
                     { path: "/tableau-de-bord/admin/serviceandpresence", element: <ServiceAndPresence/> },
                     { path: "/tableau-de-bord/admin/service-details/:serviceId", element: <ServiceDetails/> },
                     { path: "/tableau-de-bord/directeur/eglises", element: <Eglise />}

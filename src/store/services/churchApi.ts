@@ -8,6 +8,8 @@ interface Church {
   email?: string;
   picture?: string;
   anthem?: string;
+  longitude?: string;
+  latitude?: string;
   facebook?: string;
   instagram?: string;
   whatsapp?: string;
@@ -19,6 +21,18 @@ interface Church {
   presentations?: any[];
   batism?: any[];
   death?: any[];
+  mission: {
+    missionName?: string;
+    presidentName?: string;
+  }
+  fullAddress: {
+    country?: string;
+    departement?: string;
+    commune?: string;
+    sectionCommunale?: string;
+    telephone?: string;
+    rue?: string;
+  }
 }
 
 interface CreateChurchRequest {
