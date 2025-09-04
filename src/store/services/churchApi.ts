@@ -164,6 +164,15 @@ export const churchApi = authApi.injectEndpoints({
       query: () => '/churches/ttis/all-tti',
       providesTags: ['Church'],
     }),
+
+    connectChurchToMission: builder.mutation<{ message: string; church: Church }, { churchId: string; missionId: string }>({
+      query: ({ churchId, missionId }) => ({
+        url: '/missions/connect-church',
+        method: 'PUT',
+        body: { churchId, missionId },
+      }),
+      invalidatesTags: ['Church', 'Mission'],
+    }),
   }),
 });
 
@@ -178,4 +187,5 @@ export const {
   useConnectTtiToChurchMutation,
   useGetTtisByChurchQuery,
   useGetAllTtisQuery,
+  useConnectChurchToMissionMutation,
 } = churchApi;
