@@ -19,7 +19,9 @@ interface ChangeRoleModalProps {
 
 const roleOptions = [
   { value: 'Membre', label: 'Membre' },
-  { value: 'Admin', label: 'Admin' }
+  { value: 'Admin', label: 'Admin' },
+  { value: 'Directeur', label: 'Directeur' },
+  { value: 'SuperAdmin', label: 'SuperAdmin' }
 ];
 
 const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({

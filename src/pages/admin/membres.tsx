@@ -477,6 +477,68 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
     e.preventDefault();
     if (validateForm()) {
       onSubmit(formData);
+      setTimeout(() => {
+        setFormData({
+      firstname: '',
+      lastname: '',
+      email: '',
+      password: '',
+      mobilePhone: '',
+      homePhone: '',
+      role: '',
+      gender: '',
+      birthDate: '',
+      joinDate: '',
+      baptismDate: '',
+      baptismLocation: '',
+      civilState: '',
+      spouseFullName: '',
+      minister: '',
+      country: '',
+      birthCountry: '',
+      city: '',
+      birthCity: '',
+      addressLine: '',
+      profession: '',
+      age: '',
+      personToContact: '',
+      facebook: '',
+      profileImage: null,
+      isActiveMember: true,
+      nif: '',
+      groupeSanguin: ''
+    });
+      }, 2000);
+      setFormData({
+      firstname: '',
+      lastname: '',
+      email: '',
+      password: '',
+      mobilePhone: '',
+      homePhone: '',
+      role: '',
+      gender: '',
+      birthDate: '',
+      joinDate: '',
+      baptismDate: '',
+      baptismLocation: '',
+      civilState: '',
+      spouseFullName: '',
+      minister: '',
+      country: '',
+      birthCountry: '',
+      city: '',
+      birthCity: '',
+      addressLine: '',
+      profession: '',
+      age: '',
+      personToContact: '',
+      facebook: '',
+      profileImage: null,
+      isActiveMember: true,
+      nif: '',
+      groupeSanguin: ''
+    });
     }
   };
 
@@ -1393,19 +1455,19 @@ export default function Membres() {
     setIsBadgeModalOpen(true);
   };
 
-  const handleRoleChange = async (newRole: string) => {
-    if (!selectedMemberForAction) return;
-    
+  const handleRoleChange = async (memberId: string, newRole: string) => {
     try {
-      // TODO: Implement API call to update member role
-      console.log(`Changing role for ${selectedMemberForAction.firstname} ${selectedMemberForAction.lastname} to ${newRole}`);
+      await updateUser({
+        id: memberId,
+        role: newRole
+      }).unwrap();
       
       // Close modal and reset selected member
       setIsChangeRoleModalOpen(false);
       setSelectedMemberForAction(null);
       
-      // Optionally refetch data
-      // refetch();
+      // Refetch data to update the UI
+      refetch();
     } catch (error) {
       console.error('Error changing role:', error);
     }
@@ -1775,6 +1837,7 @@ export default function Membres() {
         }
         
         await register(formDataObj).unwrap();
+        
       } else {
         // No image, use regular JSON request
         const userData = {
