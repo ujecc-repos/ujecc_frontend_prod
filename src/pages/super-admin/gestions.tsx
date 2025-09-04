@@ -12,7 +12,7 @@ import { Country, State, City } from 'country-state-city';
 
 // API Imports
 import { useRegisterMutation, useGetUsersQuery } from '../../store/services/authApi';
-import { useCreateChurchMutation, useGetChurchesQuery, useAddUserToChurchMutation, useGetAllTtisQuery, useConnectTtiToChurchMutation } from '../../store/services/churchApi';
+import { useCreateChurchMutation, useGetChurchesQuery, useAddUserToChurchMutation, useGetAllTtisQuery, useConnectTtiToChurchMutation, useConnectChurchToMissionMutation } from '../../store/services/churchApi';
 import { useGetMissionsQuery } from '../../store/services/mission';
 import { useGetDepartementCommunesQuery } from '../../store/services/churchApi';
 import Creatable from 'react-select/creatable';
@@ -83,6 +83,11 @@ interface ConnectTtiFormData {
   ttiId: string;
 }
 
+interface ConnectChurchToMissionFormData {
+  churchId: string;
+  missionId: string;
+}
+
 const GestionPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   // State for active tab
@@ -91,7 +96,7 @@ const GestionPage: React.FC = () => {
   // Handle URL tab parameter
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam && ['church', 'user', 'addUserToChurch', 'connectTti'].includes(tabParam)) {
+    if (tabParam && ['church', 'user', 'addUserToChurch', 'connectTti', 'connectChurchToMission'].includes(tabParam)) {
       setActiveTab(tabParam);
     }
   }, [searchParams]);
@@ -316,6 +321,7 @@ const GestionPage: React.FC = () => {
   const [registerUser] = useRegisterMutation();
   const [addUserToChurch] = useAddUserToChurchMutation();
   const [connectTtiToChurch] = useConnectTtiToChurchMutation();
+  const [connectChurchToMission] = useConnectChurchToMissionMutation();
   
   // Add User To Church form state
   const [addUserToChurchFormData, setAddUserToChurchFormData] = useState<AddUserToChurchFormData>({
@@ -341,6 +347,18 @@ const GestionPage: React.FC = () => {
   // Form errors for connect TTI
   const [connectTtiErrors, setConnectTtiErrors] = useState<Record<string, string>>({});
 
+  // Connect Church to Mission form state
+  const [connectChurchToMissionFormData, setConnectChurchToMissionFormData] = useState<ConnectChurchToMissionFormData>({
+    churchId: '',
+    missionId: ''
+  });
+
+  // Loading state for connect church to mission
+  const [isConnectChurchToMissionLoading, setIsConnectChurchToMissionLoading] = useState<boolean>(false);
+
+  // Form errors for connect church to mission
+  const [connectChurchToMissionErrors, setConnectChurchToMissionErrors] = useState<Record<string, string>>({});
+
   // Transform missions for react-select
   const missionOptions = useMemo(() => {
     if (!missions) return [];
@@ -349,6 +367,8 @@ const GestionPage: React.FC = () => {
       label: mission.missionName
     }));
   }, [missions]);
+
+
 
   // Validate church form
   const validateChurchForm = () => {
@@ -520,6 +540,37 @@ const GestionPage: React.FC = () => {
       setIsConnectTtiLoading(false);
     }
   };
+
+  // Validate connect church to mission form
+  const validateConnectChurchToMissionForm = () => {
+    const errors: Record<string, string> = {};
+    if (!connectChurchToMissionFormData.churchId) errors.churchId = 'L\'église est requise';
+    if (!connectChurchToMissionFormData.missionId) errors.missionId = 'La mission est requise';
+    setConnectChurchToMissionErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Handle connect church to mission form submission
+  const handleConnectChurchToMissionSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateConnectChurchToMissionForm()) return;
+    
+    setIsConnectChurchToMissionLoading(true);
+    try {
+      await connectChurchToMission(connectChurchToMissionFormData).unwrap();
+      toast.success('Église connectée à la mission avec succès!');
+      // Reset form
+      setConnectChurchToMissionFormData({
+        churchId: '',
+        missionId: ''
+      });
+    } catch (error) {
+      console.error('Error connecting church to mission:', error);
+      toast.error('Erreur lors de la connexion de l\'église à la mission');
+    } finally {
+       setIsConnectChurchToMissionLoading(false);
+     }
+   };
   
   // Transform users for react-select
   const userOptions = useMemo(() => {
@@ -572,12 +623,13 @@ const GestionPage: React.FC = () => {
       case 'user': return 1;
       case 'addUserToChurch': return 2;
       case 'connectTti': return 3;
+      case 'connectChurchToMission': return 4;
       default: return 0;
     }
   };
 
   const handleTabChange = (index: number) => {
-    const tabs = ['church', 'user', 'addUserToChurch', 'connectTti'];
+    const tabs = ['church', 'user', 'addUserToChurch', 'connectTti', 'connectChurchToMission'];
     setActiveTab(tabs[index]);
   };
 
@@ -612,6 +664,13 @@ const GestionPage: React.FC = () => {
             // }
           >
             {/* Connecter à TTI */}
+          </Tab>
+          <Tab
+            // className={({ selected }) =>
+            //   `w-full py-3 text-sm font-medium rounded-lg transition-all duration-200 ${selected ? 'bg-teal-600 text-white shadow' : 'text-gray-700 hover:bg-teal-100'}`
+            // }
+          >
+            {/* Connecter Église à Mission */}
           </Tab>
         </Tab.List>
         
@@ -1379,6 +1438,67 @@ const GestionPage: React.FC = () => {
                     </>
                   ) : (
                     'Connecter le TTI à l\'Église'
+                  )}
+                </button>
+              </div>
+            </form>
+          </Tab.Panel>
+          
+          {/* Connect Church to Mission Panel */}
+          <Tab.Panel className="bg-white rounded-xl shadow-lg p-6 ring-1 ring-teal-500/5">
+            <h2 className="text-2xl font-semibold text-gray-800 mb-6">Connecter une Église à une Mission</h2>
+            
+            <form onSubmit={handleConnectChurchToMissionSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Church Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Église</label>
+                  <Select
+                    value={churchOptions.find(option => option.value === connectChurchToMissionFormData.churchId)}
+                    onChange={(selectedOption: any) => setConnectChurchToMissionFormData(prev => ({ ...prev, churchId: selectedOption?.value || '' }))}
+                    options={churchOptions}
+                    placeholder="Sélectionner une église"
+                    isClearable
+                    isSearchable
+                    className="react-select-container"
+                    classNamePrefix="react-select"
+                  />
+                  {connectChurchToMissionErrors.churchId && <p className="mt-1 text-sm text-red-600">{connectChurchToMissionErrors.churchId}</p>}
+                </div>
+                
+                {/* Mission Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Mission</label>
+                  <Select
+                    value={missionOptions.find(option => option.value === connectChurchToMissionFormData.missionId)}
+                    onChange={(selectedOption: any) => setConnectChurchToMissionFormData(prev => ({ ...prev, missionId: selectedOption?.value || '' }))}
+                    options={missionOptions}
+                    placeholder="Sélectionner une mission"
+                    isClearable
+                    isSearchable
+                    className="react-select-container"
+                    classNamePrefix="react-select"
+                  />
+                  {connectChurchToMissionErrors.missionId && <p className="mt-1 text-sm text-red-600">{connectChurchToMissionErrors.missionId}</p>}
+                </div>
+              </div>
+              
+              <div className="flex justify-end mt-6">
+                <button
+                  type="submit"
+                  disabled={isConnectChurchToMissionLoading}
+                  className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                >
+                  {isConnectChurchToMissionLoading ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Connexion en cours...
+                    </>
+                  ) : (
+                    'Connecter l\'Église à la Mission'
                   )}
                 </button>
               </div>

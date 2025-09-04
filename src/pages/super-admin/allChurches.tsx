@@ -635,12 +635,12 @@ const EditChurchModal: React.FC<EditChurchModalProps> = ({ isOpen, onClose, chur
                   Numéro
                 </label>
                 <input
-                  type="text"
-                  name="Numéro"
+                  type="numeric"
+                  name="telephone"
                   value={formData.telephone}
                   onChange={handleChange}
                   className="w-full p-2 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500"
-                  placeholder="Entrez le numéro de téléphone"
+                  placeholder="Entrez le numéro"
                 />
               </div>
 

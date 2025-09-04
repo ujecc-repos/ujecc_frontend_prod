@@ -426,19 +426,19 @@ export default function GestionUtilisateurs() {
   };
 
 
-  const handleRoleChange = async (newRole: string) => {
-    if (!selectedMemberForAction) return;
-    
+  const handleRoleChange = async (memberId: string, newRole: string) => {
     try {
-      // TODO: Implement API call to update member role
-      console.log(`Changing role for ${selectedMemberForAction.firstname} ${selectedMemberForAction.lastname} to ${newRole}`);
+      await updateUser({
+        id: memberId,
+        role: newRole
+      }).unwrap();
       
       // Close modal and reset selected member
       setIsChangeRoleModalOpen(false);
       setSelectedMemberForAction(null);
       
-      // Optionally refetch data
-      // refetch();
+      // Refetch data to update the UI
+      refetch();
     } catch (error) {
       console.error('Error changing role:', error);
     }

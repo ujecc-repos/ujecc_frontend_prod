@@ -132,12 +132,13 @@ const navigation = {
        icon: BuildingLibraryIcon,
        hasSubsections: true,
        subsections: [
-         { name: 'Créer une Église', href: '/tableau-de-bord/super-admin/gestions?tab=church', icon: PlusIcon },
-         { name: 'Créer un Utilisateur', href: '/tableau-de-bord/super-admin/gestions?tab=user', icon: UserPlusIcon },
-         { name: 'Ajouter Utilisateur à Église', href: '/tableau-de-bord/super-admin/gestions?tab=addUserToChurch', icon: LinkIcon },
-         { name: 'Connecter à TTI', href: '/tableau-de-bord/super-admin/gestions?tab=connectTti', icon: ArrowsRightLeftIcon },
-         { name: 'Gestion Utilisateurs', href: '/tableau-de-bord/super-admin/gestion-utilisateurs', icon: UserGroupIcon }
-       ]
+          { name: 'Créer une Église', href: '/tableau-de-bord/super-admin/gestions?tab=church', icon: PlusIcon },
+          { name: 'Créer un Utilisateur', href: '/tableau-de-bord/super-admin/gestions?tab=user', icon: UserPlusIcon },
+          { name: 'Ajouter Utilisateur à Église', href: '/tableau-de-bord/super-admin/gestions?tab=addUserToChurch', icon: LinkIcon },
+          { name: 'Connecter à TTI', href: '/tableau-de-bord/super-admin/gestions?tab=connectTti', icon: ArrowsRightLeftIcon },
+          { name: 'Connecter Église à Mission', href: '/tableau-de-bord/super-admin/gestions?tab=connectChurchToMission', icon: LinkIcon },
+          { name: 'Gestion Utilisateurs', href: '/tableau-de-bord/super-admin/gestion-utilisateurs', icon: UserGroupIcon }
+        ]
      },
     { name: 'Toutes les églises', href: '/tableau-de-bord/super-admin/allchurches', icon: BuildingLibraryIcon },
   ],
