@@ -21,7 +21,7 @@ export default function MainPage() {
   return (
     <>
     {
-      role === "Directeur" ? <StatistiqueForDirecteur/> : role === "Admin" ? <Statistics/> : <StatisticsForSuperAdmin/>
+      role === "Directeur" ? <StatistiqueForDirecteur/> : role === "Admin" ? <Statistics/> : role === "SuperAdmin" ? <StatisticsForSuperAdmin/> : role === "Invite" ? <Statistics/> : null
     }
     </>
   )

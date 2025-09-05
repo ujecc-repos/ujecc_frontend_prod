@@ -42,6 +42,7 @@ import ServiceDetails from "../pages/admin/service-details";
 import Eglise from "../pages/director/eglise";
 import TTI from "../pages/admin/tti";
 import TimotheeTithes from "../pages/admin/timothee-tithes";
+import Invitation from "../pages/invite/invite";
 
 
 const router = createBrowserRouter([
@@ -64,6 +65,10 @@ const router = createBrowserRouter([
                     {
                         path: "/tableau-de-bord/admin/membres",
                         element: <Membres/>
+                    },
+                    {
+                        path: "/tableau-de-bord/admin/membres/invite",
+                        element: <Invitation/>
                     },
                     {
                         path: "/tableau-de-bord/admin/person/:id",
@@ -160,7 +165,8 @@ const router = createBrowserRouter([
                     { path: "/tableau-de-bord/super-admin/church/:churchId", element: <ChurchDetails/> },
                     { path: "/tableau-de-bord/admin/serviceandpresence", element: <ServiceAndPresence/> },
                     { path: "/tableau-de-bord/admin/service-details/:serviceId", element: <ServiceDetails/> },
-                    { path: "/tableau-de-bord/directeur/eglises", element: <Eglise />}
+                    { path: "/tableau-de-bord/directeur/eglises", element: <Eglise />},
+
                     
                 ]
             }
