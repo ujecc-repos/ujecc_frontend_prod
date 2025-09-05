@@ -21,6 +21,8 @@ import { saveAs } from 'file-saver';
 import Calendar from 'react-calendar';
 import Select from 'react-select';
 import 'react-calendar/dist/Calendar.css';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import {useGetDepartementCommunesQuery} from '../../store/services/churchApi';
 
 // Import API hooks (adjust based on your actual API structure)
@@ -1801,12 +1803,12 @@ export default function Membres() {
     try {
       // Validate required fields
       if (!formData.firstname) {
-        alert('Le nom est obligatoire');
+        toast.error('Le nom est obligatoire');
         return;
       }
       
       if (!formData.lastname) {
-        alert('Le prénom est obligatoire');
+        toast.error('Le prénom est obligatoire');
         return;
       }
       
@@ -1851,7 +1853,7 @@ export default function Membres() {
       
       // Close modal and show success message
       setIsAddMemberModalOpen(false);
-      // alert('Membre ajouté avec succès!');
+      toast.success('Membre ajouté avec succès!');
       
       // Refetch users to update the list
       // refetch();
@@ -1859,7 +1861,7 @@ export default function Membres() {
       console.error('Error adding member:', error);
       const errorMessage = error?.data?.message || error?.message || 'Erreur lors de l\'ajout du membre';
       console.log("error : ", error)
-      alert(`Erreur d'enregistrement: ${errorMessage}`);
+      toast.error(`Erreur d'enregistrement: ${errorMessage}`);
     } finally {
       setIsAddingMember(false);
     }
@@ -1879,6 +1881,7 @@ export default function Membres() {
 
   return (
     <div className="">
+      <ToastContainer position="top-right" autoClose={5000} />
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Gestion des Membres</h1>

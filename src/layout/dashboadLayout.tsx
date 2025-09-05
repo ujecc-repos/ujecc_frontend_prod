@@ -123,6 +123,10 @@ const navigation = {
        icon: UserGroupIcon,
      },
    ],
+  Invite: [
+    { name: 'Tableau de bord', href: '/tableau-de-bord', icon: TfiStatsUp },
+    { name: 'Membres', href: '/tableau-de-bord/admin/membres/invite', icon: UserIcon },
+  ],
   SuperAdmin: [
     { name: 'Tableau de bord', href: '/tableau-de-bord', icon: TfiStatsUp },
     { name: 'Missions', href: '/tableau-de-bord/super-admin/missions', icon: UserIcon },
@@ -149,7 +153,7 @@ const navigation = {
   ],
 };
 
-type UserRole = 'Admin' | 'SuperAdmin' | 'Directeur';
+type UserRole = 'Admin' | 'SuperAdmin' | 'Directeur' | "Invite";
 
 const DashboardLayout = ({ userRole }: {userRole: UserRole}) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);

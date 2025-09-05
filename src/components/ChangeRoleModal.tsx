@@ -21,7 +21,8 @@ const roleOptions = [
   { value: 'Membre', label: 'Membre' },
   { value: 'Admin', label: 'Admin' },
   { value: 'Directeur', label: 'Directeur' },
-  { value: 'SuperAdmin', label: 'SuperAdmin' }
+  { value: 'SuperAdmin', label: 'SuperAdmin' },
+  { value: 'Invite', label: 'Invité' },
 ];
 
 const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({
