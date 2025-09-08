@@ -56,7 +56,7 @@ interface Member {
 
 type AgeCategory = 'enfant' | 'adolescent' | 'jeune' | 'adulte' | 'all';
 type GenderType = 'homme' | 'femme' | 'all';
-type CivilStateType = 'célibataire' | 'marié(e)' | 'divorcé(e)' | 'veuf/veuve' | 'all';
+type CivilStateType = 'célibataire' | 'marié(e)' | 'divorcé(e)' | 'veuf/veuve' | 'all' | 'union libre';
 type SearchType = 'name' | 'email' | 'phone';
 
 interface FilterState {
@@ -220,10 +220,10 @@ const FilterModal: React.FC<FilterModalProps> = ({ isOpen, onClose, filters, onA
                   <div className="space-y-2">
                     {[
                       { value: 'all', label: 'Tous' },
-                      { value: 'enfant', label: 'Enfant (0-12 ans)' },
-                      { value: 'adolescent', label: 'Adolescent (13-17 ans)' },
-                      { value: 'jeune', label: 'Jeune (18-35 ans)' },
-                      { value: 'adulte', label: 'Adulte (36+ ans)' }
+                      { value: 'enfant', label: 'Enfant' },
+                      { value: 'adolescent', label: 'Adolescent' },
+                      { value: 'jeune', label: 'Jeune' },
+                      { value: 'adulte', label: 'Adulte' }
                     ].map((option) => (
                       <label key={option.value} className="flex items-center">
                         <input
@@ -859,6 +859,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                       <option value="marié(e)">Marié(e)</option>
                       <option value="divorcé(e)">Divorcé(e)</option>
                       <option value="veuf/veuve">Veuf/Veuve</option>
+                      <option value="union libre">Union Libre</option>
                     </select>
                   </div>
 
@@ -890,13 +891,13 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
 
                   {/* NIF */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">NIF (Numéro d'Identification Fiscale)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">NI/NU</label>
                     <input
-                      type="text"
+                      type="number"
                       value={formData.nif || ''}
                       onChange={(e) => setFormData(prev => ({ ...prev, nif: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      placeholder="NIF (optionnel)"
+                      placeholder="NI/NU(optionnel)"
                     />
                   </div>
 
