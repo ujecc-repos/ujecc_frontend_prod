@@ -12,6 +12,7 @@ import {
   StarIcon
 } from '@heroicons/react/24/outline';
 import { useGetUserByIdQuery, useMakeTimotheeMutation, useRemoveTimotheeMutation } from '../store/services/authApi';
+import { useGetUserByTokenQuery } from '../store/services/authApi';
 
 const PersonDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -24,6 +25,8 @@ const PersonDetail: React.FC = () => {
   // Timothee mutations
   const [makeTimothee] = useMakeTimotheeMutation();
   const [removeTimothee] = useRemoveTimotheeMutation();
+  const {data: userToken} = useGetUserByTokenQuery()
+  console.log("user token : ", userToken)
 
   const calculateAge = (birthDate: string | undefined): number => {
     if (!birthDate) return 0;
@@ -134,6 +137,7 @@ const PersonDetail: React.FC = () => {
                </span>
                
                {/* Timothee Button */}
+               {userToken?.church?.ttiId && (
                <button
                  onClick={handleTimotheeToggle}
                  disabled={isUpdatingTimothee}
@@ -153,6 +157,7 @@ const PersonDetail: React.FC = () => {
                    }
                  </span>
                </button>
+               )}
             </div>
           </div>
         </div>
