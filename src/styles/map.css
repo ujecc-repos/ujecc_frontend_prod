@@ -1,0 +1,79 @@
+/* Custom styles for MapLibre GL maps */
+.church-popup .maplibregl-popup-content {
+  padding: 0;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.church-popup .maplibregl-popup-close-button {
+  color: #6b7280;
+  font-size: 18px;
+  padding: 4px;
+}
+
+.church-popup .maplibregl-popup-close-button:hover {
+  color: #374151;
+  background-color: #f3f4f6;
+}
+
+/* Custom marker styles */
+.church-marker {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.church-marker:hover {
+  transform: scale(1.1);
+}
+
+/* Cluster styles */
+.maplibregl-cluster {
+  background: #51bbd6;
+  border-radius: 50%;
+  color: white;
+  border: 2px solid #fff;
+  font-weight: bold;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.maplibregl-cluster.cluster-small {
+  background: #51bbd6;
+}
+
+.maplibregl-cluster.cluster-medium {
+  background: #f1f075;
+  color: #333;
+}
+
+.maplibregl-cluster.cluster-large {
+  background: #f28cb1;
+}
+
+/* Map container styles */
+.map-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.map-container .maplibregl-canvas {
+  outline: none;
+}
+
+/* Loading overlay */
+.map-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}

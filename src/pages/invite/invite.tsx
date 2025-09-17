@@ -805,8 +805,8 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                     >
                       <option value="">Sélectionner un rôle</option>
                       <option value="Membre">Membre</option>
-                      <option value="Directeur">Directeur</option>
-                      <option value="Admin">Administrateur</option>
+                      {/* <option value="Directeur">Directeur</option> */}
+                      {/* <option value="Admin">Administrateur</option> */}
                     </select>
                     {errors.role && <p className="mt-1 text-sm text-red-500">{errors.role}</p>}
                   </div>
