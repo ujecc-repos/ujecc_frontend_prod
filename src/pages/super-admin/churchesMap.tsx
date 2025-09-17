@@ -1,18 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import Map, { Marker, Popup } from 'react-map-gl/maplibre';
+import 'maplibre-gl/dist/maplibre-gl.css';
+import '../../styles/map.css';
 import { useGetChurchesQuery } from '../../store/services/churchApi';
 import { BuildingOfficeIcon, MapPinIcon, PhoneIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
-
-// Fix for default marker icons in Leaflet with webpack
-//  @ts-ignore
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-});
 
 interface Church {
   id: string;
@@ -22,6 +13,10 @@ interface Church {
   email?: string;
   longitude?: string;
   latitude?: string;
+  mission?: {
+    missionName?: string;
+    presidentName?: string;
+  };
   fullAddress?: {
     country?: string;
     departement?: string;
@@ -34,8 +29,9 @@ interface Church {
 
 const ChurchesMap: React.FC = () => {
   const { data: churches = [], isLoading } = useGetChurchesQuery();
-  const [mapCenter, setMapCenter] = useState<[number, number]>([18.9712, -72.2852]); // Default center (Haiti)
+  const [mapCenter, setMapCenter] = useState<{longitude: number, latitude: number}>({longitude: -72.2852, latitude: 18.9712}); // Default center (Haiti)
   const [validChurches, setValidChurches] = useState<Church[]>([]);
+  const [popupInfo, setPopupInfo] = useState<{longitude: number, latitude: number, church: Church} | null>(null);
 
   useEffect(() => {
     if (churches && churches.length > 0) {
@@ -50,10 +46,10 @@ const ChurchesMap: React.FC = () => {
       // If we have churches with coordinates, center the map on the first one
       if (churchesWithCoordinates.length > 0) {
         const firstChurch = churchesWithCoordinates[0];
-        setMapCenter([
-          parseFloat(firstChurch.latitude!),
-          parseFloat(firstChurch.longitude!)
-        ]);
+        setMapCenter({
+          latitude: parseFloat(firstChurch.latitude!),
+          longitude: parseFloat(firstChurch.longitude!)
+        });
       }
     }
   }, [churches]);
@@ -81,54 +77,119 @@ const ChurchesMap: React.FC = () => {
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow-md overflow-hidden" style={{ height: '70vh' }}>
-          <MapContainer 
-            center={mapCenter} 
-            zoom={8} 
-            style={{ height: '100%', width: '100%' }}
+          <Map
+            {...mapCenter}
+            zoom={8}
+            style={{ width: '100%', height: '100%' }}
+            mapStyle="https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json"
           >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
             {validChurches.map((church) => (
-              <Marker 
-                key={church.id}
-                position={[
-                  parseFloat(church.latitude!),
-                  parseFloat(church.longitude!)
-                ]}
-              >
-                <Popup>
-                  <div className="p-2">
-                    <h3 className="font-semibold text-lg">{church.name}</h3>
-                    {church.fullAddress && (
-                      <div className="flex items-center text-sm mt-2">
-                        <MapPinIcon className="h-4 w-4 mr-1 text-gray-500" />
-                        <span>
-                          {church.fullAddress.country?.toLowerCase() === "haiti" ? 
-                            `${church.fullAddress.country}, ${church.fullAddress.departement}, ${church.fullAddress.commune}` : 
-                            `${church.fullAddress.country || ''}, ${church.fullAddress.departement || ''}, ${church.fullAddress.commune || ''}, ${church.fullAddress.rue || ''}`
-                          }
-                        </span>
-                      </div>
-                    )}
-                    {church.phone && (
-                      <div className="flex items-center text-sm mt-1">
-                        <PhoneIcon className="h-4 w-4 mr-1 text-gray-500" />
-                        <span>{church.phone}</span>
-                      </div>
-                    )}
-                    {church.email && (
-                      <div className="flex items-center text-sm mt-1">
-                        <EnvelopeIcon className="h-4 w-4 mr-1 text-gray-500" />
-                        <span>{church.email}</span>
-                      </div>
-                    )}
-                  </div>
-                </Popup>
-              </Marker>
+              <Marker
+                   key={church.id}
+                   longitude={parseFloat(church.longitude!)}
+                   latitude={parseFloat(church.latitude!)}
+                   onClick={(e) => {
+                     e.originalEvent.stopPropagation();
+                     setPopupInfo({
+                       longitude: parseFloat(church.longitude!),
+                       latitude: parseFloat(church.latitude!),
+                       church
+                     });
+                   }}
+                 >
+                   <div className="church-marker w-8 h-8 bg-blue-500 rounded-full border-2 border-white shadow-lg cursor-pointer flex items-center justify-center">
+                     <BuildingOfficeIcon className="w-4 h-4 text-white" />
+                   </div>
+                 </Marker>
             ))}
-          </MapContainer>
+            
+            {popupInfo && (
+              <Popup
+                longitude={popupInfo.longitude}
+                latitude={popupInfo.latitude}
+                onClose={() => setPopupInfo(null)}
+                closeButton={true}
+                closeOnClick={false}
+              >
+                <div className="p-3 max-w-xs">
+                  <h3 className="font-bold text-lg mb-2 text-blue-800">{popupInfo.church.name}</h3>
+                  
+                  {/* Mission Information */}
+                  {popupInfo.church.mission && (
+                    <div className="mb-3">
+                      <div className="font-semibold text-sm text-gray-700 mb-1">Mission:</div>
+                      <div className="ml-2 text-sm space-y-1">
+                        <div>Name: {popupInfo.church.mission.missionName || "N/A"}</div>
+                        {popupInfo.church.mission.presidentName && (
+                          <div>President: {popupInfo.church.mission.presidentName}</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Address Information */}
+                  {popupInfo.church.fullAddress && (
+                    <div className="mb-3">
+                      <div className="flex items-center text-sm font-semibold text-gray-700 mb-1">
+                        <MapPinIcon className="h-4 w-4 mr-1" />
+                        Address:
+                      </div>
+                      <div className="ml-5 text-sm space-y-1">
+                        {popupInfo.church.fullAddress.country && (
+                          <div>Country: {popupInfo.church.fullAddress.country}</div>
+                        )}
+                        {popupInfo.church.fullAddress.departement && (
+                          <div>Department: {popupInfo.church.fullAddress.departement}</div>
+                        )}
+                        {popupInfo.church.fullAddress.commune && (
+                          <div>Commune: {popupInfo.church.fullAddress.commune}</div>
+                        )}
+                        {popupInfo.church.fullAddress.sectionCommunale && (
+                          <div>Section Communale: {popupInfo.church.fullAddress.sectionCommunale}</div>
+                        )}
+                        {popupInfo.church.fullAddress.rue && (
+                          <div>Street: {popupInfo.church.fullAddress.rue}</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Contact Information */}
+                  <div className="mb-3">
+                    <div className="font-semibold text-sm text-gray-700 mb-1">Contact:</div>
+                    <div className="ml-2 space-y-1">
+                      {popupInfo.church.phone && (
+                        <div className="flex items-center text-sm">
+                          <PhoneIcon className="h-4 w-4 mr-1 text-gray-500" />
+                          <span>{popupInfo.church.phone}</span>
+                        </div>
+                      )}
+                      {popupInfo.church.fullAddress?.telephone && popupInfo.church.fullAddress.telephone !== popupInfo.church.phone && (
+                        <div className="flex items-center text-sm">
+                          <PhoneIcon className="h-4 w-4 mr-1 text-gray-500" />
+                          <span>Tel: {popupInfo.church.fullAddress.telephone}</span>
+                        </div>
+                      )}
+                      {popupInfo.church.email && (
+                        <div className="flex items-center text-sm">
+                          <EnvelopeIcon className="h-4 w-4 mr-1 text-gray-500" />
+                          <span>{popupInfo.church.email}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* General Address if available */}
+                  {popupInfo.church.address && (
+                    <div className="mb-2">
+                      <div className="font-semibold text-sm text-gray-700 mb-1">General Address:</div>
+                      <div className="ml-2 text-sm text-gray-600">{popupInfo.church.address}</div>
+                    </div>
+                  )}
+                </div>
+              </Popup>
+            )}
+          </Map>
         </div>
       )}
     </div>
