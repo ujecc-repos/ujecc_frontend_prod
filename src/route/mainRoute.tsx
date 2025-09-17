@@ -43,6 +43,7 @@ import Eglise from "../pages/director/eglise";
 import TTI from "../pages/admin/tti";
 import TimotheeTithes from "../pages/admin/timothee-tithes";
 import Invitation from "../pages/invite/invite";
+import ChurchMap from "../pages/super-admin/mapping";
 
 
 const router = createBrowserRouter([
@@ -157,8 +158,7 @@ const router = createBrowserRouter([
                     { path: "/tableau-de-bord/super-admin/missions", element: <MissionPage/> },
                     { path: "/tableau-de-bord/super-admin/gestions", element: <GestionPage/> },
                     { path: "/tableau-de-bord/super-admin/gestion-utilisateurs", element: <GestionUtilisateursPage/> },
-                    { path: "/tableau-de-bord/admin/timothee/:timotheeId/tithes", element: <TimotheeTithes/> },
-                    
+                    { path: "/tableau-de-bord/admin/timothee/:timotheeId/tithes", element: <TimotheeTithes/> },                   
                     // 
                     { path: "/tableau-de-bord/pasteurs", element: <PasteurPage/> },
                     { path: "/tableau-de-bord/super-admin/allchurches", element: <AllChurches/> },
@@ -166,8 +166,7 @@ const router = createBrowserRouter([
                     { path: "/tableau-de-bord/admin/serviceandpresence", element: <ServiceAndPresence/> },
                     { path: "/tableau-de-bord/admin/service-details/:serviceId", element: <ServiceDetails/> },
                     { path: "/tableau-de-bord/directeur/eglises", element: <Eglise />},
-
-                    
+                    { path: "/tableau-de-bord/super-admin/map", element: <ChurchMap/>}                   
                 ]
             }
         ]
