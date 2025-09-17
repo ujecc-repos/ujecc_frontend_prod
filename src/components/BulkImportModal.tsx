@@ -42,6 +42,7 @@ const BulkImportModal: React.FC<BulkImportModalProps> = ({ isOpen, onClose, onIm
       processExcelFile(selectedFile);
     }
   };
+  
 
   const processExcelFile = (file: File) => {
     const reader = new FileReader();
@@ -135,6 +136,7 @@ const BulkImportModal: React.FC<BulkImportModalProps> = ({ isOpen, onClose, onIm
       fileInputRef.current.value = '';
     }
     onClose();
+    console.log(file)
   };
 
   const downloadTemplate = () => {
