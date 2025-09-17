@@ -4,6 +4,7 @@ import {
   MagnifyingGlassIcon,
   FunnelIcon,
   ArrowDownTrayIcon,
+  ArrowUpTrayIcon,
   PlusIcon,
   PencilIcon,
   TrashIcon,
@@ -21,12 +22,10 @@ import { saveAs } from 'file-saver';
 import Calendar from 'react-calendar';
 import Select from 'react-select';
 import 'react-calendar/dist/Calendar.css';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 import {useGetDepartementCommunesQuery} from '../../store/services/churchApi';
 
 // Import API hooks (adjust based on your actual API structure)
-import { useGetUserByTokenQuery, useGetUsersByChurchQuery, useRegisterMutation, useUpdateUserMutation, useDeleteUserMutation } from '../../store/services/authApi';
+import { useGetUserByTokenQuery, useGetUsersByChurchQuery, useRegisterMutation, useUpdateUserMutation, useDeleteUserMutation, useBulkInsertUsersMutation } from '../../store/services/authApi';
 import { useGetMinistriesByChurchQuery } from '../../store/services/ministryApi';
 import { useCreateTransferMutation } from '../../store/services/transferApi';
 
@@ -36,6 +35,7 @@ import BadgeModal from '../../components/BadgeModal';
 import DeleteMemberModal from '../../components/DeleteMemberModal';
 import EditMemberModal from '../../components/EditMemberModal';
 import TransferMemberModal from '../../components/TransferMemberModal';
+import BulkImportModal from '../../components/BulkImportModal';
 
 interface Member {
   id: string;
@@ -56,7 +56,7 @@ interface Member {
 
 type AgeCategory = 'enfant' | 'adolescent' | 'jeune' | 'adulte' | 'all';
 type GenderType = 'homme' | 'femme' | 'all';
-type CivilStateType = 'célibataire' | 'marié(e)' | 'divorcé(e)' | 'veuf/veuve' | 'all';
+type CivilStateType = 'célibataire' | 'marié(e)' | 'divorcé(e)' | 'veuf/veuve' | 'union libre' | 'all';
 type SearchType = 'name' | 'email' | 'phone';
 
 interface FilterState {
@@ -248,7 +248,8 @@ const FilterModal: React.FC<FilterModalProps> = ({ isOpen, onClose, filters, onA
                       { value: 'célibataire', label: 'Célibataire' },
                       { value: 'marié(e)', label: 'Marié(e)' },
                       { value: 'divorcé(e)', label: 'Divorcé(e)' },
-                      { value: 'veuf/veuve', label: 'Veuf/Veuve' }
+                      { value: 'veuf/veuve', label: 'Veuf/Veuve' },
+                      { value: 'union libre', label: 'Union Libre' }
                     ].map((option) => (
                       <label key={option.value} className="flex items-center">
                         <input
@@ -479,68 +480,6 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
     e.preventDefault();
     if (validateForm()) {
       onSubmit(formData);
-      setTimeout(() => {
-        setFormData({
-      firstname: '',
-      lastname: '',
-      email: '',
-      password: '',
-      mobilePhone: '',
-      homePhone: '',
-      role: '',
-      gender: '',
-      birthDate: '',
-      joinDate: '',
-      baptismDate: '',
-      baptismLocation: '',
-      civilState: '',
-      spouseFullName: '',
-      minister: '',
-      country: '',
-      birthCountry: '',
-      city: '',
-      birthCity: '',
-      addressLine: '',
-      profession: '',
-      age: '',
-      personToContact: '',
-      facebook: '',
-      profileImage: null,
-      isActiveMember: true,
-      nif: '',
-      groupeSanguin: ''
-    });
-      }, 2000);
-      setFormData({
-      firstname: '',
-      lastname: '',
-      email: '',
-      password: '',
-      mobilePhone: '',
-      homePhone: '',
-      role: '',
-      gender: '',
-      birthDate: '',
-      joinDate: '',
-      baptismDate: '',
-      baptismLocation: '',
-      civilState: '',
-      spouseFullName: '',
-      minister: '',
-      country: '',
-      birthCountry: '',
-      city: '',
-      birthCity: '',
-      addressLine: '',
-      profession: '',
-      age: '',
-      personToContact: '',
-      facebook: '',
-      profileImage: null,
-      isActiveMember: true,
-      nif: '',
-      groupeSanguin: ''
-    });
     }
   };
 
@@ -859,6 +798,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                       <option value="marié(e)">Marié(e)</option>
                       <option value="divorcé(e)">Divorcé(e)</option>
                       <option value="veuf/veuve">Veuf/Veuve</option>
+                      <option value="union libre">Union Libre</option>
                     </select>
                   </div>
 
@@ -890,13 +830,13 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
 
                   {/* NIF */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">NIF (Numéro d'Identification Fiscale)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">NI/NU</label>
                     <input
-                      type="text"
+                      type="number"
                       value={formData.nif || ''}
                       onChange={(e) => setFormData(prev => ({ ...prev, nif: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      placeholder="NIF (optionnel)"
+                      placeholder="NI/NU"
                     />
                   </div>
 
@@ -1298,6 +1238,8 @@ export default function Membres() {
   const [isEditingMember, setIsEditingMember] = useState(false);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [isTransferringMember, setIsTransferringMember] = useState(false);
+  const [isBulkImportModalOpen, setIsBulkImportModalOpen] = useState(false);
+  const [isBulkImporting, setIsBulkImporting] = useState(false);
   const [selectedMemberForAction, setSelectedMemberForAction] = useState<Member | null>(null);
   const itemsPerPage = 7;
 
@@ -1321,6 +1263,9 @@ export default function Membres() {
   
   // Create transfer mutation for transferring members
   const [createTransfer] = useCreateTransferMutation();
+  
+  // Bulk insert mutation for importing members
+  const [bulkInsertUsers] = useBulkInsertUsersMutation();
 
   // Initialize filters
   const [filters, setFilters] = useState<FilterState>({
@@ -1457,19 +1402,19 @@ export default function Membres() {
     setIsBadgeModalOpen(true);
   };
 
-  const handleRoleChange = async (memberId: string, newRole: string) => {
+  const handleRoleChange = async (newRole: string) => {
+    if (!selectedMemberForAction) return;
+    
     try {
-      await updateUser({
-        id: memberId,
-        role: newRole
-      }).unwrap();
+      // TODO: Implement API call to update member role
+      console.log(`Changing role for ${selectedMemberForAction.firstname} ${selectedMemberForAction.lastname} to ${newRole}`);
       
       // Close modal and reset selected member
       setIsChangeRoleModalOpen(false);
       setSelectedMemberForAction(null);
       
-      // Refetch data to update the UI
-      refetch();
+      // Optionally refetch data
+      // refetch();
     } catch (error) {
       console.error('Error changing role:', error);
     }
@@ -1607,6 +1552,43 @@ export default function Membres() {
 
   const handleRowClick = (member: Member) => {
     navigate(`/tableau-de-bord/admin/person/${member.id}`);
+  };
+
+  const handleBulkImport = async (users: Array<{nom: string, prenom: string, sex: string, birthDate: string, nif: string}>): Promise<{ success: boolean; insertedCount: number; data?: any }> => {
+    if (!userData?.church?.id) {
+      throw new Error('Church ID not found');
+    }
+
+    setIsBulkImporting(true);
+    try {
+      // Transform the data to match the expected format
+      const usersData = users.map(user => ({
+        firstname: user.prenom,
+        lastname: user.nom,
+        sex: user.sex,
+        birthDate: user.birthDate,
+        nif: user.nif,
+      }));
+
+      const result = await bulkInsertUsers({
+        users: usersData,
+        churchId: userData.church.id
+      }).unwrap();
+
+      // Refetch data to show new members
+      refetch();
+      
+      return { 
+        success: true, 
+        insertedCount: result.summary?.created || result.createdUsers?.length || usersData.length, 
+        data: result 
+      };
+    } catch (error: any) {
+      console.error('Error during bulk import:', error);
+      throw error;
+    } finally {
+      setIsBulkImporting(false);
+    }
   };
 
   // Export functions
@@ -1803,12 +1785,12 @@ export default function Membres() {
     try {
       // Validate required fields
       if (!formData.firstname) {
-        toast.error('Le nom est obligatoire');
+        alert('Le nom est obligatoire');
         return;
       }
       
       if (!formData.lastname) {
-        toast.error('Le prénom est obligatoire');
+        alert('Le prénom est obligatoire');
         return;
       }
       
@@ -1839,7 +1821,6 @@ export default function Membres() {
         }
         
         await register(formDataObj).unwrap();
-        
       } else {
         // No image, use regular JSON request
         const userData = {
@@ -1853,7 +1834,7 @@ export default function Membres() {
       
       // Close modal and show success message
       setIsAddMemberModalOpen(false);
-      toast.success('Membre ajouté avec succès!');
+      // alert('Membre ajouté avec succès!');
       
       // Refetch users to update the list
       // refetch();
@@ -1861,7 +1842,7 @@ export default function Membres() {
       console.error('Error adding member:', error);
       const errorMessage = error?.data?.message || error?.message || 'Erreur lors de l\'ajout du membre';
       console.log("error : ", error)
-      toast.error(`Erreur d'enregistrement: ${errorMessage}`);
+      alert(`Erreur d'enregistrement: ${errorMessage}`);
     } finally {
       setIsAddingMember(false);
     }
@@ -1881,7 +1862,6 @@ export default function Membres() {
 
   return (
     <div className="">
-      <ToastContainer position="top-right" autoClose={5000} />
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Gestion des Membres</h1>
@@ -1926,6 +1906,27 @@ export default function Membres() {
             >
               <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
               Exporter
+            </button>
+
+            <button
+              onClick={() => setIsBulkImportModalOpen(true)}
+              disabled={isBulkImporting}
+              className="flex items-center px-4 py-2 border border-teal-600 text-teal-600 rounded-lg hover:bg-teal-50 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              {isBulkImporting ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-teal-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Import en cours...
+                </>
+              ) : (
+                <>
+                  <ArrowUpTrayIcon className="h-5 w-5 mr-2" />
+                  Importer Excel
+                </>
+              )}
             </button>
 
             <button
@@ -2370,6 +2371,13 @@ export default function Membres() {
         member={selectedMemberForAction}
         onSubmit={handleTransferSubmit}
         isLoading={isTransferringMember}
+      />
+
+      <BulkImportModal
+        isOpen={isBulkImportModalOpen}
+        onClose={() => setIsBulkImportModalOpen(false)}
+        onImport={handleBulkImport}
+        isLoading={isBulkImporting}
       />
     </div>
   );

@@ -241,6 +241,14 @@ export const authApi = createApi({
     getAllTimotheesTithes: builder.query<User[], string>({      query: (churchId) => `/users/timothees/tithes/${churchId}`,
       providesTags: ['User'],
     }),
+    bulkInsertUsers: builder.mutation<{ message: string, createdUsers: User[], errors: any[], summary?: { total: number, created: number, failed: number } }, { users: any[], churchId: string }>({
+      query: ({ users, churchId }) => ({
+        url: '/users/bulk-insert',
+        method: 'POST',
+        body: { users, churchId },
+      }),
+      invalidatesTags: ['User'],
+    }),
 
     // Make a user a timothee
     makeTimothee: builder.mutation<{ message: string, user: User }, string>({query: (id) => ({
@@ -286,4 +294,5 @@ export const {
   useMakeTimotheeMutation,
   useRemoveTimotheeMutation,
   useGetTimotheesByChurchQuery,
+  useBulkInsertUsersMutation
 } = authApi;
