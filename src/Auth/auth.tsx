@@ -18,10 +18,30 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }: {children: any}) => {
   const [user, setUser] = useState(null);
 
+  // Function to check if token is expired
+  const isTokenExpired = (token: string): boolean => {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const currentTime = Date.now() / 1000;
+      return payload.exp < currentTime;
+    } catch (error) {
+      return true; // If token is malformed, consider it expired
+    }
+  };
+
   useEffect(() => {
     const userInfo = localStorage.getItem('user');
-    if (userInfo) {
+    const token = localStorage.getItem('token');
+    
+    // Check if both user and token exist, and token is not expired
+    if (userInfo && token && !isTokenExpired(token)) {
       setUser(JSON.parse(userInfo));
+    } else {
+      // Clear invalid/expired data
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
+      localStorage.removeItem('role');
+      setUser(null);
     }
   }, [])
 
@@ -34,6 +54,7 @@ export const AuthProvider = ({ children }: {children: any}) => {
   const logout = () => {
     localStorage.removeItem('user');
     localStorage.removeItem('token');
+    localStorage.removeItem('role');
     setUser(null);
   };
 

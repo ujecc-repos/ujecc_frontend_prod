@@ -8,14 +8,14 @@ export default function MainPage() {
  const [role, setRole] = useState<string>("")
 
  useEffect(() => {
-  const role = localStorage.getItem("role")
-  if (role) {
-    setRole(`${role}`)
-  }
- }, [role])
+   const role = localStorage.getItem("role")
+   if (role) {
+     setRole(`${role}`)
+   }
+ }, [])
 
  if(role.length < 1 ) {
-  return;
+  return null;
  }
 
   return (
