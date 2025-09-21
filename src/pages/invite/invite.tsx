@@ -548,6 +548,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                       <option value="marié(e)">Marié(e)</option>
                       <option value="divorcé(e)">Divorcé(e)</option>
                       <option value="veuf/veuve">Veuf/Veuve</option>
+                      <option value="union libre">Union Libre</option>
                     </select>
                   </div>
 

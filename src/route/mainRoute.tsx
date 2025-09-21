@@ -44,6 +44,7 @@ import TTI from "../pages/admin/tti";
 import TimotheeTithes from "../pages/admin/timothee-tithes";
 import Invitation from "../pages/invite/invite";
 import ChurchMap from "../pages/super-admin/mapping";
+import Recovery from "../pages/super-admin/recovery";
 
 
 const router = createBrowserRouter([
@@ -134,6 +135,10 @@ const router = createBrowserRouter([
                     {
                         path: "/tableau-de-bord/admin/bapteme/creation",
                         element: <CreationBapteme/>
+                    },
+                    {
+                        path: "/tableau-de-bord/super-admin/recovery",
+                        element: <Recovery/>
                     },
                     {
                         path: "/tableau-de-bord/admin/comite",
