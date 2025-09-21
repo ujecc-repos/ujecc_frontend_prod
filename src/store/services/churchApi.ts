@@ -93,7 +93,7 @@ export const churchApi = authApi.injectEndpoints({
         method: 'POST',
         body: churchData,
       }),
-      invalidatesTags: ['Church', 'Transfer'],
+      invalidatesTags: ['Church', 'Transfer', "User"],
     }),
 
     getChurches: builder.query<Church[], void>({
@@ -122,7 +122,7 @@ export const churchApi = authApi.injectEndpoints({
           body: isFormData ? churchData : (churchData as UpdateChurchRequest),
         };
       },
-      invalidatesTags: ["Church", "Transfer"]
+      invalidatesTags: ["Church", "Transfer", "User"]
     }),
 
     addUserToChurch: builder.mutation<AddUserToChurchResponse, { churchId: string, userId: string }>({
@@ -131,7 +131,7 @@ export const churchApi = authApi.injectEndpoints({
         method: 'POST',
         body: { userId },
       }),
-      invalidatesTags: ['Church'],
+      invalidatesTags: ['Church', "User"],
     }),
 
     deleteChurch: builder.mutation<{ message: string }, string>({
@@ -139,7 +139,7 @@ export const churchApi = authApi.injectEndpoints({
         url: `/churches/${id}`,
         method: 'DELETE',
       }),
-      invalidatesTags: ['Church', 'Transfer'],
+      invalidatesTags: ['Church', 'Transfer', "User"],
     }),
     
     getDepartementCommunes: builder.query<DepartementCommunesResponse, string>({

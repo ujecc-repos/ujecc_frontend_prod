@@ -153,6 +153,10 @@ export const authApi = createApi({
       query: () => '/users/allusers',
       providesTags: ['User'],
     }),
+    getMembersRecovery: builder.query<User[], void>({
+      query: () => '/users/members/recovery',
+      providesTags: ['User'],
+    }),
 
     // get users and administrators
     getUsersAndAdministrators: builder.query<User[], void>({
@@ -294,5 +298,6 @@ export const {
   useMakeTimotheeMutation,
   useRemoveTimotheeMutation,
   useGetTimotheesByChurchQuery,
-  useBulkInsertUsersMutation
+  useBulkInsertUsersMutation,
+  useGetMembersRecoveryQuery,
 } = authApi;

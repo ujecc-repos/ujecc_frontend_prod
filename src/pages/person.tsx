@@ -98,7 +98,7 @@ const PersonDetail: React.FC = () => {
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Membre introuvable</h2>
           <p className="text-gray-600 mb-4">Les informations de ce membre ne sont pas disponibles.</p>
           <button
-            onClick={() => navigate('/tableau-de-bord/admin/membres')}
+            onClick={() => navigate(-1)}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
           >
             Retour à la liste
@@ -116,7 +116,7 @@ const PersonDetail: React.FC = () => {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => navigate('/tableau-de-bord/admin/membres')}
+                onClick={() => navigate(-1)}
                 className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
               >
                 <ArrowLeftIcon className="h-5 w-5 mr-2" />

@@ -29,7 +29,8 @@ import {
   PlusIcon,
   UserPlusIcon,
   LinkIcon,
-  MapPinIcon
+  MapPinIcon,
+  CloudArrowUpIcon
 } from '@heroicons/react/24/outline';
 import { TfiStatsUp } from "react-icons/tfi";
 import { motion } from 'framer-motion';
@@ -147,7 +148,9 @@ const navigation = {
      },
     { name: 'Toutes les églises', href: '/tableau-de-bord/super-admin/allchurches', icon: BuildingLibraryIcon },
     { name: 'Mapping', href: '/tableau-de-bord/super-admin/map', icon: MapPinIcon },
+    { name: 'Recovery', href: '/tableau-de-bord/super-admin/recovery', icon: CloudArrowUpIcon },
   ],
+  
   Directeur: [
     { name: 'Tableau de bord', href: '/tableau-de-bord', icon: TfiStatsUp },
     { name: 'Église', href: "/tableau-de-bord/directeur/eglises", icon: BuildingLibraryIcon},
