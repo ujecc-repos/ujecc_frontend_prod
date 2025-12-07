@@ -30,7 +30,7 @@ import { useGetMinistriesByChurchQuery } from '../../store/services/ministryApi'
 import { useCreateTransferMutation } from '../../store/services/transferApi';
 
 // Import custom components
-import ChangeRoleModal from '../../components/ChangeRoleModal';
+// import ChangeRoleModal from '../../components/ChangeRoleModal';
 import BadgeModal from '../../components/BadgeModal';
 import DeleteMemberModal from '../../components/DeleteMemberModal';
 import EditMemberModal from '../../components/EditMemberModal';
@@ -1231,7 +1231,7 @@ export default function Membres() {
   const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
   const [isAddingMember, setIsAddingMember] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [isChangeRoleModalOpen, setIsChangeRoleModalOpen] = useState(false);
+  // const [isChangeRoleModalOpen, setIsChangeRoleModalOpen] = useState(false);
   const [isBadgeModalOpen, setIsBadgeModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -1392,33 +1392,16 @@ export default function Membres() {
     });
   };
 
-  const handleChangeRole = (member: Member) => {
-    setSelectedMemberForAction(member);
-    setIsChangeRoleModalOpen(true);
-  };
+  // const handleChangeRole = (member: Member) => {
+  //   setSelectedMemberForAction(member);
+  //   setIsChangeRoleModalOpen(true);
+  // };
 
   const handleCreateBadge = (member: Member) => {
     setSelectedMemberForAction(member);
     setIsBadgeModalOpen(true);
   };
 
-  const handleRoleChange = async (newRole: string) => {
-    if (!selectedMemberForAction) return;
-    
-    try {
-      // TODO: Implement API call to update member role
-      console.log(`Changing role for ${selectedMemberForAction.firstname} ${selectedMemberForAction.lastname} to ${newRole}`);
-      
-      // Close modal and reset selected member
-      setIsChangeRoleModalOpen(false);
-      setSelectedMemberForAction(null);
-      
-      // Optionally refetch data
-      // refetch();
-    } catch (error) {
-      console.error('Error changing role:', error);
-    }
-  };
 
   const handleDeleteMember = (member: Member) => {
     setSelectedMemberForAction(member);
@@ -2094,7 +2077,7 @@ export default function Membres() {
                           <span className="absolute bottom-full right-0 mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">Modifier</span>
                         </button>
                         
-                        <button
+                        {/* <button
                           onClick={(e) => {
                             e.stopPropagation();
                             handleChangeRole(member);
@@ -2104,7 +2087,7 @@ export default function Membres() {
                         >
                           <UserIcon className="h-5 w-5" />
                           <span className="absolute bottom-full right-0 mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">Changer rôle</span>
-                        </button>
+                        </button> */}
                         
                         <button
                           onClick={(e) => {
@@ -2316,7 +2299,7 @@ export default function Membres() {
         isLoading={isAddingMember}
       />
 
-      <ChangeRoleModal
+      {/* <ChangeRoleModal
         isOpen={isChangeRoleModalOpen}
         onClose={() => {
           setIsChangeRoleModalOpen(false);
@@ -2324,7 +2307,7 @@ export default function Membres() {
         }}
         member={selectedMemberForAction}
         onRoleChange={handleRoleChange}
-      />
+      /> */}
 
       <BadgeModal
         isOpen={isBadgeModalOpen}
