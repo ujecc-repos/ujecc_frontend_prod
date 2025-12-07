@@ -16,7 +16,8 @@ import {  useGetUsersQuery, useUpdateUserMutation, useDeleteUserMutation } from 
 // Import custom components
 import ChangeRoleModal from '../../components/ChangeRoleModal';
 import DeleteMemberModal from '../../components/DeleteMemberModal';
-import EditMemberModal from '../../components/EditMemberModal';
+// import EditMemberModal from '../../components/EditMemberModal';
+import EditMemberModalUser from '../../components/EditMemberModalUser';
 
 interface Member {
   id: string;
@@ -916,7 +917,7 @@ export default function GestionUtilisateurs() {
         onDelete={handleConfirmDelete}
       />
 
-      <EditMemberModal
+      <EditMemberModalUser
         isOpen={isEditModalOpen}
         onClose={() => {
           setIsEditModalOpen(false);
