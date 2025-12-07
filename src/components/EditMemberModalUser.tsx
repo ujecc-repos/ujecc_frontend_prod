@@ -79,7 +79,7 @@ interface EditMemberModalProps {
   isLoading: boolean;
 }
 
-const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, member, onSubmit, isLoading }) => {
+const EditMemberModalUser: React.FC<EditMemberModalProps> = ({ isOpen, onClose, member, onSubmit, isLoading }) => {
   const [formData, setFormData] = useState<EditMemberFormData>({
     firstname: '',
     lastname: '',
@@ -414,6 +414,9 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
                     >
                       <option value="">Sélectionner un rôle</option>
                       <option value="Membre">Membre</option>
+                      <option value="Admin">Admin</option>
+                      <option value="Director">Director</option>
+                      <option value="SuperAdmin">SuperAdmin</option>
                     </select>
                     {errors.role && <p className="mt-1 text-sm text-red-500">{errors.role}</p>}
                   </div>
@@ -837,4 +840,4 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
   );
 };
 
-export default EditMemberModal;
+export default EditMemberModalUser;
