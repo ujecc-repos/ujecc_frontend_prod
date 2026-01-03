@@ -10,6 +10,10 @@ import {
   UsersIcon,
   FunnelIcon
 } from '@heroicons/react/24/outline';
+import * as XLSX from 'xlsx';
+import { jsPDF } from 'jspdf';
+import { Document, Packer, Paragraph, Table, TableCell, TableRow, TextRun, WidthType } from 'docx';
+import { saveAs } from 'file-saver';
 
 import { useGetGroupsByChurchQuery, useDeleteGroupMutation, useCreateGroupMutation, useTransferUserBetweenGroupsMutation, useUpdateGroupMutation } from '../../store/services/groupApi';
 import { useGetUserByTokenQuery } from '../../store/services/authApi';
@@ -117,8 +121,183 @@ export default function Groupe() {
     navigate(`/tableau-de-bord/admin/groupe/${group.id}`);
   };
 
-  const handleExport = (type: 'xlsx' | 'pdf' | 'docx') => {
-    console.log(`Export en tant que ${type}`);
+  const handleExport = async (type: 'xlsx' | 'pdf' | 'docx') => {
+    // Prepare the specific data for the requested table format
+    const tableData = filteredGroups.map(group => ({
+      Nom: group.name,
+      'Réunion': `${group.meetingDays || ''} ${group.meetingTime || ''}`.trim() || 'Non défini',
+      'Membres': (group.users?.length || 0).toString(),
+      'Responsable': group.minister || 'Non assigné'
+    }));
+
+    const totalGroups = filteredGroups.length;
+    const date = new Date().toLocaleDateString('fr-FR');
+
+    if (type === 'xlsx') {
+      // Create workbook and worksheet
+      const wb = XLSX.utils.book_new();
+      
+      // Create data array with header information
+      const wsData = [
+        ['Rapport des Groupes'],
+        [`Date: ${date}`],
+        [`Nombre total de groupes: ${totalGroups}`],
+        [''], // Empty row
+        ['Nom du groupe', 'Jour et Heure de réunion', 'Nombre de membres', 'Responsable'] // Table Headers
+      ];
+
+      // Add table data
+      tableData.forEach(row => {
+        wsData.push([row.Nom, row['Réunion'], row['Membres'], row['Responsable']]);
+      });
+
+      // Create sheet from array of arrays
+      const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+      // Add sheet to workbook
+      XLSX.utils.book_append_sheet(wb, ws, "Groupes");
+      XLSX.writeFile(wb, "rapport_groupes.xlsx");
+    } else if (type === 'pdf') {
+      const doc = new jsPDF();
+      
+      // Title
+      doc.setFontSize(20);
+      doc.setTextColor(0, 128, 128); // Teal color
+      doc.text("Rapport des Groupes", 105, 20, { align: "center" });
+      
+      // Stats
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0);
+      doc.text(`Date: ${date}`, 15, 35);
+      doc.text(`Nombre total de groupes: ${totalGroups}`, 15, 42);
+      
+      // Table Header
+      let y = 55;
+      const xPositions = [15, 75, 135, 165]; // x coordinates for columns
+      
+      doc.setFillColor(240, 240, 240);
+      doc.rect(10, y - 5, 190, 10, 'F');
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      
+      doc.text("Nom du groupe", xPositions[0], y);
+      doc.text("Réunion", xPositions[1], y);
+      doc.text("Membres", xPositions[2], y);
+      doc.text("Responsable", xPositions[3], y);
+      
+      y += 10;
+      
+      // Table Content
+      doc.setFont("helvetica", "normal");
+      
+      tableData.forEach((row, index) => {
+        if (y > 270) {
+          doc.addPage();
+          y = 20;
+          
+          // Redraw header on new page
+          doc.setFillColor(240, 240, 240);
+          doc.rect(10, y - 5, 190, 10, 'F');
+          doc.setFont("helvetica", "bold");
+          doc.text("Nom du groupe", xPositions[0], y);
+          doc.text("Réunion", xPositions[1], y);
+          doc.text("Membres", xPositions[2], y);
+          doc.text("Responsable", xPositions[3], y);
+          doc.setFont("helvetica", "normal");
+          y += 10;
+        }
+
+        // Zebra striping
+        if (index % 2 === 1) {
+            doc.setFillColor(250, 250, 250);
+            doc.rect(10, y - 5, 190, 8, 'F');
+        }
+        
+        // Truncate text if too long to prevent overlap
+        const truncate = (str: string, maxLen: number) => str.length > maxLen ? str.substring(0, maxLen) + '...' : str;
+        
+        doc.text(truncate(row.Nom, 35), xPositions[0], y);
+        doc.text(truncate(row['Réunion'], 30), xPositions[1], y);
+        doc.text(row['Membres'], xPositions[2], y);
+        doc.text(truncate(row['Responsable'], 25), xPositions[3], y);
+        
+        y += 8;
+      });
+      
+      doc.save("rapport_groupes.pdf");
+    } else if (type === 'docx') {
+      const rows = [
+        new TableRow({
+          tableHeader: true,
+          children: [
+            new TableCell({ 
+                children: [new Paragraph({ children: [new TextRun({ text: "Nom du groupe", bold: true })] })],
+                shading: { fill: "E0E0E0" }
+            }),
+            new TableCell({ 
+                children: [new Paragraph({ children: [new TextRun({ text: "Réunion", bold: true })] })],
+                shading: { fill: "E0E0E0" }
+            }),
+            new TableCell({ 
+                children: [new Paragraph({ children: [new TextRun({ text: "Membres", bold: true })] })],
+                shading: { fill: "E0E0E0" }
+            }),
+            new TableCell({ 
+                children: [new Paragraph({ children: [new TextRun({ text: "Responsable", bold: true })] })],
+                shading: { fill: "E0E0E0" }
+            }),
+          ],
+        }),
+        ...tableData.map(item => 
+          new TableRow({
+            children: [
+              new TableCell({ children: [new Paragraph({ text: item.Nom })] }),
+              new TableCell({ children: [new Paragraph({ text: item['Réunion'] })] }),
+              new TableCell({ children: [new Paragraph({ text: item['Membres'] })] }),
+              new TableCell({ children: [new Paragraph({ text: item['Responsable'] })] }),
+            ],
+          })
+        )
+      ];
+
+      const doc = new Document({
+        sections: [{
+          properties: {},
+          children: [
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "Rapport des Groupes",
+                  bold: true,
+                  size: 32,
+                  color: "008080"
+                }),
+              ],
+              spacing: { after: 200 },
+            }),
+            new Paragraph({
+                children: [
+                    new TextRun({ text: `Date: ${date}`, size: 24 }),
+                ]
+            }),
+            new Paragraph({
+                children: [
+                    new TextRun({ text: `Nombre total de groupes: ${totalGroups}`, size: 24, bold: true }),
+                ],
+                spacing: { after: 400 },
+            }),
+            new Table({
+              rows: rows,
+              width: { size: 100, type: WidthType.PERCENTAGE },
+            }),
+          ],
+        }],
+      });
+
+      const blob = await Packer.toBlob(doc);
+      saveAs(blob, "rapport_groupes.docx");
+    }
+    
     setShowExportModal(false);
   };
 
@@ -413,7 +592,7 @@ export default function Groupe() {
                             {group.picture ? (
                               <img
                                 className="h-10 w-10 rounded-full object-cover"
-                                src={`https://ujecc-backend.onrender.com${group.picture}`}
+                                src={`${import.meta.env.VITE_API_URL_PHOTO}${group.picture}`}
                                 alt={group.name}
                               />
                             ) : (

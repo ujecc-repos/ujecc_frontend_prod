@@ -56,6 +56,13 @@ export default function CreationFuneraille() {
           newErrors.deathCertificate = 'Le certificat de décès ne doit pas dépasser 5MB';
         }
       }
+
+      // Validation de la cohérence des dates (naissance et décès)
+      if (formData.birthDate && formData.deathDate) {
+        if (formData.deathDate <= formData.birthDate) {
+          newErrors.deathDate = 'La date de décès doit être postérieure à la date de naissance';
+        }
+      }
     } else if (step === 1) {
       if (!formData.nextOfKin) newErrors.nextOfKin = 'Le nom du représentant est obligatoire';
       if (!formData.relationShip) newErrors.relationShip = 'La relation est obligatoire';
@@ -79,6 +86,20 @@ export default function CreationFuneraille() {
       // Validation du format de l'heure
       if (formData.funeralTime && !/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(formData.funeralTime)) {
         newErrors.funeralTime = 'Format d\'heure invalide (HH:MM)';
+      }
+
+      // Validation de la cohérence des dates (naissance et funérailles)
+      if (formData.birthDate && formData.funeralDate) {
+        if (formData.funeralDate <= formData.birthDate) {
+          newErrors.funeralDate = 'La date des funérailles doit être postérieure à la date de naissance';
+        }
+      }
+      
+      // Validation de la cohérence des dates (décès et funérailles)
+      if (formData.deathDate && formData.funeralDate) {
+        if (formData.funeralDate < formData.deathDate) {
+          newErrors.funeralDate = 'La date des funérailles doit être postérieure ou égale à la date de décès';
+        }
       }
     }
 

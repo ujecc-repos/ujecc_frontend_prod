@@ -63,18 +63,28 @@ const BulkImportModal: React.FC<BulkImportModalProps> = ({ isOpen, onClose, onIm
             nom: row[0]?.toString().trim() || '',
             prenom: row[1]?.toString().trim() || '',
             genre: row[2]?.toString().trim() || '',
-            dateNaissance: row[3]?.toString().trim() || '',
+            dateNaissance: row[3] ? excelDateToJSDate(row[3])?.toLocaleDateString('fr-FR') : "Pas encore",
+            
             // Map to expected API fields
             firstname: row[1]?.toString().trim() || '',
             lastname: row[0]?.toString().trim() || '',
-            sex: row[2]?.toString().trim() || '',
-            birthDate: excelDateToJSDate(row[3])?.toLocaleDateString('fr-FR') || "",
-            nif: row[4]?.toString().trim() || '',
-            email: '',
-            password: '',
-            // role: 'Membre',
+            sex: row[2]?.toString().trim() || 'Pas encore',
+            birthDate: row[3] ? excelDateToJSDate(row[3])?.toLocaleDateString('fr-FR') : "Pas encore",
+            nif: row[4]?.toString().trim() || 'Pas encore',
+            city: row[5]?.toString().trim() || 'Pas encore',
+            country: row[6]?.toString().trim() || 'Pas encore',
+            civilState: row[7]?.toString().trim() || 'Pas encore',
+            baptismDate: row[8] ? excelDateToJSDate(row[8])?.toLocaleDateString('fr-FR') : "Pas encore",
+            groupeSanguin: row[9]?.toString().trim() || 'Pas encore',
+            minister: row[10]?.toString().trim() || 'Pas encore',
+            isBaptized: row[11]?.toString().trim().toLowerCase() === 'oui',
+            birthCity: row[12]?.toString().trim() || 'Pas encore',
+            mobilePhone: row[13]?.toString().trim() || 'Pas encore',
+            email: row[14]?.toString().trim() || 'Pas encore',
+            role: row[15]?.toString().trim() || 'Membre',
+            profession: row[16]?.toString().trim() || 'Pas encore',
+            
             membreActif: true,
-            minister: 'Non spécifié'
           }));     
         setPreviewData(processedData);
         setStep('preview');
@@ -141,10 +151,10 @@ const BulkImportModal: React.FC<BulkImportModalProps> = ({ isOpen, onClose, onIm
 
   const downloadTemplate = () => {
     const templateData = [
-      ['nom', 'prenom', 'sex', 'date de naissance', 'ni/nu'],
-      ['Dupont', 'Jean', 'Homme', '01/01/1990', 'NI'],
-      ['Martin', 'Marie', 'Femme', '15/05/1985', 'NU'],
-      ['Durand', 'Pierre', 'Homme', '20/12/1995', 'NI']
+      ['nom', 'prenom', 'sex', 'date de naissance', 'ni/nu', 'ville', 'pays', 'état civil', 'date de baptême', 'groupe sanguin', 'ministère', 'baptisé(e)', 'ville de naissance', 'téléphone', 'email', 'rôle', 'profession'],
+      ['Dupont', 'Jean', 'Homme', '01/01/1990', 'NI', 'Paris', 'France', 'Célibataire', '01/01/2000', 'O+', 'Chorale', 'Oui', 'Lyon', '0600000000', 'jean.dupont@email.com', 'Membre', 'Ingénieur'],
+      ['Martin', 'Marie', 'Femme', '15/05/1985', 'NU', 'Marseille', 'France', 'Marié(e)', '15/05/2005', 'A-', 'Jeunesse', 'Oui', 'Nice', '0600000001', 'marie.martin@email.com', 'Membre', 'Professeur'],
+      ['Durand', 'Pierre', 'Homme', '20/12/1995', 'NI', 'Bordeaux', 'France', 'Célibataire', '', 'B+', 'Aucun', 'Non', 'Lille', '0600000002', 'pierre.durand@email.com', 'Membre', 'Étudiant']
     ];
     
     const ws = XLSX.utils.aoa_to_sheet(templateData);
@@ -178,7 +188,7 @@ const BulkImportModal: React.FC<BulkImportModalProps> = ({ isOpen, onClose, onIm
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <h3 className="text-sm font-medium text-blue-900 mb-2">Instructions :</h3>
                 <ul className="text-sm text-blue-800 space-y-1">
-                  <li>• Le fichier Excel doit contenir cinq colonnes : "nom", "prenom", "genre", "date de naissance" et "ni/nu"</li>
+                  <li>• Le fichier Excel doit contenir les colonnes : "nom", "prenom", "genre", "date de naissance", "ni/nu", "ville", "pays", "état civil", "date de baptême", "groupe sanguin", "ministère", "baptisé(e)", "ville de naissance", "téléphone", "email", "rôle", "profession"</li>
                   <li>• La première ligne doit contenir les en-têtes</li>
                   <li>• Formats acceptés : .xlsx, .xls</li>
                   <li>• Un email sera généré automatiquement pour chaque membre</li>
@@ -258,6 +268,42 @@ const BulkImportModal: React.FC<BulkImportModalProps> = ({ isOpen, onClose, onIm
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           NI/NU
                         </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Ville
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Pays
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          État civil
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Date de baptême
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Groupe sanguin
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Ministère
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Baptisé(e)
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Ville de naissance
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Téléphone
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Email
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Rôle
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Profession
+                        </th>
                         {/* <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Email (généré)
                         </th> */}
@@ -272,9 +318,21 @@ const BulkImportModal: React.FC<BulkImportModalProps> = ({ isOpen, onClose, onIm
                             <td className="px-4 py-3 text-sm text-gray-900">{index + 1}</td>
                             <td className="px-4 py-3 text-sm text-gray-900">{user.nom}</td>
                           <td className="px-4 py-3 text-sm text-gray-900">{user.prenom}</td>
-                          <td className="px-4 py-3 text-sm text-gray-900">{user.genre}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900">{user.sex}</td>
                           <td className="px-4 py-3 text-sm text-gray-900">{user.birthDate}</td>
                           <td className="px-4 py-3 text-sm text-gray-900">{user.nif}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900">{user.city}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900">{user.country}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900">{user.civilState}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900">{user.baptismDate}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900">{user.groupeSanguin}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900">{user.minister}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900">{user.isBaptized ? 'Oui' : 'Non'}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900">{user.birthCity}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900">{user.mobilePhone}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900">{user.email}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900">{user.role}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900">{user.profession}</td>
                           {/* <td className="px-4 py-3 text-sm text-gray-500">{user.email}</td> */}
                         </tr>
                       );

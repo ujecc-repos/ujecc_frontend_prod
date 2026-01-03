@@ -144,6 +144,13 @@ export default function CreationBapteme() {
         newErrors.baptismDate = 'La date du baptême est requise.';
       }
       
+      // Validation de la cohérence des dates
+      if (formData.baptismDate && formData.birthDate) {
+        if (formData.baptismDate <= formData.birthDate) {
+          newErrors.baptismDate = 'La date de baptême doit être postérieure à la date de naissance.';
+        }
+      }
+      
       if (!formData.baptismLocation) {
         newErrors.baptismLocation = 'Le lieu du baptême est requis.';
       }

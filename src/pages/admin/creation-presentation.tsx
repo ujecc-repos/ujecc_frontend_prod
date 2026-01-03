@@ -66,7 +66,12 @@ export default function CreationPresentation() {
         newErrors.phone = 'Format de téléphone invalide';
       }
     } else if (step === 2) {
-      if (!formData.presentationDate) newErrors.presentationDate = 'La date de présentation est obligatoire';
+      if (!formData.presentationDate) {
+        newErrors.presentationDate = 'La date de présentation est obligatoire';
+      } else if (formData.dateOfBirth && formData.presentationDate <= formData.dateOfBirth) {
+        newErrors.presentationDate = 'La date de présentation doit être postérieure à la date de naissance';
+      }
+      
       if (!formData.officiantName) newErrors.officiantName = 'Le nom de l\'officiant est obligatoire';
       if (!formData.witness) newErrors.witness = 'Le témoin est obligatoire';
       if (!formData.description) newErrors.description = 'La description est obligatoire';

@@ -8,6 +8,7 @@ interface Tithe {
   paymentMethod: string;
   note?: string;
   churchId?: string;
+  currency?: string;
   church?: any;
   createdAt?: string;
   updatedAt?: string;
@@ -22,6 +23,7 @@ interface TithesByChurchResponse {
 interface CreateTitheRequest {
   contributorName: string;
   amount: number;
+  currency?: string;
   date: string;
   paymentMethod: string;
   note?: string;

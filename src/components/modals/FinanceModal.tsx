@@ -33,6 +33,7 @@ const FinanceModal: React.FC<FinanceModalProps> = ({ isOpen, onClose, type, acti
   // Common form fields
   const [contributorName, setContributorName] = useState('Anonyme');
   const [amount, setAmount] = useState('');
+  const [currency, setCurrency] = useState('HTG');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [note, setNote] = useState('');
@@ -75,6 +76,7 @@ const FinanceModal: React.FC<FinanceModalProps> = ({ isOpen, onClose, type, acti
   const resetForm = () => {
     setContributorName('');
     setAmount('');
+    setCurrency('HTG');
     setDate(new Date().toISOString().split('T')[0]);
     setPaymentMethod('cash');
     setNote('');
@@ -125,6 +127,7 @@ const FinanceModal: React.FC<FinanceModalProps> = ({ isOpen, onClose, type, acti
     const commonData = {
       contributorName,
       amount: parseFloat(amount),
+      currency,
       date,
       paymentMethod,
       note,
@@ -196,8 +199,24 @@ const FinanceModal: React.FC<FinanceModalProps> = ({ isOpen, onClose, type, acti
             )}
 
             <div>
+              <label htmlFor="currency" className="block text-sm font-medium text-gray-700">
+                Devise
+              </label>
+              <select
+                id="currency"
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value)}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm"
+              >
+                <option value="HTG">HTG</option>
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+              </select>
+            </div>
+
+            <div>
               <label htmlFor="amount" className="block text-sm font-medium text-gray-700">
-                Montant (HTG) *
+                Montant *
               </label>
               <input
                 type="number"

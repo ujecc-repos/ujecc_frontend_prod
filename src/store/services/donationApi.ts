@@ -11,6 +11,7 @@ interface Donation {
   church?: any;
   createdAt?: string;
   updatedAt?: string;
+  currency?: string;
 }
 
 interface DonationsByChurchResponse {
@@ -22,6 +23,7 @@ interface DonationsByChurchResponse {
 interface CreateDonationRequest {
   contributorName: string;
   amount: number;
+  currency?: string;
   date: string;
   paymentMethod: string;
   note?: string;

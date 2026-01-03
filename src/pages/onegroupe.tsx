@@ -7,8 +7,8 @@ import { useGetUserByTokenQuery } from '../store/services/authApi';
 
 interface GroupMember {
   id: string;
-  firstName: string;
-  lastName: string;
+  firstname: string;
+  lastname: string;
   email: string;
   phone: string;
   role: string;
@@ -72,12 +72,12 @@ export default function Onegroupe() {
         </button>
         
         <div className="flex space-x-2">
-          <button
+          {/* <button
             onClick={() => navigate(`/tableau-de-bord/admin/groupe/${id}/edit`)}
             className="flex items-center px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-md hover:bg-teal-700 transition-colors"
           >
             Modifier
-          </button>
+          </button> */}
           <button
             onClick={() => setIsAddMemberModalOpen(true)}
             className="flex items-center px-4 py-2 text-sm font-medium text-gray-800 border-1 rounded-md hover:bg-blue-700 transition-colors"
@@ -93,7 +93,7 @@ export default function Onegroupe() {
           <div className="w-full md:w-1/4 flex-shrink-0">
             {group.picture ? (
               <img 
-                src={`https://ujecc-backend.onrender.com${group.picture}`} 
+                src={`${import.meta.env.VITE_API_URL_PHOTO}${group.picture}`} 
                 alt={group.name} 
                 className="w-full h-48 object-cover rounded-lg shadow-sm"
               />
@@ -266,7 +266,7 @@ export default function Onegroupe() {
                             <div className="flex items-center">
                               <div className="flex-shrink-0 h-10 w-10">
                                 {member.picture ? (
-                                  <img className="h-10 w-10 rounded-full object-cover" src={`https://ujecc-backend.onrender.com${member.picture}`} alt="" />
+                                  <img className="h-10 w-10 rounded-full object-cover" src={`${import.meta.env.VITE_API_URL_PHOTO}${member.picture}`} alt="" />
                                 ) : (
                                   <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
                                     <UserIcon className="h-6 w-6 text-gray-400" />
@@ -275,7 +275,7 @@ export default function Onegroupe() {
                               </div>
                               <div className="ml-4">
                                 <div className="text-sm font-medium text-gray-900">
-                                  {member.firstName} {member.lastName}
+                                  {member.firstname} {member.lastname}
                                 </div>
                               </div>
                             </div>

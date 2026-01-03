@@ -12,6 +12,7 @@ interface Offering {
   church?: any;
   createdAt?: string;
   updatedAt?: string;
+  currency?: string;
 }
 
 interface OfferingsByChurchResponse {
@@ -25,6 +26,7 @@ interface CreateOfferingRequest {
   amount: number;
   date: string;
   paymentMethod: string;
+  currency?: string;
   note?: string;
   status?: string;
   churchId?: string;

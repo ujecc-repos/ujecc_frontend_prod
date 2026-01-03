@@ -27,6 +27,8 @@ import {useGetDepartementCommunesQuery} from '../../store/services/churchApi';
 // Import API hooks (adjust based on your actual API structure)
 import { useGetUserByTokenQuery, useGetUsersByChurchQuery, useRegisterMutation, useUpdateUserMutation, useDeleteUserMutation, useBulkInsertUsersMutation } from '../../store/services/authApi';
 import { useGetMinistriesByChurchQuery } from '../../store/services/ministryApi';
+import { useGetGroupsByChurchQuery } from '../../store/services/groupApi';
+import { useGetSundayClassesByChurchQuery } from '../../store/services/sundayClassApi';
 import { useCreateTransferMutation } from '../../store/services/transferApi';
 
 // Import custom components
@@ -112,6 +114,9 @@ interface AddMemberFormData {
   isActiveMember: boolean;
   nif?: string;
   groupeSanguin?: string;
+  isBaptized?: boolean;
+  groupId?: string;
+  sundayClassId?: string;
 }
 
 interface AddMemberModalProps {
@@ -404,7 +409,10 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
     profileImage: null,
     isActiveMember: true,
     nif: '',
-    groupeSanguin: ''
+    groupeSanguin: '',
+    isBaptized: false,
+    groupId: '',
+    sundayClassId: ''
   });
 
   // const [showPassword, setShowPassword] = useState(false);
@@ -421,6 +429,28 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
   
   // Fetch ministries for the church
   const { data: ministriesData } = useGetMinistriesByChurchQuery(churchId || '', { skip: !churchId });
+  
+  // Fetch groups and sunday classes
+  const { data: groupsData } = useGetGroupsByChurchQuery(churchId || '', { skip: !churchId });
+  const { data: sundayClassesData } = useGetSundayClassesByChurchQuery({ churchId: churchId || '' }, { skip: !churchId });
+
+  // Transform groups and sunday classes for react-select
+  const groupOptions = useMemo(() => {
+    if (!groupsData) return [];
+    return groupsData.map(group => ({
+      value: group.id,
+      label: group.name
+    }));
+  }, [groupsData]);
+
+  const sundayClassOptions = useMemo(() => {
+    if (!sundayClassesData) return [];
+    return sundayClassesData.map(cls => ({
+      value: cls.id,
+      label: cls.nom || 'Classe sans nom'
+    }));
+  }, [sundayClassesData]);
+
   
   // Fetch department communes data
   const {data: Ouest} = useGetDepartementCommunesQuery("Ouest")
@@ -512,7 +542,10 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
       profileImage: null,
       isActiveMember: true,
       nif: '',
-      groupeSanguin: ''
+      groupeSanguin: '',
+      isBaptized: false,
+      groupId: '',
+      sundayClassId: ''
     });
     setImagePreview(null);
     setErrors({});
@@ -871,23 +904,23 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Téléphone</label>
                     <input
-                      type="tel"
+                      type="number"
                       value={formData.mobilePhone}
                       onChange={(e) => setFormData(prev => ({ ...prev, mobilePhone: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      placeholder="+509 1234 5678"
+                      placeholder="509 1234 5678"
                     />
                   </div>
 
                   {/* Home Phone */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Personne à contacter</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Numéro de la Personne à contacter</label>
                     <input
-                      type="tel"
+                      type="number"
                       value={formData.homePhone}
                       onChange={(e) => setFormData(prev => ({ ...prev, homePhone: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      placeholder="+509 1234 5678"
+                      placeholder="509 1234 5678"
                     />
                   </div>
 
@@ -1058,42 +1091,99 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                       <option value="Membre">Membre</option>
                       {/* <option value="Directeur">Directeur</option> */}
                       <option value="Admin">Administrateur</option>
+                      {/* <option value="Leader">Chef de service</option> */}
                     </select>
                     {errors.role && <p className="mt-1 text-sm text-red-500">{errors.role}</p>}
                   </div>
 
-                  {/* Minister */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Ministère au sein de l'église</label>
-                    <Select
-                      value={ministryOptions.find(option => option.value === formData.minister) || null}
-                      onChange={(selectedOption) => setFormData(prev => ({ ...prev, minister: selectedOption?.value || '' }))}
-                      options={ministryOptions}
-                      placeholder="Sélectionner un ministère"
-                      isClearable
-                      isSearchable
-                      className="react-select-container"
-                      classNamePrefix="react-select"
-                      styles={{
-                        control: (provided) => ({
-                          ...provided,
-                          borderColor: '#d1d5db',
-                          '&:hover': {
-                            borderColor: '#d1d5db'
-                          },
-                          '&:focus-within': {
-                            borderColor: '#14b8a6',
-                            boxShadow: '0 0 0 2px rgba(20, 184, 166, 0.2)'
-                          }
-                        })
-                      }}
-                    />
-                  </div>
+                {/* Minister */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Ministère au sein de l'église</label>
+                  <Select
+                    value={ministryOptions.find(option => option.value === formData.minister) || null}
+                    onChange={(selectedOption) => setFormData(prev => ({ ...prev, minister: selectedOption?.value || '' }))}
+                    options={ministryOptions}
+                    placeholder="Sélectionner un ministère"
+                    isClearable
+                    isSearchable
+                    className="react-select-container"
+                    classNamePrefix="react-select"
+                    styles={{
+                      control: (provided) => ({
+                        ...provided,
+                        borderColor: '#d1d5db',
+                        '&:hover': {
+                          borderColor: '#d1d5db'
+                        },
+                        '&:focus-within': {
+                          borderColor: '#14b8a6',
+                          boxShadow: '0 0 0 2px rgba(20, 184, 166, 0.2)'
+                        }
+                      })
+                    }}
+                  />
+                </div>
+                
+                {/* Groupe */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Groupe</label>
+                  <Select
+                    value={groupOptions.find(option => option.value === formData.groupId) || null}
+                    onChange={(selectedOption) => setFormData(prev => ({ ...prev, groupId: selectedOption?.value || '' }))}
+                    options={groupOptions}
+                    placeholder="Sélectionner un groupe"
+                    isClearable
+                    isSearchable
+                    className="react-select-container"
+                    classNamePrefix="react-select"
+                    styles={{
+                      control: (provided) => ({
+                        ...provided,
+                        borderColor: '#d1d5db',
+                        '&:hover': {
+                          borderColor: '#d1d5db'
+                        },
+                        '&:focus-within': {
+                          borderColor: '#14b8a6',
+                          boxShadow: '0 0 0 2px rgba(20, 184, 166, 0.2)'
+                        }
+                      })
+                    }}
+                  />
+                </div>
+                
+                {/* Classe du dimanche */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Classe du dimanche</label>
+                  <Select
+                    value={sundayClassOptions.find(option => option.value === formData.sundayClassId) || null}
+                    onChange={(selectedOption) => setFormData(prev => ({ ...prev, sundayClassId: selectedOption?.value || '' }))}
+                    options={sundayClassOptions}
+                    placeholder="Sélectionner une classe"
+                    isClearable
+                    isSearchable
+                    className="react-select-container"
+                    classNamePrefix="react-select"
+                    styles={{
+                      control: (provided) => ({
+                        ...provided,
+                        borderColor: '#d1d5db',
+                        '&:hover': {
+                          borderColor: '#d1d5db'
+                        },
+                        '&:focus-within': {
+                          borderColor: '#14b8a6',
+                          boxShadow: '0 0 0 2px rgba(20, 184, 166, 0.2)'
+                        }
+                      })
+                    }}
+                  />
+                </div>
 
-                  {/* Join Date */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Date d'adhésion</label>
-                    <div className="relative">
+                {/* Join Date */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Date d'adhésion</label>
+                  <div className="relative">
                       <input
                         type="text"
                         value={formData.joinDate ? formData.joinDate.split('-').reverse().join('/') : ''}
@@ -1131,9 +1221,25 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                     </div>
                   </div>
 
+                  {/* Baptism Status */}
+                  <div className="md:col-span-2 flex items-center mb-2">
+                    <input
+                      id="isBaptized"
+                      type="checkbox"
+                      checked={formData.isBaptized}
+                      onChange={(e) => setFormData(prev => ({ ...prev, isBaptized: e.target.checked }))}
+                      className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="isBaptized" className="ml-2 block text-sm text-gray-900">
+                      Est baptisé(e) ?
+                    </label>
+                  </div>
+
                   {/* Baptism Date */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Date de Baptême</label>
+                  {formData.isBaptized && (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Date de Baptême</label>
                     <div className="relative">
                       <input
                         type="text"
@@ -1183,6 +1289,8 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                       placeholder="Lieu de baptême"
                     />
                   </div>
+                  </>
+                  )}
                 </div>
               </div>
             )}
@@ -1266,6 +1374,33 @@ export default function Membres() {
   
   // Bulk insert mutation for importing members
   const [bulkInsertUsers] = useBulkInsertUsersMutation();
+
+  const getApiErrorMessage = (error: any, fallbackMessage: string) => {
+    const pickString = (...values: any[]) => values.find((v) => typeof v === 'string' && v.trim().length > 0);
+
+    const data = error?.data ?? error?.response?.data;
+
+    const messageFromData =
+      typeof data === 'string'
+        ? data
+        : pickString(
+            data?.message,
+            data?.error,
+            data?.details,
+            data?.errors?.[0]?.message,
+            data?.errors?.[0]
+          );
+
+    return (
+      pickString(
+        messageFromData,
+        error?.message,
+        error?.error,
+        error?.originalStatus ? String(error.originalStatus) : undefined,
+        error?.status ? String(error.status) : undefined
+      ) || fallbackMessage
+    );
+  };
 
   // Initialize filters
   const [filters, setFilters] = useState<FilterState>({
@@ -1489,7 +1624,7 @@ export default function Membres() {
       refetch();
     } catch (error: any) {
       console.error('Error updating member:', error);
-      const errorMessage = error?.data?.message || error?.message || 'Erreur lors de la mise à jour de l\'utilisateur';
+      const errorMessage = getApiErrorMessage(error, 'Erreur lors de la mise à jour de l\'utilisateur');
       console.log("error : ", error);
       alert(`Erreur de mise à jour: ${errorMessage}`);
     } finally {
@@ -1537,7 +1672,7 @@ export default function Membres() {
     navigate(`/tableau-de-bord/admin/person/${member.id}`);
   };
 
-  const handleBulkImport = async (users: Array<{nom: string, prenom: string, sex: string, birthDate: string, nif: string}>): Promise<{ success: boolean; insertedCount: number; data?: any }> => {
+  const handleBulkImport = async (users: any[]): Promise<{ success: boolean; insertedCount: number; data?: any }> => {
     if (!userData?.church?.id) {
       throw new Error('Church ID not found');
     }
@@ -1546,11 +1681,23 @@ export default function Membres() {
     try {
       // Transform the data to match the expected format
       const usersData = users.map(user => ({
-        firstname: user.prenom,
-        lastname: user.nom,
+        firstname: user.firstname,
+        lastname: user.lastname,
         sex: user.sex,
         birthDate: user.birthDate,
         nif: user.nif,
+        city: user.city,
+        country: user.country,
+        civilState: user.civilState,
+        baptismDate: user.baptismDate,
+        groupeSanguin: user.groupeSanguin,
+        minister: user.minister,
+        isBaptized: user.isBaptized,
+        birthCity: user.birthCity,
+        mobilePhone: user.mobilePhone,
+        email: user.email,
+        role: user.role,
+        profession: user.profession,
       }));
 
       const result = await bulkInsertUsers({
@@ -1789,12 +1936,15 @@ export default function Membres() {
         
         // Add all other form fields
         Object.keys(formData).forEach(key => {
-          if (key !== 'profileImage') {
-            const value = formData[key as keyof AddMemberFormData];
-            // Include all values except null and undefined
-            if (value !== null && value !== undefined) {
-              formDataObj.append(key, String(value));
-            }
+          if (key === 'profileImage') return;
+          const value = formData[key as keyof AddMemberFormData];
+          if (value === null || value === undefined) return;
+          if (key === 'gender') {
+            formDataObj.append('sex', String(value));
+          } else if (key === 'isActiveMember') {
+            formDataObj.append('membreActif', String(value));
+          } else {
+            formDataObj.append(key, String(value));
           }
         });
         
@@ -1806,10 +1956,17 @@ export default function Membres() {
         await register(formDataObj).unwrap();
       } else {
         // No image, use regular JSON request
-        const userData = {
+        const mappedData: any = {
           ...formData,
+          sex: formData.gender,
+          membreActif: formData.isActiveMember,
+        };
+        delete mappedData.gender;
+        delete mappedData.isActiveMember;
+        const userData = {
+          ...mappedData,
           churchId: churchId || '',
-          profileImage: undefined // Remove profileImage from the object
+          profileImage: undefined
         };
         
         await register(userData).unwrap();
@@ -1823,7 +1980,7 @@ export default function Membres() {
       // refetch();
     } catch (error: any) {
       console.error('Error adding member:', error);
-      const errorMessage = error?.data?.message || error?.message || 'Erreur lors de l\'ajout du membre';
+      const errorMessage = getApiErrorMessage(error, 'Erreur lors de l\'ajout du membre');
       console.log("error : ", error)
       alert(`Erreur d'enregistrement: ${errorMessage}`);
     } finally {
@@ -2021,8 +2178,8 @@ export default function Membres() {
                           {member.picture ? (
                             <img
                               className="h-10 w-10 rounded-full object-cover"
-                              src={`https://ujecc-backend.onrender.com${member.picture}`}
-                              // src={`http://localhost:4000${member.picture}`}
+                              src={`${import.meta.env.VITE_API_URL_PHOTO}${member.picture}`}
+                             
                               alt={`${member.firstname} ${member.lastname}`}
                             />
                           ) : (

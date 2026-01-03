@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   MagnifyingGlassIcon,
-  ArrowDownTrayIcon,
   PlusIcon,
   PencilIcon,
   TrashIcon,
@@ -493,13 +492,13 @@ export default function Mariage() {
           <div className="flex items-center space-x-3">
             {/* Filter Buttons */}
 
-            <button
+            {/* <button
               onClick={() => setShowExportModal(true)}
               className="flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
               Exporter
-            </button>
+            </button> */}
 
             <button
               onClick={() => navigate('/tableau-de-bord/admin/mariages/creation')}

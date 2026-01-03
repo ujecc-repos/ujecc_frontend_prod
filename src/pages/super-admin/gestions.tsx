@@ -28,6 +28,7 @@ interface CreateChurchFormData {
   missionId: string;
   longitude: string;
   latitude: string;
+  option: string;
 }
 
 interface SelectOption {
@@ -227,7 +228,8 @@ const GestionPage: React.FC = () => {
     telephone: '',
     missionId: '',
     longitude: '',
-    latitude: ''
+    latitude: '',
+    option: ''
   });
   
   // Handle location selection changes
@@ -368,7 +370,13 @@ const GestionPage: React.FC = () => {
     }));
   }, [missions]);
 
-
+  const churchTypeOptions = [
+    { value: 'Zone', label: 'Zone' },
+    { value: 'Station', label: 'Station' },
+    { value: 'Cellulle', label: 'Cellulle' },
+    { value: 'Ministère', label: 'Ministère' },
+    { value: 'Autres', label: 'Autres' },
+  ];
 
   // Validate church form
   const validateChurchForm = () => {
@@ -381,6 +389,7 @@ const GestionPage: React.FC = () => {
     if (!churchFormData.commune) {
       errors.commune = isHaitiSelected ? 'La commune est requise' : 'La ville est requise';
     }
+    if (!churchFormData.option) errors.option = "L'option est requise";
     // if (!churchFormData.missionId) errors.missionId = 'La mission est requise';
     
     setChurchErrors(errors);
@@ -426,7 +435,8 @@ const GestionPage: React.FC = () => {
         telephone: '',
         missionId: '',
         longitude: '',
-        latitude: ''
+        latitude: '',
+        option: ''
       });
       // Reset location states
       setSelectedCountry(null);
@@ -696,6 +706,22 @@ const GestionPage: React.FC = () => {
                     formatCreateLabel={(inputValue) => inputValue}
                   />
                   {churchErrors.name && <p className="mt-1 text-sm text-red-600">{churchErrors.name}</p>}
+                </div>
+
+                {/* Option */}
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Type d'Église</label>
+                  <Select
+                    value={churchTypeOptions.find(option => option.value === churchFormData.option)}
+                    onChange={(selectedOption: any) => setChurchFormData(prev => ({ ...prev, option: selectedOption?.value || '' }))}
+                    options={churchTypeOptions}
+                    placeholder="Sélectionner un type"
+                    isClearable
+                    isSearchable
+                    className="react-select-container"
+                    classNamePrefix="react-select"
+                  />
+                  {churchErrors.option && <p className="mt-1 text-sm text-red-600">{churchErrors.option}</p>}
                 </div>
                 
                 {/* Country */}
@@ -1217,6 +1243,7 @@ const GestionPage: React.FC = () => {
                       >
                         <option value="Admin">Admin</option>
                         <option value="Directeur">Director</option>
+                        <option value="Leader">Chef d'église</option>
                       </select>
                       {userErrors.role && <p className="mt-1 text-sm text-red-600">{userErrors.role}</p>}
                     </div>

@@ -6,7 +6,6 @@ import {
   PlusIcon,
   PencilIcon,
   TrashIcon,
-  DocumentArrowDownIcon,
   FunnelIcon,
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
@@ -189,14 +188,14 @@ export default function Sanction() {
           </p>
         </div>
         <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none space-x-2">
-          <button
+          {/* <button
             type="button"
             onClick={() => setShowExportModal(true)}
             className="inline-flex items-center justify-center rounded-md border border-transparent  px-4 py-2 text-sm font-medium text-black shadow-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 sm:w-auto"
           >
             <DocumentArrowDownIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
             Exporter
-          </button>
+          </button> */}
           <button
             type="button"
             onClick={() => setIsCreateModalOpen(true)}

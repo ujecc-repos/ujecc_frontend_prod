@@ -17,6 +17,7 @@ export interface User {
   createdAt: Date;
   updatedAt: Date;
   joinDate?: string | null;
+  code?: string;
   email: string;
   civilState?: string;
   firstname: string;
@@ -164,6 +165,11 @@ export const authApi = createApi({
       providesTags: ['User'],
     }),
 
+    getBaptizedCount: builder.query<{ count: number }, string>({
+      query: (churchId) => `/users/baptized/count/${churchId}`,
+      providesTags: ['User'],
+    }),
+
     getUserById: builder.query<User, string>({
       query: (id) => `/users/${id}`,
       providesTags: ["User"],
@@ -283,6 +289,7 @@ export const {
   useLoginMutation,
   useRegisterMutation,
   useGetUsersQuery,
+  useGetBaptizedCountQuery,
   useGetUserByIdQuery,
   useUpdateUserMutation,
   useDeleteUserMutation,
