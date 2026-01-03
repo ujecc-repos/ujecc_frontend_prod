@@ -2,12 +2,29 @@ import React, { useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
+import { useGetUserByTokenQuery } from '../../store/services/authApi';
+import { useGetChurchByIdQuery } from '../../store/services/churchApi';
 
 interface CreateMinistryModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (ministryData: { name: string; description: string }) => void;
   isLoading: boolean;
+}
+
+interface Church {
+  id?: string | number;
+  name?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  picture?: string;
+  anthem?: string;
+  facebook?: string;
+  instagram?: string;
+  option?: string;
+  whatsapp?: string;
+  [key: string]: any;
 }
 
 const CreateMinistryModal: React.FC<CreateMinistryModalProps> = ({
@@ -20,12 +37,19 @@ const CreateMinistryModal: React.FC<CreateMinistryModalProps> = ({
   const [description, setDescription] = useState('');
   const [errors, setErrors] = useState<{ name?: string; description?: string }>({});
 
+   const { data: userData } = useGetUserByTokenQuery();
+    const churchId = userData?.church?.id;
+  
+    const { data: churchData } = useGetChurchByIdQuery(churchId ? churchId.toString() : '', {
+          skip: !userData?.church?.id,
+        }) as { data: Church | undefined, isLoading: boolean };
+
   const validateForm = () => {
     const newErrors: { name?: string; description?: string } = {};
     let isValid = true;
 
     if (!name.trim()) {
-      newErrors.name = 'Le nom du ministère est requis';
+      newErrors.name = `Le nom du ${churchData?.option} est requis`;
       isValid = false;
     } else if (name.length < 2) {
       newErrors.name = 'Le nom doit contenir au moins 2 caractères';
@@ -92,7 +116,7 @@ const CreateMinistryModal: React.FC<CreateMinistryModalProps> = ({
               <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
                 <div className="flex items-center justify-between mb-4">
                   <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900">
-                    Créer un nouveau ministère
+                    Créer un nouveau {churchData?.option}
                   </Dialog.Title>
                   <button
                     type="button"
@@ -107,7 +131,7 @@ const CreateMinistryModal: React.FC<CreateMinistryModalProps> = ({
                   <div className="space-y-4">
                     <div>
                       <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                        Nom du ministère <span className="text-red-500">*</span>
+                        Nom du {churchData?.option} <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
@@ -116,7 +140,7 @@ const CreateMinistryModal: React.FC<CreateMinistryModalProps> = ({
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         className={`mt-1 p-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${errors.name ? 'border-red-500' : ''}`}
-                        placeholder="Ex: Ministère de la Jeunesse"
+                        placeholder={`Ex: ${churchData?.option} de la Jeunesse`}
                       />
                       {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
                     </div>
@@ -132,7 +156,7 @@ const CreateMinistryModal: React.FC<CreateMinistryModalProps> = ({
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
                         className={`mt-1 p-2 block w-full rounded-md border-gray-300 shadow-sm  sm:text-sm ${errors.description ? 'border-red-500' : ''}`}
-                        placeholder="Décrivez le but et les activités de ce ministère"
+                        placeholder={`Décrivez le but et les activités de ce ${churchData?.option}`}
                       />
                       {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description}</p>}
                     </div>
@@ -160,7 +184,7 @@ const CreateMinistryModal: React.FC<CreateMinistryModalProps> = ({
                           Création en cours...
                         </>
                       ) : (
-                        'Créer le ministère'
+                        `Créer le ${churchData?.option}`
                       )}
                     </button>
                   </div>

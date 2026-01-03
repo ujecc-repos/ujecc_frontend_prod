@@ -27,6 +27,7 @@ import { useGetPasteursByChurchQuery } from '../../store/services/pasteurApi';
 import { useGetPresentationsByChurchQuery } from '../../store/services/presentationApi';
 import { useGetSundayClassesByChurchQuery } from '../../store/services/sundayClassApi';
 import { useGetTransfersByChurchQuery } from '../../store/services/transferApi';
+import { useGetBaptizedCountQuery } from '../../store/services/authApi';
 
 interface MetricCardProps {
   title: string;
@@ -135,6 +136,7 @@ export default function Statistics() {
   const { data: marriagesData, isLoading: isMarriagesLoading } = useGetMarriagesByChurchQuery(churchId || '', { skip: !churchId });
   const { data: pasteursData, isLoading: isPasteursLoading } = useGetPasteursByChurchQuery(churchId || '', { skip: !churchId });
   const { data: upcomingBirthdays, isLoading: isBirthdaysLoading } = useGetUpcomingBirthdaysQuery({ churchId: churchId || '', days: 30 }, { skip: !churchId });
+  const {data: countBaptized} = useGetBaptizedCountQuery(churchId || '', { skip: !churchId })
 
   // Check if any data is still loading
   useEffect(() => {
@@ -262,7 +264,7 @@ export default function Statistics() {
       churchName: userData?.church?.name || "",
       date: new Date().toLocaleDateString(),
       statistics: {
-        baptisms: baptismsCount,
+        baptisms: baptismsCount + (countBaptized?.count || 0),
         groups: groupsCount,
         sundayClasses: sundayClassesCount,
         presentations: presentationsCount,
@@ -501,7 +503,8 @@ export default function Statistics() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
           <MetricCard
             title="Baptêmes"
-            value={baptismsCount.toString().padStart(2, '0')}
+            // value={baptismsCount.toString().padStart(2, '0')}
+            value={`${baptismsCount + (countBaptized?.count || 0)}`.toString().padStart(2, "0")}
             icon={BuildingLibraryIcon}
             color="text-emerald-600"
             bgColor="bg-emerald-50"

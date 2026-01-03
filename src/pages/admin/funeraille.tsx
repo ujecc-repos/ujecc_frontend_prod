@@ -8,7 +8,6 @@ import { useGetUserByTokenQuery } from '../../store/services/authApi';
 import {
   PlusIcon,
   MagnifyingGlassIcon,
-  ArrowDownTrayIcon,
   TrashIcon,
 } from '@heroicons/react/24/outline';
 import { UserCircleIcon } from '@heroicons/react/24/solid';
@@ -135,13 +134,13 @@ export default function Funeraille() {
           </p>
         </div>
         <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none space-x-2">
-          <button
+          {/* <button
             onClick={() => setShowExportModal(true)}
             className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
           >
             <ArrowDownTrayIcon className="-ml-0.5 mr-2 h-4 w-4" aria-hidden="true" />
             Exporter
-          </button>
+          </button> */}
           <Link
             to="/tableau-de-bord/admin/funerailles/creation"
             className="inline-flex items-center rounded-md border border-transparent bg-teal-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
@@ -184,7 +183,7 @@ export default function Funeraille() {
                   <p className="mt-1 text-sm text-gray-500">Commencez par créer une nouvelle funéraille.</p>
                   <div className="mt-6">
                     <Link
-                      to="/tableau-de-bord/admin/funeraille/nouveau"
+                      to="/tableau-de-bord/admin/funerailles/creation"
                       className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                     >
                       <PlusIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />

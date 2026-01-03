@@ -17,6 +17,7 @@ interface Church {
   groups?: any[];
   events?: any[];
   mariages?: any[];
+  option?: string;
   funerals?: any[];
   presentations?: any[];
   batism?: any[];

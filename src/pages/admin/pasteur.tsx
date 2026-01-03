@@ -95,7 +95,7 @@ export default function Pasteur() {
   // Gestion des actions sur les pasteurs
   const handleCreatePasteur = async () => {
     try {
-      if (!formData.pasteurName || !formData.email || !formData.phone) {
+      if (!formData.pasteurName || !formData.phone) {
         alert('Veuillez remplir tous les champs obligatoires');
         return;
       }
@@ -484,7 +484,7 @@ export default function Pasteur() {
               </div>
               
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                 <input
                   type="email"
                   id="email"
@@ -492,7 +492,6 @@ export default function Pasteur() {
                   onChange={(e) => setFormData({...formData, email: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-teal-500 focus:border-teal-500"
                   placeholder="email@exemple.com"
-                  required
                 />
               </div>
               
@@ -593,7 +592,7 @@ export default function Pasteur() {
               </div>
               
               <div>
-                <label htmlFor="editEmail" className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                <label htmlFor="editEmail" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                 <input
                   type="email"
                   id="editEmail"
@@ -601,7 +600,6 @@ export default function Pasteur() {
                   onChange={(e) => setFormData({...formData, email: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-teal-500 focus:border-teal-500"
                   placeholder="email@exemple.com"
-                  required
                 />
               </div>
               

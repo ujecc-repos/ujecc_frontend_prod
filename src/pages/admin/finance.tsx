@@ -14,7 +14,7 @@ import {
 import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
-import { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, AlignmentType, HeadingLevel } from 'docx';
+import { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, AlignmentType, HeadingLevel, TextRun } from 'docx';
 import FinanceModal from '../../components/modals/FinanceModal';
 
 // Import API hooks
@@ -29,6 +29,7 @@ interface FinanceItem {
   id: string;
   contributor: string;
   amount: number;
+  currency?: string;
   date: string;
   status: string;
   statusType?: 'offering' | 'tithe' | 'donation' | 'moisson';
@@ -295,6 +296,7 @@ const Finance: React.FC = () => {
       case 'offrandes':
         data = offeringData?.offerings?.map(offering => ({
           id: offering.id,
+          currency: offering.currency || 'HTG',
           contributor: offering.contributorName || 'Tout le monde',
           amount: offering.amount,
           date: new Date(offering.date).toLocaleDateString(),
@@ -306,7 +308,8 @@ const Finance: React.FC = () => {
       case 'dimes':
         data = titheData?.tithings?.map(tithe => ({
           id: tithe.id,
-          contributor: tithe.contributorName,
+          currency: tithe.currency || 'HTG',
+          contributor: tithe.contributorName || 'Tout le monde',
           amount: tithe.amount,
           date: new Date(tithe.date).toLocaleDateString(),
           status: 'completed',
@@ -317,7 +320,8 @@ const Finance: React.FC = () => {
       case 'dons':
         data = donationData?.donations?.map(donation => ({
           id: donation.id,
-          contributor: donation.contributorName,
+          currency: donation.currency || 'HTG',
+          contributor: donation.contributorName || 'Tout le monde',
           amount: donation.amount,
           date: new Date(donation.date).toLocaleDateString(),
           status: 'completed',
@@ -330,6 +334,7 @@ const Finance: React.FC = () => {
           id: moisson.id,
           contributor: moisson.contributorName,
           amount: moisson.amount,
+          currency: moisson.currency || "HTG",
           date: new Date(moisson.date).toLocaleDateString(),
           status: moisson.status || 'service',
           statusType: 'moisson'
@@ -371,7 +376,7 @@ const Finance: React.FC = () => {
   };
 
   const { data: filteredData, totalAmount, totalItems, paginatedData } = getFilteredData();
-
+console.log(totalAmount)
   // Pagination calculations
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startItem = (currentPage - 1) * itemsPerPage + 1;
@@ -487,42 +492,79 @@ const Finance: React.FC = () => {
   const handleExport = (type: 'xlsx' | 'pdf' | 'docx') => {
     const { data } = getFilteredData();
     const fileName = `${activeTab}_${new Date().toISOString().split('T')[0]}`;
+    const date = new Date().toLocaleDateString('fr-FR');
+
+    // Calculate totals by currency
+    const totalsByCurrency = data.reduce((acc, item) => {
+      const currency = item.currency || 'HTG';
+      acc[currency] = (acc[currency] || 0) + item.amount;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const totalString = Object.entries(totalsByCurrency)
+      .map(([currency, amount]) => `${amount.toLocaleString()} ${currency}`)
+      .join(', ');
 
     if (type === 'xlsx') {
-      const worksheet = XLSX.utils.json_to_sheet(data.map(item => ({
-        Contributeur: item.contributor,
-        Montant: item.amount,
-        Date: item.date,
-        Statut: item.status === 'completed' ? 'Complété' : 
-               item.status === 'pending' ? 'En cours' : 
-               item.status === 'service' ? 'Service' : 'Moisson'
-      })));
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, activeTab);
-      XLSX.writeFile(workbook, `${fileName}.xlsx`);
+      const wb = XLSX.utils.book_new();
+      
+      const wsData: any[][] = [
+        [`Liste des ${activeTab}`],
+        [`Date: ${date}`],
+        [`Nombre d'entrées: ${data.length}`],
+        [`Montant total: ${totalString}`],
+        [''],
+        ['Contributeur', 'Montant', 'Devise', 'Date', 'Statut']
+      ];
+
+      data.forEach(row => {
+        wsData.push([
+          row.contributor,
+          row.amount,
+          row.currency || 'HTG',
+          row.date,
+          row.status === 'completed' ? 'Complété' : 
+          row.status === 'pending' ? 'En cours' : 
+          row.status === 'service' ? 'Service' : 'Moisson'
+        ]);
+      });
+
+      const ws = XLSX.utils.aoa_to_sheet(wsData);
+      XLSX.utils.book_append_sheet(wb, ws, activeTab);
+      XLSX.writeFile(wb, `${fileName}.xlsx`);
     } 
     else if (type === 'pdf') {
       const doc = new jsPDF();
-      doc.text(`Liste des ${activeTab}`, 14, 16);
-      doc.text(`Total: ${totalAmount} HTG`, 14, 24);
+      
+      doc.setFontSize(20);
+      doc.setTextColor(0, 128, 128);
+      doc.text(`Liste des ${activeTab}`, 105, 20, { align: "center" });
+      
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0);
+      doc.text(`Date: ${date}`, 14, 30);
+      doc.text(`Total: ${totalString}`, 14, 37);
       
       // Add table headers
       doc.setFontSize(10);
-      doc.text('Contributeur', 14, 35);
-      doc.text('Montant', 80, 35);
-      doc.text('Date', 120, 35);
-      doc.text('Statut', 160, 35);
+      doc.setFillColor(240, 240, 240);
+      doc.rect(14, 45, 180, 10, 'F');
+      doc.setFont("helvetica", "bold");
+      doc.text('Contributeur', 16, 51);
+      doc.text('Montant', 80, 51);
+      doc.text('Date', 120, 51);
+      doc.text('Statut', 160, 51);
+      doc.setFont("helvetica", "normal");
       
       // Add table rows
-      let y = 45;
-      data.forEach((item, index) => {
-        console.log(index)
+      let y = 60;
+      data.forEach((item) => {
         if (y > 270) { // Add new page if needed
           doc.addPage();
           y = 20;
         }
-        doc.text(item.contributor, 14, y);
-        doc.text(`${item.amount} HTG`, 80, y);
+        doc.text(item.contributor, 16, y);
+        doc.text(`${item.amount} ${item.currency || 'HTG'}`, 80, y);
         doc.text(item.date, 120, y);
         doc.text(item.status === 'completed' ? 'Complété' : 
                 item.status === 'pending' ? 'En cours' : 
@@ -542,7 +584,7 @@ const Finance: React.FC = () => {
               width: { size: 30, type: WidthType.PERCENTAGE }
             }),
             new TableCell({
-              children: [new Paragraph(`${item.amount} HTG`)],
+              children: [new Paragraph(`${item.amount} ${item.currency || 'HTG'}`)],
               width: { size: 20, type: WidthType.PERCENTAGE }
             }),
             new TableCell({
@@ -589,22 +631,23 @@ const Finance: React.FC = () => {
           properties: {},
           children: [
             new Paragraph({
-              text: `Liste des ${activeTab}`,
-              heading: HeadingLevel.HEADING_1,
-              alignment: AlignmentType.CENTER
-            }),
-            new Paragraph({
-              text: `Total: ${totalAmount} HTG`,
-              heading: HeadingLevel.HEADING_2,
-              alignment: AlignmentType.LEFT
-            }),
-            new Paragraph({
-              text: `Date d'exportation: ${new Date().toLocaleDateString()}`,
-              alignment: AlignmentType.LEFT
-            }),
-            new Paragraph({
-              text: "",
+              children: [
+                new TextRun({ 
+                  text: `Liste des ${activeTab}`, 
+                  bold: true, 
+                  size: 32, 
+                  color: "008080" 
+                })
+              ],
+              alignment: AlignmentType.CENTER,
               spacing: { after: 200 }
+            }),
+            new Paragraph({
+              children: [new TextRun({ text: `Date: ${date}`, size: 24 })]
+            }),
+            new Paragraph({
+              children: [new TextRun({ text: `Total: ${totalString}`, size: 24, bold: true })],
+              spacing: { after: 400 }
             }),
             new Table({
               rows: [headerRow, ...rows]
@@ -754,13 +797,7 @@ const Finance: React.FC = () => {
             </div>
           ) : (
             <>
-              {/* Total amount card */}
-              {totalItems > 0 && (
-                <div className="bg-teal-600 text-white rounded-lg p-4 mb-6 flex justify-between items-center">
-                  <span className="text-lg font-semibold">Total:</span>
-                  <span className="text-xl font-bold">{totalAmount.toFixed(2)} HTG</span>
-                </div>
-              )}
+             
 
               {/* Data table */}
               {totalItems > 0 ? (
@@ -780,7 +817,7 @@ const Finance: React.FC = () => {
                         {paginatedData.map((item) => (
                           <tr key={item.id} className="hover:bg-gray-50 transition-colors duration-150">
                             <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">{item.contributor}</td>
-                            <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{item.amount} HTG</td>
+                            <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{item.amount} {item.currency}</td>
                             <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{item.date}</td>
                             <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                               {renderStatusBadge(item.status, item.statusType)}

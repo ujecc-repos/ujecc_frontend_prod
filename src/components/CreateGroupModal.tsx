@@ -295,7 +295,7 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ isOpen, onClose, on
                   </div>
 
                   {/* Age Group */}
-                  <div>
+                  {/* <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Tranche d'âge</label>
                     <input
                       type="text"
@@ -304,7 +304,7 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ isOpen, onClose, on
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                       placeholder="ex: 18-25, Adultes, Enfants"
                     />
-                  </div>
+                  </div> */}
 
                   {/* Max Members */}
                   <div>

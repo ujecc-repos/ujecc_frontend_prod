@@ -168,7 +168,7 @@ const EditMemberModalUser: React.FC<EditMemberModalProps> = ({ isOpen, onClose, 
       
       // Set image preview if member has a picture
       if (member.picture) {
-        setImagePreview(`https://ujecc-backend.onrender.com${member.picture}`);
+        setImagePreview(`${import.meta.env.VITE_API_URL_PHOTO}${member.picture}`);
       } else {
         setImagePreview(null);
       }

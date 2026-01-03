@@ -123,9 +123,9 @@ const EditGroupModal: React.FC<EditGroupModalProps> = ({ isOpen, onClose, onSubm
       newErrors.name = 'Le nom du groupe est requis';
     }
     
-    if (!formData.ageGroup.trim()) {
-      newErrors.ageGroup = 'La tranche d\'âge est requise';
-    }
+    // if (!formData.ageGroup.trim()) {
+    //   newErrors.ageGroup = 'La tranche d\'âge est requise';
+    // }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -269,7 +269,7 @@ const EditGroupModal: React.FC<EditGroupModalProps> = ({ isOpen, onClose, onSubm
                   </div>
 
                   {/* Age Group */}
-                  <div>
+                  {/* <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Tranche d'âge <span className="text-red-500">*</span></label>
                     <input
                       type="text"
@@ -279,7 +279,7 @@ const EditGroupModal: React.FC<EditGroupModalProps> = ({ isOpen, onClose, onSubm
                       placeholder="ex: 18-25 ans, Adultes, Enfants"
                     />
                     {errors.ageGroup && <p className="mt-1 text-sm text-red-500">{errors.ageGroup}</p>}
-                  </div>
+                  </div> */}
 
                   {/* Description */}
                   <div className="md:col-span-2">

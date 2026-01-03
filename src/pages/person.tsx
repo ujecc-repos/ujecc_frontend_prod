@@ -173,7 +173,7 @@ const PersonDetail: React.FC = () => {
                 <div className="w-24 h-24 mx-auto mb-4 bg-white/20 rounded-full flex items-center justify-center">
                   {member.picture ? (
                     <img
-                      src={`https://ujecc-backend.onrender.com${member.picture}`}
+                      src={`${import.meta.env.VITE_API_URL_PHOTO}${member.picture}`}
                       alt={`${member.firstname} ${member.lastname}`}
                       className="w-24 h-24 rounded-full object-cover"
                     />
@@ -260,6 +260,13 @@ const PersonDetail: React.FC = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-500 mb-1">Âge déclaré</label>
                       <p className="text-gray-900">{member.age} ans</p>
+                    </div>
+                  )}
+
+                  {member.code && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500 mb-1">Code d'identification</label>
+                      <p className="text-gray-900">{member.code}</p>
                     </div>
                   )}
                 </div>
