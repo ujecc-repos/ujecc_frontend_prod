@@ -11,11 +11,13 @@ interface Expense {
   churchId?: string;
   createdAt?: string;
   updatedAt?: string;
+  currency?: string;
 }
 
 interface CreateExpenseRequest {
   amount: number;
   quantity: number;
+  currency?: string;
   category: string;
   date: string;
   paymentMethod: string;

@@ -6,7 +6,6 @@ import {
   FunnelIcon,
   PencilIcon,
   TrashIcon,
-  DocumentArrowDownIcon,
 } from '@heroicons/react/24/outline';
 import {
   useDeleteMinistryMutation,
@@ -18,6 +17,22 @@ import type { Ministry } from '../../store/services/ministryApi';
 import { useGetUserByTokenQuery } from '../../store/services/authApi';
 import CreateMinistryModal from '../../components/ministere/CreateMinistryModal';
 import EditMinistryModal from '../../components/ministere/EditMinistryModal';
+import { useGetChurchByIdQuery } from '../../store/services/churchApi';
+
+interface Church {
+  id?: string | number;
+  name?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  picture?: string;
+  anthem?: string;
+  facebook?: string;
+  instagram?: string;
+  option?: string;
+  whatsapp?: string;
+  [key: string]: any;
+}
 
 export default function Ministere() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -39,6 +54,10 @@ export default function Ministere() {
   // Get user data to access church ID
   const { data: userData } = useGetUserByTokenQuery();
   const churchId = userData?.church?.id;
+
+  const { data: churchData } = useGetChurchByIdQuery(churchId ? churchId.toString() : '', {
+        skip: !userData?.church?.id,
+      }) as { data: Church | undefined, isLoading: boolean };
 
   // Fetch ministries data
   const {
@@ -180,16 +199,16 @@ export default function Ministere() {
       {!isLoading && (
         <>
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-800">Ministères</h1>
+            <h1 className="text-2xl font-bold text-gray-800">{churchData?.option}</h1>
             <div className="flex items-center space-x-2">
-              <span className="text-gray-600">{filteredMinistries.length} ministère(s)</span>
-              <button
+              <span className="text-gray-600">{filteredMinistries.length} {churchData?.option}(s)</span>
+              {/* <button
                 onClick={() => setShowExportModal(true)}
                 className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-colors flex items-center space-x-1"
               >
                 <DocumentArrowDownIcon className="h-5 w-5" />
                 <span>Exporter</span>
-              </button>
+              </button> */}
             </div>
           </div>
 
@@ -199,14 +218,14 @@ export default function Ministere() {
               className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-colors flex items-center space-x-1"
             >
               <PlusIcon className="h-5 w-5" />
-              <span>Nouveau ministère</span>
+              <span>Nouveau {churchData?.option}</span>
             </button>
 
             <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="Rechercher un ministère..."
+                  placeholder="Rechercher..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:w-64"
@@ -249,7 +268,7 @@ export default function Ministere() {
                 <thead className="bg-gray-50">
                   <tr>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Ministère
+                      {churchData?.option}
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Description
@@ -267,13 +286,13 @@ export default function Ministere() {
                     <tr>
                       <td colSpan={4} className="px-6 py-4 text-center text-sm text-gray-500">
                         <div className="flex flex-col items-center justify-center py-12">
-                          <p className="text-gray-500 mb-4">Aucun ministère trouvé</p>
+                          <p className="text-gray-500 mb-4">Aucun {churchData?.option} trouvé</p>
                           <button
                             onClick={() => setIsCreateMinistryModalOpen(true)}
                             className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-colors flex items-center space-x-1"
                           >
                             <PlusIcon className="h-5 w-5" />
-                            <span>Créer le premier ministère</span>
+                            <span>Créer le premier {churchData?.option}</span>
                           </button>
                         </div>
                       </td>
@@ -354,7 +373,7 @@ export default function Ministere() {
                       <span className="text-purple-600 font-bold">
                         {Math.min(endIndex, filteredMinistries.length)}
                       </span> sur{' '}
-                      <span className="text-purple-600 font-bold">{filteredMinistries.length}</span> ministères
+                      <span className="text-purple-600 font-bold">{filteredMinistries.length}</span> {churchData?.option}(s)
                     </span>
                   </div>
                 </div>
@@ -404,10 +423,10 @@ export default function Ministere() {
               <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
                 <TrashIcon className="h-6 w-6 text-red-600" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mt-4">Supprimer le ministère</h3>
+              <h3 className="text-lg font-medium text-gray-900 mt-4">Supprimer le {churchData?.option}</h3>
               <div className="mt-2 px-7 py-3">
                 <p className="text-sm text-gray-500">
-                  Êtes-vous sûr de vouloir supprimer le ministère "{selectedMinistryForAction?.name}" ? Cette action ne peut pas être annulée.
+                  Êtes-vous sûr de vouloir supprimer le {churchData?.option} "{selectedMinistryForAction?.name}" ? Cette action ne peut pas être annulée.
                 </p>
               </div>
               <div className="flex justify-center space-x-4 mt-4">
@@ -434,7 +453,7 @@ export default function Ministere() {
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div className="mt-3 text-center">
-              <h3 className="text-lg font-medium text-gray-900">Exporter les ministères</h3>
+              <h3 className="text-lg font-medium text-gray-900">Exporter les {churchData?.option}</h3>
               <div className="mt-4 space-y-3">
                 <button
                   onClick={() => handleExport('xlsx')}

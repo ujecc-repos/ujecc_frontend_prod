@@ -66,7 +66,7 @@ const UserProfile: React.FC = () => {
 
   // Initialize form data when user data is loaded
   useEffect(() => {
-    if (user) {
+    if (user && !isEditing) {
       setFormData({
         firstname: user.firstname,
         lastname: user.lastname,
@@ -93,10 +93,12 @@ const UserProfile: React.FC = () => {
       });
 
       if (user.picture) {
-        setImagePreview(`https://ujecc-backend.onrender.com${user.picture}`);
+        setImagePreview(`${import.meta.env.VITE_API_URL_PHOTO || 'https://ujecc-backend.onrender.com'}${user.picture}`);
+      } else {
+        setImagePreview(null);
       }
     }
-  }, [user]);
+  }, [user, isEditing]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target as HTMLInputElement;
@@ -175,7 +177,7 @@ const UserProfile: React.FC = () => {
       });
 
       if (user.picture) {
-        setImagePreview(`https://ujecc-backend.onrender.com${user.picture}`);
+        setImagePreview(`${import.meta.env.VITE_API_URL_PHOTO || 'https://ujecc-backend.onrender.com'}${user.picture}`);
       } else {
         setImagePreview(null);
       }
@@ -278,21 +280,7 @@ const UserProfile: React.FC = () => {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
               <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-8 text-center relative">
-                {isEditing && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40">
-                    <label htmlFor="profile-image" className="cursor-pointer p-3 bg-white rounded-full">
-                      <CameraIcon className="h-6 w-6 text-blue-600" />
-                      <input
-                        id="profile-image"
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleImageChange}
-                      />
-                    </label>
-                  </div>
-                )}
-                <div className="w-24 h-24 mx-auto mb-4 bg-white/20 rounded-full flex items-center justify-center overflow-hidden">
+                <div className="w-24 h-24 mx-auto mb-4 bg-white/20 rounded-full flex items-center justify-center overflow-hidden relative">
                   {imagePreview ? (
                     <img
                       src={imagePreview}
@@ -303,6 +291,21 @@ const UserProfile: React.FC = () => {
                     <span className="text-2xl font-bold text-white">
                       {user.firstname?.[0] || ''}{user.lastname?.[0] || ''}
                     </span>
+                  )}
+                  {isEditing && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
+                      <label htmlFor="profile-image" className="cursor-pointer p-2 bg-white rounded-full shadow-sm hover:bg-gray-100 transition-colors">
+                        <CameraIcon className="h-5 w-5 text-blue-600" />
+                        <input
+                          id="profile-image"
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleImageChange}
+                          onClick={(e) => { (e.target as HTMLInputElement).value = '' }}
+                        />
+                      </label>
+                    </div>
                   )}
                 </div>
                 <h2 className="text-xl font-bold text-white mb-1">

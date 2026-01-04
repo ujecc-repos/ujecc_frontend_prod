@@ -36,9 +36,57 @@ import { TfiStatsUp } from "react-icons/tfi";
 import { motion } from 'framer-motion';
 import { useGetLogoutMutation } from '../store/services/authApi';
 import { useGetUserByTokenQuery } from '../store/services/authApi';
+import { useGetChurchByIdQuery } from '../store/services/churchApi';
 
 
-const navigation = {
+
+
+type UserRole = 'Admin' | 'SuperAdmin' | 'Directeur' | "Invite" | "Leader";
+
+interface Church {
+  id?: string | number;
+  name?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  picture?: string;
+  anthem?: string;
+  facebook?: string;
+  instagram?: string;
+  option?: string;
+  whatsapp?: string;
+  [key: string]: any;
+}
+
+const DashboardLayout = ({ userRole }: {userRole: UserRole}) => {
+
+  const { data: userData} = useGetUserByTokenQuery();
+    const churchId = userData?.church?.id;
+  
+    const { data: churchData } = useGetChurchByIdQuery(churchId ? churchId.toString() : '', {
+      skip: !churchId,
+    }) as { data: Church | undefined, isLoading: boolean };
+
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  // const [notificationCount] = useState(3);
+  const [expandedSections, setExpandedSections] = useState<{[key: string]: boolean}>({});
+  const [logOut] = useGetLogoutMutation()
+  const {data: userToken} = useGetUserByTokenQuery()
+  // const { user, logout } = useAuth();
+  // const user = { name: 'User', email: 'user@example.com' }; // Temporary mock user
+  const logout = () => Promise.resolve(); // Temporary mock logout
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const toggleSection = (sectionName: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [sectionName]: !prev[sectionName]
+    }));
+  };
+
+  const navigation = {
   Admin: [
     { name: 'Tableau de bord', href: '/tableau-de-bord', icon: TfiStatsUp },
     { name: 'Membres', href: '/tableau-de-bord/admin/membres', icon: UserIcon },
@@ -53,7 +101,7 @@ const navigation = {
       icon: UserGroupIcon,
     },
     {
-      name: 'ministères',
+      name: churchData?.option || 'aucune',
       href: '/tableau-de-bord/admin/ministères',
       icon: BuildingLibraryIcon,
     },
@@ -120,7 +168,8 @@ const navigation = {
        icon: UserGroupIcon,
      },
      {
-       name: 'TTI(Timothee training institute)',
+      //  name: 'TTI(Timothee training institute)',
+       name: 'Programme',
        href: '/tableau-de-bord/admin/tti',
        icon: UserGroupIcon,
      },
@@ -128,6 +177,10 @@ const navigation = {
   Invite: [
     { name: 'Tableau de bord', href: '/tableau-de-bord', icon: TfiStatsUp },
     { name: 'Membres', href: '/tableau-de-bord/admin/membres/invite', icon: UserIcon },
+  ],
+  Leader: [
+    { name: 'Tableau de bord', href: '/tableau-de-bord', icon: TfiStatsUp },
+    { name: 'Services & Présences', href: '/tableau-de-bord/admin/serviceandpresence', icon: UserGroupIcon },
   ],
   SuperAdmin: [
     { name: 'Tableau de bord', href: '/tableau-de-bord', icon: TfiStatsUp },
@@ -141,7 +194,7 @@ const navigation = {
           { name: 'Créer une Église', href: '/tableau-de-bord/super-admin/gestions?tab=church', icon: PlusIcon },
           { name: 'Créer un Utilisateur', href: '/tableau-de-bord/super-admin/gestions?tab=user', icon: UserPlusIcon },
           { name: 'Ajouter Utilisateur à Église', href: '/tableau-de-bord/super-admin/gestions?tab=addUserToChurch', icon: LinkIcon },
-          { name: 'Connecter à TTI', href: '/tableau-de-bord/super-admin/gestions?tab=connectTti', icon: ArrowsRightLeftIcon },
+          { name: 'Connecter à un programme', href: '/tableau-de-bord/super-admin/gestions?tab=connectTti', icon: ArrowsRightLeftIcon },
           { name: 'Connecter Église à Mission', href: '/tableau-de-bord/super-admin/gestions?tab=connectChurchToMission', icon: LinkIcon },
           { name: 'Gestion Utilisateurs', href: '/tableau-de-bord/super-admin/gestion-utilisateurs', icon: UserGroupIcon }
         ]
@@ -158,27 +211,6 @@ const navigation = {
   ],
 };
 
-type UserRole = 'Admin' | 'SuperAdmin' | 'Directeur' | "Invite";
-
-const DashboardLayout = ({ userRole }: {userRole: UserRole}) => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [notificationCount] = useState(3);
-  const [expandedSections, setExpandedSections] = useState<{[key: string]: boolean}>({});
-  const [logOut] = useGetLogoutMutation()
-  const {data: userToken} = useGetUserByTokenQuery()
-  // const { user, logout } = useAuth();
-  // const user = { name: 'User', email: 'user@example.com' }; // Temporary mock user
-  const logout = () => Promise.resolve(); // Temporary mock logout
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  const toggleSection = (sectionName: string) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [sectionName]: !prev[sectionName]
-    }));
-  };
 
   const handleLogout = async () => {
     try {
@@ -242,7 +274,7 @@ const DashboardLayout = ({ userRole }: {userRole: UserRole}) => {
                     <div className="h-10 w-10 rounded-full bg-teal-100 flex items-center justify-center ring-2 ring-white relative">
                       <img
                         className="h-10 w-auto rounded-full"
-                        src="https://goodnewsmission.eu/wp-content/uploads/2017/03/p_posp.jpg?189db0"
+                        src={userToken?.picture && userToken?.picture.length > 4 ? `${import.meta.env.VITE_API_URL_PHOTO}${userToken?.picture}` : "https://goodnewsmission.eu/wp-content/uploads/2017/03/p_posp.jpg?189db0"}
                         alt="User Image"
                       />
                       <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-400 ring-2 ring-white"></div>
@@ -362,8 +394,7 @@ const DashboardLayout = ({ userRole }: {userRole: UserRole}) => {
             <div className="h-10 w-10 rounded-full bg-teal-100 flex items-center justify-center ring-2 ring-white relative">
               <img
                 className="h-10 w-10 rounded-full object-cover"
-                src={"https://goodnewsmission.eu/wp-content/uploads/2017/03/p_posp.jpg?189db0"}
-                alt="User Image"
+                src={userToken?.picture && userToken?.picture.length > 4 ? `${import.meta.env.VITE_API_URL_PHOTO}${userToken?.picture}` : "https://goodnewsmission.eu/wp-content/uploads/2017/03/p_posp.jpg?189db0"}
               />
               <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-400 ring-2 ring-white"></div>
             </div>
@@ -560,11 +591,11 @@ const DashboardLayout = ({ userRole }: {userRole: UserRole}) => {
               >
                 <span className="sr-only">View notifications</span>
                 <BellIcon className="h-6 w-6" aria-hidden="true" />
-                {notificationCount > 0 && (
+                {/* {notificationCount > 0 && (
                   <span className="absolute top-[11px] right-[14px] inline-flex items-center justify-center w-5 h-5 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
                     {notificationCount}
                   </span>
-                )}
+                )} */}
               </button>
 
               {/* Profile dropdown */}
@@ -577,7 +608,7 @@ const DashboardLayout = ({ userRole }: {userRole: UserRole}) => {
                       <div className="h-7 w-7 rounded-full bg-white/20 flex items-center justify-center mr-3 ring-2 ring-white/30">
                         <img
                            className="h-6 w-6 rounded-full object-cover"
-                           src="https://goodnewsmission.eu/wp-content/uploads/2017/03/p_posp.jpg?189db0"
+                           src={userToken?.picture && userToken?.picture.length > 4 ? `${import.meta.env.VITE_API_URL_PHOTO}${userToken?.picture}` : "https://goodnewsmission.eu/wp-content/uploads/2017/03/p_posp.jpg?189db0"}
                            alt="User Image"
                          />
                       </div>

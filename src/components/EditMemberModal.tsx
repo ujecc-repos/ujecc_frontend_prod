@@ -168,7 +168,7 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
       
       // Set image preview if member has a picture
       if (member.picture) {
-        setImagePreview(`https://ujecc-backend.onrender.com${member.picture}`);
+        setImagePreview(`${import.meta.env.VITE_API_URL_PHOTO}${member.picture}`);
       } else {
         setImagePreview(null);
       }
@@ -583,7 +583,7 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Téléphone Mobile</label>
                     <input
-                      type="tel"
+                      type="number"
                       value={formData.mobilePhone}
                       onChange={(e) => setFormData(prev => ({ ...prev, mobilePhone: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
@@ -595,7 +595,7 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Téléphone Fixe</label>
                     <input
-                      type="tel"
+                      type="number"
                       value={formData.homePhone}
                       onChange={(e) => setFormData(prev => ({ ...prev, homePhone: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"

@@ -20,13 +20,14 @@ interface CreateExpenseRequest {
   paymentMethod: string;
   description: string;
   churchId?: string;
+  currency?: string;
 }
 
-const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSubmit, churchId, categories: propCategories, title: modalTitle = 'Ajouter une dépense' }) => {
+const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSubmit, churchId, categories: _propCategories, title: modalTitle = 'Ajouter une dépense' }) => {
   // Form fields
-  console.log(propCategories)
   const [expenseTitle, setExpenseTitle] = useState('');
   const [amount, setAmount] = useState('');
+  const [currency, setCurrency] = useState('HTG');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [category, setCategory] = useState('Autre');
   const [description, setDescription] = useState('');
@@ -51,7 +52,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSubmit, 
     'Nourriture',
     'Événements',
     'Missions',
-    'Charité',
+    'Don',
     'Autre'
   ];
 
@@ -67,6 +68,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSubmit, 
   const resetForm = () => {
     setExpenseTitle('');
     setAmount('');
+    setCurrency('HTG');
     setDate(new Date().toISOString().split('T')[0]);
     setCategory('Autre');
     setDescription('');
@@ -117,6 +119,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSubmit, 
     try {
       const expenseData: CreateExpenseRequest = {
         amount: parseFloat(amount),
+        currency,
         quantity: 1, // Default quantity
         category,
         date,
@@ -160,8 +163,24 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSubmit, 
           <form onSubmit={handleSubmit} className="space-y-4">
 
             <div>
+              <label htmlFor="currency" className="block text-sm font-medium text-gray-700">
+                Devise
+              </label>
+              <select
+                id="currency"
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value)}
+                className="mt-1 p-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm"
+              >
+                <option value="HTG">HTG</option>
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+              </select>
+            </div>
+
+            <div>
               <label htmlFor="amount" className="block text-sm font-medium text-gray-700">
-                Montant (HTG) *
+                Montant *
               </label>
               <input
                 type="text"

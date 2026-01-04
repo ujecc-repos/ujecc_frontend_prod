@@ -10,10 +10,67 @@ import {
   useGetExpensesByCategoryQuery,
   useDeleteExpenseMutation 
 } from '../../store/services/expenseApi';
-import { ExportModal } from '../../components/ExportModal';
 import { FilterModal } from '../../components/FilterModal';
 import { ExpenseModal } from '../../components/ExpenseModal';
 import { useGetUserByTokenQuery } from '../../store/services/authApi';
+import { saveAs } from 'file-saver';
+import jsPDF from 'jspdf';
+import * as XLSX from 'xlsx';
+import { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, TextRun } from 'docx';
+import { ArrowDownTrayIcon } from '@heroicons/react/24/outline';
+
+interface ExportModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onExport: (type: 'xlsx' | 'pdf' | 'docx') => void;
+  activeTab?: string;
+}
+
+const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport, activeTab = 'Dépenses' }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-96 max-w-md mx-4">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Exporter les {activeTab}</h3>
+        <p className="text-sm text-gray-600 mb-6">Choisissez le format d'exportation pour télécharger la liste des {activeTab}.</p>
+        
+        <div className="space-y-3">
+          <button
+            onClick={() => onExport('xlsx')}
+            className="w-full flex items-center justify-center px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
+          >
+            <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
+            Exporter en Excel (.xlsx)
+          </button>
+          
+          <button
+            onClick={() => onExport('pdf')}
+            className="w-full flex items-center justify-center px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
+          >
+            <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
+            Exporter en PDF (.pdf)
+          </button>
+          
+          <button
+            onClick={() => onExport('docx')}
+            className="w-full flex items-center justify-center px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+          >
+            <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
+            Exporter en Word (.docx)
+          </button>
+        </div>
+        
+        <button
+          onClick={onClose}
+          className="w-full mt-4 px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+        >
+          Annuler
+        </button>
+      </div>
+    </div>
+  );
+};
 
 const Depense = () => {
   const [activeTab, setActiveTab] = useState(0);
@@ -132,9 +189,165 @@ const Depense = () => {
     setIsFilterModalOpen(false);
   };
 
-  const handleExport = (format: string, dateRange: { startDate: string; endDate: string }) => {
-    // Export logic here
-    console.log('Exporting in format:', format, 'with date range:', dateRange);
+  const handleExport = async (type: 'xlsx' | 'pdf' | 'docx') => {
+    const dataToExport = filteredExpenses.map(expense => ({
+      Titre: expense.description,
+      Catégorie: expense.category,
+      Montant: expense.amount,
+      Devise: expense.currency || 'HTG',
+      Date: format(new Date(expense.date), 'dd/MM/yyyy'),
+      Description: expense.description
+    }));
+
+    const date = new Date().toLocaleDateString('fr-FR');
+    
+    // Calculate totals by currency
+    const totalsByCurrency = filteredExpenses.reduce((acc, item) => {
+      const currency = item.currency || 'HTG';
+      acc[currency] = (acc[currency] || 0) + item.amount;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const totalString = Object.entries(totalsByCurrency)
+      .map(([currency, amount]) => `${amount.toLocaleString()} ${currency}`)
+      .join(', ');
+
+    if (type === 'xlsx') {
+      const wb = XLSX.utils.book_new();
+      
+      const wsData: any[][] = [
+        ['Rapport des Dépenses'],
+        [`Date: ${date}`],
+        [`Nombre de dépenses: ${filteredExpenses.length}`],
+        [`Montant total: ${totalString}`],
+        [''],
+        ['Titre', 'Catégorie', 'Montant', 'Devise', 'Date', 'Description']
+      ];
+
+      dataToExport.forEach(row => {
+        wsData.push([
+          row.Titre,
+          row.Catégorie,
+          row.Montant,
+          row.Devise,
+          row.Date,
+          row.Description
+        ]);
+      });
+
+      const ws = XLSX.utils.aoa_to_sheet(wsData);
+      XLSX.utils.book_append_sheet(wb, ws, "Dépenses");
+      XLSX.writeFile(wb, "rapport_depenses.xlsx");
+    } else if (type === 'pdf') {
+      const doc = new jsPDF();
+      
+      doc.setFontSize(20);
+      doc.setTextColor(0, 128, 128);
+      doc.text("Rapport des Dépenses", 105, 20, { align: "center" });
+      
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0);
+      doc.text(`Date: ${date}`, 15, 35);
+      doc.text(`Total: ${totalString}`, 15, 42);
+      
+      let y = 55;
+      const xPositions = [15, 65, 105, 135, 160]; // Adjusted positions
+      
+      // Header
+      doc.setFillColor(240, 240, 240);
+      doc.rect(10, y - 5, 190, 10, 'F');
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      
+      doc.text("Titre", xPositions[0], y);
+      doc.text("Catégorie", xPositions[1], y);
+      doc.text("Montant", xPositions[2], y);
+      doc.text("Date", xPositions[3], y);
+      
+      y += 10;
+      
+      doc.setFont("helvetica", "normal");
+      
+      dataToExport.forEach((row, index) => {
+        if (y > 270) {
+          doc.addPage();
+          y = 20;
+          
+          doc.setFillColor(240, 240, 240);
+          doc.rect(10, y - 5, 190, 10, 'F');
+          doc.setFont("helvetica", "bold");
+          doc.text("Titre", xPositions[0], y);
+          doc.text("Catégorie", xPositions[1], y);
+          doc.text("Montant", xPositions[2], y);
+          doc.text("Date", xPositions[3], y);
+          doc.setFont("helvetica", "normal");
+          y += 10;
+        }
+
+        if (index % 2 === 1) {
+            doc.setFillColor(250, 250, 250);
+            doc.rect(10, y - 5, 190, 8, 'F');
+        }
+        
+        const truncate = (str: string, maxLen: number) => str.length > maxLen ? str.substring(0, maxLen) + '...' : str;
+        
+        doc.text(truncate(row.Titre, 25), xPositions[0], y);
+        doc.text(truncate(row.Catégorie, 20), xPositions[1], y);
+        doc.text(`${row.Montant.toLocaleString()} ${row.Devise}`, xPositions[2], y);
+        doc.text(row.Date, xPositions[3], y);
+        
+        y += 8;
+      });
+      
+      doc.save("rapport_depenses.pdf");
+    } else if (type === 'docx') {
+      const rows = [
+        new TableRow({
+          tableHeader: true,
+          children: [
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Titre", bold: true })] })], shading: { fill: "E0E0E0" } }),
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Catégorie", bold: true })] })], shading: { fill: "E0E0E0" } }),
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Montant", bold: true })] })], shading: { fill: "E0E0E0" } }),
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Date", bold: true })] })], shading: { fill: "E0E0E0" } }),
+          ],
+        }),
+        ...dataToExport.map(item => 
+          new TableRow({
+            children: [
+              new TableCell({ children: [new Paragraph({ text: item.Titre })] }),
+              new TableCell({ children: [new Paragraph({ text: item.Catégorie })] }),
+              new TableCell({ children: [new Paragraph({ text: `${item.Montant} ${item.Devise}` })] }),
+              new TableCell({ children: [new Paragraph({ text: item.Date })] }),
+            ],
+          })
+        )
+      ];
+
+      const doc = new Document({
+        sections: [{
+          properties: {},
+          children: [
+            new Paragraph({
+              children: [new TextRun({ text: "Rapport des Dépenses", bold: true, size: 32, color: "008080" })],
+              spacing: { after: 200 },
+            }),
+            new Paragraph({ children: [new TextRun({ text: `Date: ${date}`, size: 24 })] }),
+            new Paragraph({ 
+              children: [new TextRun({ text: `Total: ${totalString}`, size: 24, bold: true })],
+              spacing: { after: 400 },
+            }),
+            new Table({
+              rows: rows,
+              width: { size: 100, type: WidthType.PERCENTAGE },
+            }),
+          ],
+        }],
+      });
+
+      const blob = await Packer.toBlob(doc);
+      saveAs(blob, "rapport_depenses.docx");
+    }
+
     setIsExportModalOpen(false);
   };
 
@@ -307,7 +520,7 @@ const Depense = () => {
                                 </span>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="text-sm text-gray-900 font-medium">{expense.amount.toLocaleString()} FCFA</div>
+                                <div className="text-sm text-gray-900 font-medium">{expense.amount.toLocaleString()} {expense.currency}</div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="text-sm text-gray-500">
@@ -383,7 +596,6 @@ const Depense = () => {
                                 {page}
                               </button>
                             ))}
-                            
                             <button
                               onClick={() => handlePageChange(currentPage + 1)}
                               disabled={currentPage === totalPages}
@@ -497,7 +709,7 @@ const Depense = () => {
           isOpen={isExportModalOpen}
           onClose={() => setIsExportModalOpen(false)}
           onExport={handleExport}
-          title="Exporter les dépenses"
+          activeTab={activeTab === 0 ? "Dépenses Courantes" : "Dépenses Globales"}
         />
       )}
 

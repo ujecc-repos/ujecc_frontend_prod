@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
 import {
   MagnifyingGlassIcon,
-  ArrowDownTrayIcon,
   PlusIcon,
   UserIcon,
   XMarkIcon,
@@ -116,9 +115,9 @@ export default function Bapteme() {
   };
 
   // Handle row click to view details
-  const handleRowClick = (baptism: Baptism) => {
-    navigate(`/tableau-de-bord/admin/bapteme/${baptism.id}`);
-  };
+  // const handleRowClick = (baptism: Baptism) => {
+  //   navigate(`/tableau-de-bord/admin/bapteme/${baptism.id}`);
+  // };
 
   // Handle delete baptism
   const handleDeleteClick = (baptism: Baptism, e: React.MouseEvent) => {
@@ -365,13 +364,13 @@ export default function Bapteme() {
 
           <div className="flex items-center space-x-4">
 
-            <button
+            {/* <button
               onClick={() => setShowExportModal(true)}
               className="flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
               Exporter
-            </button>
+            </button> */}
 
             <button
               onClick={() => navigate('/tableau-de-bord/admin/bapteme/creation')}
@@ -461,7 +460,7 @@ export default function Bapteme() {
                   <tr 
                     key={baptism.id} 
                     className="hover:bg-gray-50 cursor-pointer transition-colors"
-                    onClick={() => handleRowClick(baptism)}
+                    // onClick={() => handleRowClick(baptism)}
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">

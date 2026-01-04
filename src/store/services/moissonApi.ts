@@ -12,12 +12,14 @@ interface Moisson {
   church?: any;
   createdAt?: string;
   updatedAt?: string;
+  currency?: string;
 }
 
 interface CreateMoissonRequest {
   contributorName: string;
   amount: number;
   date: string;
+  currency?: string;
   status: string;
   paymentMethod: string;
   note?: string;

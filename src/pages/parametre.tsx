@@ -28,6 +28,7 @@ interface Church {
   anthem?: string;
   facebook?: string;
   instagram?: string;
+  option?: string;
   whatsapp?: string;
   [key: string]: any;
 }
@@ -55,7 +56,7 @@ export default function ParametreScreen() {
     mainPasteur: ''
   });
 
-  const baseUrl = 'https://ujecc-backend.onrender.com';
+  // const baseUrl = 'https://ujecc-backend.onrender.com';
 
   useEffect(() => {
     if (churchData) {
@@ -72,7 +73,7 @@ export default function ParametreScreen() {
       });
 
       if (churchData.picture) {
-        setSelectedImage(`${baseUrl}${churchData.picture}`);
+        setSelectedImage(`${import.meta.env.VITE_API_URL_PHOTO}${churchData.picture}`);
       }
     }
   }, [churchData]);
@@ -89,7 +90,7 @@ export default function ParametreScreen() {
     if (!churchId || typeof churchId !== 'string' && typeof churchId !== 'number') return;
 
     try {
-      if (selectedImage && (!churchData?.picture || !selectedImage.includes(baseUrl))) {
+      if (selectedImage && (!churchData?.picture || !selectedImage.includes(import.meta.env.VITE_API_URL_PHOTO))) {
         const formDataObj = new FormData();
         
         // Get the file from the input element
