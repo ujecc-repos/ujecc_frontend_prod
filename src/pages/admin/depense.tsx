@@ -3,12 +3,12 @@ import { Tab } from '@headlessui/react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { 
-  useGetExpensesByChurchQuery, 
-  useGetMonthlyExpenseSummaryQuery, 
-  useGetQuarterlyExpenseSummaryQuery, 
+import {
+  useGetExpensesByChurchQuery,
+  useGetMonthlyExpenseSummaryQuery,
+  useGetQuarterlyExpenseSummaryQuery,
   useGetExpensesByCategoryQuery,
-  useDeleteExpenseMutation 
+  useDeleteExpenseMutation
 } from '../../store/services/expenseApi';
 import { FilterModal } from '../../components/FilterModal';
 import { ExpenseModal } from '../../components/ExpenseModal';
@@ -34,7 +34,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport, ac
       <div className="bg-white rounded-lg p-6 w-96 max-w-md mx-4">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Exporter les {activeTab}</h3>
         <p className="text-sm text-gray-600 mb-6">Choisissez le format d'exportation pour télécharger la liste des {activeTab}.</p>
-        
+
         <div className="space-y-3">
           <button
             onClick={() => onExport('xlsx')}
@@ -43,7 +43,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport, ac
             <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
             Exporter en Excel (.xlsx)
           </button>
-          
+
           <button
             onClick={() => onExport('pdf')}
             className="w-full flex items-center justify-center px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
@@ -51,7 +51,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport, ac
             <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
             Exporter en PDF (.pdf)
           </button>
-          
+
           <button
             onClick={() => onExport('docx')}
             className="w-full flex items-center justify-center px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
@@ -60,7 +60,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport, ac
             Exporter en Word (.docx)
           </button>
         </div>
-        
+
         <button
           onClick={onClose}
           className="w-full mt-4 px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200"
@@ -82,8 +82,8 @@ const Depense = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [filterDateRange, setFilterDateRange] = useState<{ start: Date | null, end: Date | null }>({ start: null, end: null });
-  
-  const {data: user } = useGetUserByTokenQuery()
+
+  const { data: user } = useGetUserByTokenQuery()
   const churchId = user?.church?.id;
 
   // Fetch expense data
@@ -133,16 +133,16 @@ const Depense = () => {
 
   // Filter expenses based on search term, category, and date range
   const filteredExpenses = expensesData?.expenses?.filter((expense) => {
-    const matchesSearch = searchTerm === '' || 
+    const matchesSearch = searchTerm === '' ||
       expense.description.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesCategory = filterCategory === '' || expense.category === filterCategory;
-    
+
     const expenseDate = new Date(expense.date);
-    const matchesDateRange = 
-      (!filterDateRange.start || expenseDate >= filterDateRange.start) && 
+    const matchesDateRange =
+      (!filterDateRange.start || expenseDate >= filterDateRange.start) &&
       (!filterDateRange.end || expenseDate <= filterDateRange.end);
-    
+
     return matchesSearch && matchesCategory && matchesDateRange;
   }) || [];
 
@@ -177,14 +177,14 @@ const Depense = () => {
     } else {
       setFilterCategory('');
     }
-    
+
     // Set date range if provided in filters
     const dateRange = {
       start: filters.startDate ? new Date(filters.startDate) : null,
       end: filters.endDate ? new Date(filters.endDate) : null
     };
     setFilterDateRange(dateRange);
-    
+
     setCurrentPage(1);
     setIsFilterModalOpen(false);
   };
@@ -200,7 +200,7 @@ const Depense = () => {
     }));
 
     const date = new Date().toLocaleDateString('fr-FR');
-    
+
     // Calculate totals by currency
     const totalsByCurrency = filteredExpenses.reduce((acc, item) => {
       const currency = item.currency || 'HTG';
@@ -214,7 +214,7 @@ const Depense = () => {
 
     if (type === 'xlsx') {
       const wb = XLSX.utils.book_new();
-      
+
       const wsData: any[][] = [
         ['Rapport des Dépenses'],
         [`Date: ${date}`],
@@ -240,39 +240,39 @@ const Depense = () => {
       XLSX.writeFile(wb, "rapport_depenses.xlsx");
     } else if (type === 'pdf') {
       const doc = new jsPDF();
-      
+
       doc.setFontSize(20);
       doc.setTextColor(0, 128, 128);
       doc.text("Rapport des Dépenses", 105, 20, { align: "center" });
-      
+
       doc.setFontSize(12);
       doc.setTextColor(0, 0, 0);
       doc.text(`Date: ${date}`, 15, 35);
       doc.text(`Total: ${totalString}`, 15, 42);
-      
+
       let y = 55;
       const xPositions = [15, 65, 105, 135, 160]; // Adjusted positions
-      
+
       // Header
       doc.setFillColor(240, 240, 240);
       doc.rect(10, y - 5, 190, 10, 'F');
       doc.setFont("helvetica", "bold");
       doc.setFontSize(10);
-      
+
       doc.text("Titre", xPositions[0], y);
       doc.text("Catégorie", xPositions[1], y);
       doc.text("Montant", xPositions[2], y);
       doc.text("Date", xPositions[3], y);
-      
+
       y += 10;
-      
+
       doc.setFont("helvetica", "normal");
-      
+
       dataToExport.forEach((row, index) => {
         if (y > 270) {
           doc.addPage();
           y = 20;
-          
+
           doc.setFillColor(240, 240, 240);
           doc.rect(10, y - 5, 190, 10, 'F');
           doc.setFont("helvetica", "bold");
@@ -285,20 +285,20 @@ const Depense = () => {
         }
 
         if (index % 2 === 1) {
-            doc.setFillColor(250, 250, 250);
-            doc.rect(10, y - 5, 190, 8, 'F');
+          doc.setFillColor(250, 250, 250);
+          doc.rect(10, y - 5, 190, 8, 'F');
         }
-        
+
         const truncate = (str: string, maxLen: number) => str.length > maxLen ? str.substring(0, maxLen) + '...' : str;
-        
+
         doc.text(truncate(row.Titre, 25), xPositions[0], y);
         doc.text(truncate(row.Catégorie, 20), xPositions[1], y);
         doc.text(`${row.Montant.toLocaleString()} ${row.Devise}`, xPositions[2], y);
         doc.text(row.Date, xPositions[3], y);
-        
+
         y += 8;
       });
-      
+
       doc.save("rapport_depenses.pdf");
     } else if (type === 'docx') {
       const rows = [
@@ -311,7 +311,7 @@ const Depense = () => {
             new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Date", bold: true })] })], shading: { fill: "E0E0E0" } }),
           ],
         }),
-        ...dataToExport.map(item => 
+        ...dataToExport.map(item =>
           new TableRow({
             children: [
               new TableCell({ children: [new Paragraph({ text: item.Titre })] }),
@@ -332,7 +332,7 @@ const Depense = () => {
               spacing: { after: 200 },
             }),
             new Paragraph({ children: [new TextRun({ text: `Date: ${date}`, size: 24 })] }),
-            new Paragraph({ 
+            new Paragraph({
               children: [new TextRun({ text: `Total: ${totalString}`, size: 24, bold: true })],
               spacing: { after: 400 },
             }),
@@ -433,10 +433,9 @@ const Depense = () => {
               <Tab.List className="flex p-1 space-x-1 bg-gray-100 rounded-xl mb-6">
                 <Tab
                   className={({ selected }) =>
-                    `w-full py-2.5 text-sm font-medium text-gray-700 rounded-lg ${
-                      selected
-                        ? 'bg-white shadow'
-                        : 'hover:bg-gray-200'
+                    `w-full py-2.5 text-sm font-medium text-gray-700 rounded-lg ${selected
+                      ? 'bg-white shadow'
+                      : 'hover:bg-gray-200'
                     }`
                   }
                 >
@@ -444,10 +443,9 @@ const Depense = () => {
                 </Tab>
                 <Tab
                   className={({ selected }) =>
-                    `w-full py-2.5 text-sm font-medium text-gray-700 rounded-lg ${
-                      selected
-                        ? 'bg-white shadow'
-                        : 'hover:bg-gray-200'
+                    `w-full py-2.5 text-sm font-medium text-gray-700 rounded-lg ${selected
+                      ? 'bg-white shadow'
+                      : 'hover:bg-gray-200'
                     }`
                   }
                 >
@@ -458,7 +456,7 @@ const Depense = () => {
                 <Tab.Panel>
                   {isLoadingExpenses ? (
                     <div className="flex justify-center items-center py-12">
-    
+
                       <div className="flex items-center justify-center h-64">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
                       </div>
@@ -532,7 +530,7 @@ const Depense = () => {
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 {/* <button className="text-teal-600 hover:text-teal-900 mr-3">Modifier</button> */}
-                                <button 
+                                <button
                                   onClick={() => handleDeleteExpense(expense.id)}
                                   disabled={isDeleting}
                                   className="text-red-600 hover:text-red-900 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -581,17 +579,16 @@ const Depense = () => {
                                 <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
                               </svg>
                             </button>
-                            
+
                             {/* Page numbers */}
                             {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                               <button
                                 key={page}
                                 onClick={() => handlePageChange(page)}
-                                className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                                  currentPage === page
+                                className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${currentPage === page
                                     ? 'z-10 bg-teal-50 border-teal-500 text-teal-600'
                                     : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                                }`}
+                                  }`}
                               >
                                 {page}
                               </button>
@@ -623,7 +620,7 @@ const Depense = () => {
                     </div>
                   )}
                 </Tab.Panel>
-                
+
                 <Tab.Panel>
                   {isLoadingMonthly || isLoadingQuarterly || isLoadingCategory ? (
                     <div className="flex justify-center items-center py-12">
@@ -646,7 +643,7 @@ const Depense = () => {
                               <CartesianGrid strokeDasharray="3 3" />
                               <XAxis dataKey="name" />
                               <YAxis />
-                              <Tooltip formatter={(value) => `${value.toLocaleString()} FCFA`} />
+                              <Tooltip formatter={(value) => `${value?.toLocaleString()} FCFA`} />
                               <Legend />
                               <Bar dataKey="montant" name="Montant" fill="#8884d8" />
                             </BarChart>
@@ -666,7 +663,7 @@ const Depense = () => {
                               <CartesianGrid strokeDasharray="3 3" />
                               <XAxis dataKey="name" />
                               <YAxis />
-                              <Tooltip formatter={(value) => `${value.toLocaleString()} FCFA`} />
+                              <Tooltip formatter={(value) => `${value?.toLocaleString()} FCFA`} />
                               <Legend />
                               <Line type="monotone" dataKey="montant" name="Montant" stroke="#8884d8" activeDot={{ r: 8 }} />
                             </LineChart>
@@ -687,7 +684,7 @@ const Depense = () => {
                               <CartesianGrid strokeDasharray="3 3" />
                               <XAxis type="number" />
                               <YAxis dataKey="name" type="category" width={150} />
-                              <Tooltip formatter={(value) => `${value.toLocaleString()} FCFA`} />
+                              <Tooltip formatter={(value) => `${value?.toLocaleString()} FCFA`} />
                               <Legend />
                               <Bar dataKey="montant" name="Montant" fill="#82ca9d" />
                             </BarChart>
