@@ -58,21 +58,21 @@ interface Church {
   [key: string]: any;
 }
 
-const DashboardLayout = ({ userRole }: {userRole: UserRole}) => {
+const DashboardLayout = ({ userRole }: { userRole: UserRole }) => {
 
-  const { data: userData} = useGetUserByTokenQuery();
-    const churchId = userData?.church?.id;
-  
-    const { data: churchData } = useGetChurchByIdQuery(churchId ? churchId.toString() : '', {
-      skip: !churchId,
-    }) as { data: Church | undefined, isLoading: boolean };
+  const { data: userData } = useGetUserByTokenQuery();
+  const churchId = userData?.church?.id;
+
+  const { data: churchData } = useGetChurchByIdQuery(churchId ? churchId.toString() : '', {
+    skip: !churchId,
+  }) as { data: Church | undefined, isLoading: boolean };
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   // const [notificationCount] = useState(3);
-  const [expandedSections, setExpandedSections] = useState<{[key: string]: boolean}>({});
+  const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({});
   const [logOut] = useGetLogoutMutation()
-  const {data: userToken} = useGetUserByTokenQuery()
+  const { data: userToken } = useGetUserByTokenQuery()
   // const { user, logout } = useAuth();
   // const user = { name: 'User', email: 'user@example.com' }; // Temporary mock user
   const logout = () => Promise.resolve(); // Temporary mock logout
@@ -87,110 +87,110 @@ const DashboardLayout = ({ userRole }: {userRole: UserRole}) => {
   };
 
   const navigation = {
-  Admin: [
-    { name: 'Tableau de bord', href: '/tableau-de-bord', icon: TfiStatsUp },
-    { name: 'Membres', href: '/tableau-de-bord/admin/membres', icon: UserIcon },
-    {
-      name: 'Groupes',
-      href: '/tableau-de-bord/admin/groupes',
-      icon: BriefcaseIcon,
-    },
-    {
-      name: 'pasteurs',
-      href: '/tableau-de-bord/admin/pasteurs',
-      icon: UserGroupIcon,
-    },
-    {
-      name: churchData?.option || 'aucune',
-      href: '/tableau-de-bord/admin/ministères',
-      icon: BuildingLibraryIcon,
-    },
-    // {
-    //   name: 'Évenements',
-    //   href: '/tableau-de-bord/admin/evenements',
-    //   icon: CalendarDaysIcon,
-    // },
-    { name: 'Sanctions', href: '/tableau-de-bord/admin/sanctions', icon: ExclamationTriangleIcon },
-    {
-      name: 'Mariages',
-      href: '/tableau-de-bord/admin/mariages',
-      icon: HeartIcon,
-    },
-    {
-      name: 'Funérailles',
-      href: '/tableau-de-bord/admin/funerailles',
-      icon: UserIcon,
-    },
-    { name: 'Présentation', href: '/tableau-de-bord/admin/presentation', icon: PresentationChartLineIcon },
-    {
-      name: 'Baptême',
-      href: '/tableau-de-bord/admin/bapteme',
-      icon: GiftIcon,
-    },
-    {
-      name: 'Comités',
-      href: '/tableau-de-bord/admin/comite',
-      icon: UserGroupIcon,
-    },
-    {
-      name: 'École du dimanche',
-      href: '/tableau-de-bord/admin/ecole-du-dimanche',
-      icon: AcademicCapIcon,
-    },
-    {
-      name: 'Anniversaires',
-      href: '/tableau-de-bord/admin/anniversaires',
-      icon: GiftIcon,
-    },
-    {
-      name: 'transferts',
-      href: '/tableau-de-bord/admin/transferts',
-      icon: ArrowsRightLeftIcon,
-    },
-    // {
-    //   name: 'Rendez-vous',
-    //   href: '/tableau-de-bord/admin/rendez-vous',
-    //   icon: ClockIcon,
-    // },
-     {
-      name: 'Finance complete',
-      href: '/tableau-de-bord/admin/finances',
-      icon: BanknotesIcon,
-    },
-     {
-       name: 'Dépenses',
-       href: '/tableau-de-bord/admin/depense',
-       icon: CurrencyDollarIcon,
-     },
-     {
-       name: 'Services & Présences',
-       href: '/tableau-de-bord/admin/serviceandpresence',
-       icon: UserGroupIcon,
-     },
-     {
-      //  name: 'TTI(Timothee training institute)',
-       name: 'Programme',
-       href: '/tableau-de-bord/admin/tti',
-       icon: UserGroupIcon,
-     },
-   ],
-  Invite: [
-    { name: 'Tableau de bord', href: '/tableau-de-bord', icon: TfiStatsUp },
-    { name: 'Membres', href: '/tableau-de-bord/admin/membres/invite', icon: UserIcon },
-  ],
-  Leader: [
-    { name: 'Tableau de bord', href: '/tableau-de-bord', icon: TfiStatsUp },
-    { name: 'Services & Présences', href: '/tableau-de-bord/admin/serviceandpresence', icon: UserGroupIcon },
-  ],
-  SuperAdmin: [
-    { name: 'Tableau de bord', href: '/tableau-de-bord', icon: TfiStatsUp },
-    { name: 'Missions', href: '/tableau-de-bord/super-admin/missions', icon: UserIcon },
-    { 
-       name: 'Gestions', 
-       href: '/tableau-de-bord/super-admin/gestions', 
-       icon: BuildingLibraryIcon,
-       hasSubsections: true,
-       subsections: [
+    Admin: [
+      { name: 'Tableau de bord', href: '/tableau-de-bord', icon: TfiStatsUp },
+      { name: 'Membres', href: '/tableau-de-bord/admin/membres', icon: UserIcon },
+      {
+        name: 'Groupes',
+        href: '/tableau-de-bord/admin/groupes',
+        icon: BriefcaseIcon,
+      },
+      {
+        name: 'pasteurs',
+        href: '/tableau-de-bord/admin/pasteurs',
+        icon: UserGroupIcon,
+      },
+      {
+        name: churchData?.option || 'aucune',
+        href: '/tableau-de-bord/admin/ministères',
+        icon: BuildingLibraryIcon,
+      },
+      // {
+      //   name: 'Évenements',
+      //   href: '/tableau-de-bord/admin/evenements',
+      //   icon: CalendarDaysIcon,
+      // },
+      { name: 'Sanctions', href: '/tableau-de-bord/admin/sanctions', icon: ExclamationTriangleIcon },
+      {
+        name: 'Mariages',
+        href: '/tableau-de-bord/admin/mariages',
+        icon: HeartIcon,
+      },
+      {
+        name: 'Funérailles',
+        href: '/tableau-de-bord/admin/funerailles',
+        icon: UserIcon,
+      },
+      { name: 'Présentation', href: '/tableau-de-bord/admin/presentation', icon: PresentationChartLineIcon },
+      {
+        name: 'Baptême',
+        href: '/tableau-de-bord/admin/bapteme',
+        icon: GiftIcon,
+      },
+      {
+        name: 'Comités',
+        href: '/tableau-de-bord/admin/comite',
+        icon: UserGroupIcon,
+      },
+      {
+        name: 'École du dimanche',
+        href: '/tableau-de-bord/admin/ecole-du-dimanche',
+        icon: AcademicCapIcon,
+      },
+      {
+        name: 'Anniversaires',
+        href: '/tableau-de-bord/admin/anniversaires',
+        icon: GiftIcon,
+      },
+      {
+        name: 'transferts',
+        href: '/tableau-de-bord/admin/transferts',
+        icon: ArrowsRightLeftIcon,
+      },
+      // {
+      //   name: 'Rendez-vous',
+      //   href: '/tableau-de-bord/admin/rendez-vous',
+      //   icon: ClockIcon,
+      // },
+      {
+        name: 'Finance complete',
+        href: '/tableau-de-bord/admin/finances',
+        icon: BanknotesIcon,
+      },
+      {
+        name: 'Dépenses',
+        href: '/tableau-de-bord/admin/depense',
+        icon: CurrencyDollarIcon,
+      },
+      {
+        name: 'Services & Présences',
+        href: '/tableau-de-bord/admin/serviceandpresence',
+        icon: UserGroupIcon,
+      },
+      //  {
+      //   //  name: 'TTI(Timothee training institute)',
+      //    name: 'Programme',
+      //    href: '/tableau-de-bord/admin/tti',
+      //    icon: UserGroupIcon,
+      //  },
+    ],
+    Invite: [
+      { name: 'Tableau de bord', href: '/tableau-de-bord', icon: TfiStatsUp },
+      { name: 'Membres', href: '/tableau-de-bord/admin/membres/invite', icon: UserIcon },
+    ],
+    Leader: [
+      { name: 'Tableau de bord', href: '/tableau-de-bord', icon: TfiStatsUp },
+      { name: 'Services & Présences', href: '/tableau-de-bord/admin/serviceandpresence', icon: UserGroupIcon },
+    ],
+    SuperAdmin: [
+      { name: 'Tableau de bord', href: '/tableau-de-bord', icon: TfiStatsUp },
+      { name: 'Missions', href: '/tableau-de-bord/super-admin/missions', icon: UserIcon },
+      {
+        name: 'Gestions',
+        href: '/tableau-de-bord/super-admin/gestions',
+        icon: BuildingLibraryIcon,
+        hasSubsections: true,
+        subsections: [
           { name: 'Créer une Église', href: '/tableau-de-bord/super-admin/gestions?tab=church', icon: PlusIcon },
           { name: 'Créer un Utilisateur', href: '/tableau-de-bord/super-admin/gestions?tab=user', icon: UserPlusIcon },
           { name: 'Ajouter Utilisateur à Église', href: '/tableau-de-bord/super-admin/gestions?tab=addUserToChurch', icon: LinkIcon },
@@ -198,18 +198,18 @@ const DashboardLayout = ({ userRole }: {userRole: UserRole}) => {
           { name: 'Connecter Église à Mission', href: '/tableau-de-bord/super-admin/gestions?tab=connectChurchToMission', icon: LinkIcon },
           { name: 'Gestion Utilisateurs', href: '/tableau-de-bord/super-admin/gestion-utilisateurs', icon: UserGroupIcon }
         ]
-     },
-    { name: 'Toutes les églises', href: '/tableau-de-bord/super-admin/allchurches', icon: BuildingLibraryIcon },
-    { name: 'Mapping', href: '/tableau-de-bord/super-admin/map', icon: MapPinIcon },
-    { name: 'Recovery', href: '/tableau-de-bord/super-admin/recovery', icon: CloudArrowUpIcon },
-  ],
-  
-  Directeur: [
-    { name: 'Tableau de bord', href: '/tableau-de-bord', icon: TfiStatsUp },
-    { name: 'Église', href: "/tableau-de-bord/directeur/eglises", icon: BuildingLibraryIcon},
-    { name: "pasteurs", href: "/tableau-de-bord/pasteurs", icon: UserIcon}
-  ],
-};
+      },
+      { name: 'Toutes les églises', href: '/tableau-de-bord/super-admin/allchurches', icon: BuildingLibraryIcon },
+      { name: 'Mapping', href: '/tableau-de-bord/super-admin/map', icon: MapPinIcon },
+      { name: 'Recovery', href: '/tableau-de-bord/super-admin/recovery', icon: CloudArrowUpIcon },
+    ],
+
+    Directeur: [
+      { name: 'Tableau de bord', href: '/tableau-de-bord', icon: TfiStatsUp },
+      { name: 'Église', href: "/tableau-de-bord/directeur/eglises", icon: BuildingLibraryIcon },
+      { name: "pasteurs", href: "/tableau-de-bord/pasteurs", icon: UserIcon }
+    ],
+  };
 
 
   const handleLogout = async () => {
@@ -255,103 +255,105 @@ const DashboardLayout = ({ userRole }: {userRole: UserRole}) => {
               <Dialog.Panel className="relative mr-16 flex w-full max-w-xs flex-1">
                 <div className="flex grow flex-col gap-y-3 overflow-y-auto bg-white pb-4">
                   <div className='px-3 border-b border-gray-200'>
-                  <div className="flex h-16 shrink-0 items-center justify-between">
-                    <img
-                      className="h-10 w-auto"
-                      src={Ecclesys}
-                      alt="Internet Banking"
-                    />
-                    <div className='pt-[8px]'>
-                    <h3 className="text-2xl font-semibold leading-6 text-gray-900">
-                      Ecclesys
-                    </h3>
-                  </div>
-                  </div>
+                    <div className="flex h-16 shrink-0 items-center justify-between">
+                      <img
+                        className="h-10 w-auto"
+                        src={Ecclesys}
+                        alt="Internet Banking"
+                      />
+                      <div className='pt-[8px]'>
+                        <h3 className="text-2xl font-semibold leading-6 text-gray-900">
+                          Ecclesys
+                        </h3>
+                      </div>
+                    </div>
                   </div>
                   {/* user profile section */}
                   <div className='px-3 border-b border-gray-200'>
-                  <div className="flex  items-center space-x-4 px-2 pb-4 ">
-                    <div className="h-10 w-10 rounded-full bg-teal-100 flex items-center justify-center ring-2 ring-white relative">
-                      <img
-                        className="h-10 w-auto rounded-full"
-                        src={userToken?.picture && userToken?.picture.length > 4 ? `${import.meta.env.VITE_API_URL_PHOTO}${userToken?.picture}` : "https://goodnewsmission.eu/wp-content/uploads/2017/03/p_posp.jpg?189db0"}
-                        alt="User Image"
-                      />
-                      <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-400 ring-2 ring-white"></div>
+                    <div className="flex  items-center space-x-4 px-2 pb-4 ">
+                      <div className="h-10 w-10 rounded-full bg-teal-100 flex items-center justify-center ring-2 ring-white relative">
+                        <img
+                          className="h-10 w-auto rounded-full"
+                          src={userToken?.picture && userToken?.picture.length > 4 ? `${import.meta.env.VITE_API_URL_PHOTO}${userToken?.picture}` : "https://goodnewsmission.eu/wp-content/uploads/2017/03/p_posp.jpg?189db0"}
+                          alt="User Image"
+                        />
+                        <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-400 ring-2 ring-white"></div>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-gray-900 capitalize">{userToken?.firstname} {userToken?.lastname}</span>
+                        <span className="text-xs text-gray-500">{userToken?.email}</span>
+                      </div>
                     </div>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium text-gray-900 capitalize">{userToken?.firstname} {userToken?.lastname}</span>
-                      <span className="text-xs text-gray-500">{userToken?.email}</span>
-                    </div>
-                  </div>
                   </div>
                   <div className="px-6 border-b border-gray-200">
-                  <nav className="flex flex-1 flex-col">
-                    <ul role="list" className="flex flex-1 flex-col gap-y-7">
-                      <li>
-                        <ul role="list" className="-mx-2 space-y-1">
-                          {navigation[userRole].filter(item => {
-                            // Hide TTI section if user's church doesn't have a TTI ID
-                            if (item.name === 'TTI(Timothee training institute)') {
-                              return userToken?.church?.ttiId;
-                            }
-                            return true;
-                          }).map((item: any) => (
-                            <li key={item.name}>
-                              {item.hasSubsections ? (
-                                <div>
-                                  <button
-                                    onClick={() => toggleSection(item.name)}
-                                    className={`group flex w-full gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold ${location.pathname.startsWith(item.href) ? 'bg-teal-50 text-teal-600' : 'text-gray-700 hover:text-teal-600 hover:bg-gray-50'}`}
+                    <nav className="flex flex-1 flex-col">
+                      <ul role="list" className="flex flex-1 flex-col gap-y-7">
+                        <li>
+                          <ul role="list" className="-mx-2 space-y-1">
+                            {navigation[userRole].filter(item => {
+                              // Hide TTI section if user's church doesn't have a TTI ID
+                              if (item.name === 'TTI(Timothee training institute)') {
+                                return userToken?.church?.ttiId;
+                              }
+                              return true;
+                            }).map((item: any) => (
+                              <li key={item.name}>
+                                {item.hasSubsections ? (
+                                  <div>
+                                    <button
+                                      onClick={() => toggleSection(item.name)}
+                                      className={`group flex w-full gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold ${location.pathname.startsWith(item.href) ? 'bg-teal-50 text-teal-600' : 'text-gray-700 hover:text-teal-600 hover:bg-gray-50'}`}
+                                    >
+                                      <item.icon
+                                        className={`h-6 w-6 shrink-0 ${location.pathname.startsWith(item.href) ? 'text-teal-600' : 'text-gray-400 group-hover:text-teal-600'}`}
+                                        aria-hidden="true"
+                                      />
+                                      <span className="flex-1 text-left">{item.name}</span>
+                                      {expandedSections[item.name] ? (
+                                        <ChevronDownIcon className="h-5 w-5" />
+                                      ) : (
+                                        <ChevronRightIcon className="h-5 w-5" />
+                                      )}
+                                    </button>
+                                    {expandedSections[item.name] && (
+                                      <ul className="mt-1 ml-6 space-y-1">
+                                        {item.subsections.map((subsection: any) => (
+                                          <li key={subsection.name}>
+                                            <Link
+                                              to={subsection.href}
+                                              onClick={() => setSidebarOpen(false)}
+                                              className={`group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-medium ${location.search.includes(subsection.href.split('?')[1]) ? 'bg-teal-50 text-teal-600' : 'text-gray-600 hover:text-teal-600 hover:bg-gray-50'}`}
+                                            >
+                                              <subsection.icon
+                                                className={`h-5 w-5 shrink-0 ${location.search.includes(subsection.href.split('?')[1]) ? 'text-teal-600' : 'text-gray-400 group-hover:text-teal-600'}`}
+                                                aria-hidden="true"
+                                              />
+                                              <span className="text-xs">{subsection.name}</span>
+                                            </Link>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <Link
+                                    to={item.href}
+                                    onClick={() => setSidebarOpen(false)}
+                                    className={`group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold ${location.pathname === item.href ? 'bg-teal-50 text-teal-600' : 'text-gray-700 hover:text-teal-600 hover:bg-gray-50'}`}
                                   >
                                     <item.icon
-                                      className={`h-6 w-6 shrink-0 ${location.pathname.startsWith(item.href) ? 'text-teal-600' : 'text-gray-400 group-hover:text-teal-600'}`}
+                                      className={`h-6 w-6 shrink-0 ${location.pathname === item.href ? 'text-teal-600' : 'text-gray-400 group-hover:text-teal-600'}`}
                                       aria-hidden="true"
                                     />
-                                    <span className="flex-1 text-left">{item.name}</span>
-                                    {expandedSections[item.name] ? (
-                                      <ChevronDownIcon className="h-5 w-5" />
-                                    ) : (
-                                      <ChevronRightIcon className="h-5 w-5" />
-                                    )}
-                                  </button>
-                                  {expandedSections[item.name] && (
-                                    <ul className="mt-1 ml-6 space-y-1">
-                                      {item.subsections.map((subsection: any) => (
-                                        <li key={subsection.name}>
-                                          <Link
-                                            to={subsection.href}
-                                            className={`group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-medium ${location.search.includes(subsection.href.split('?')[1]) ? 'bg-teal-50 text-teal-600' : 'text-gray-600 hover:text-teal-600 hover:bg-gray-50'}`}
-                                          >
-                                            <subsection.icon
-                                              className={`h-5 w-5 shrink-0 ${location.search.includes(subsection.href.split('?')[1]) ? 'text-teal-600' : 'text-gray-400 group-hover:text-teal-600'}`}
-                                              aria-hidden="true"
-                                            />
-                                            <span className="text-xs">{subsection.name}</span>
-                                          </Link>
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  )}
-                                </div>
-                              ) : (
-                                <Link
-                                  to={item.href}
-                                  className={`group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold ${location.pathname === item.href ? 'bg-teal-50 text-teal-600' : 'text-gray-700 hover:text-teal-600 hover:bg-gray-50'}`}
-                                >
-                                  <item.icon
-                                    className={`h-6 w-6 shrink-0 ${location.pathname === item.href ? 'text-teal-600' : 'text-gray-400 group-hover:text-teal-600'}`}
-                                    aria-hidden="true"
-                                  />
-                                  <span>{item.name}</span>
-                                </Link>
-                              )}
-                            </li>
-                          ))}
-                        </ul>
-                      </li>
-                    </ul>
-                  </nav>
+                                    <span>{item.name}</span>
+                                  </Link>
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                        </li>
+                      </ul>
+                    </nav>
                   </div>
                 </div>
               </Dialog.Panel>
@@ -361,7 +363,7 @@ const DashboardLayout = ({ userRole }: {userRole: UserRole}) => {
       </Transition.Root>
 
       {/* Static sidebar for desktop */}
-      <motion.div 
+      <motion.div
         className={`hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:flex-col`}
         animate={{ width: sidebarCollapsed ? '5rem' : '18rem' }}
         transition={{ duration: 0.3, ease: 'easeInOut' }}>
@@ -381,28 +383,28 @@ const DashboardLayout = ({ userRole }: {userRole: UserRole}) => {
             </div>
           </div>}
           {sidebarCollapsed && <div className='px-2 border-b border-gray-200'><div className="flex h-14 shrink-0 items-center justify-between">
-              <img
-                className="h-10 w-auto"
-                src={Ecclesys}
-                alt="Internet Banking"
-              />
-            </div></div>}
-          
+            <img
+              className="h-10 w-auto"
+              src={Ecclesys}
+              alt="Internet Banking"
+            />
+          </div></div>}
+
           {/* User Profile Section */}
           <div className="px-3 border-b border-gray-200">
-          <div className="flex items-center space-x-4 px-2 pb-4 pt-1">
-            <div className="h-10 w-10 rounded-full bg-teal-100 flex items-center justify-center ring-2 ring-white relative">
-              <img
-                className="h-10 w-10 rounded-full object-cover"
-                src={userToken?.picture && userToken?.picture.length > 4 ? `${import.meta.env.VITE_API_URL_PHOTO}${userToken?.picture}` : "https://goodnewsmission.eu/wp-content/uploads/2017/03/p_posp.jpg?189db0"}
-              />
-              <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-400 ring-2 ring-white"></div>
+            <div className="flex items-center space-x-4 px-2 pb-4 pt-1">
+              <div className="h-10 w-10 rounded-full bg-teal-100 flex items-center justify-center ring-2 ring-white relative">
+                <img
+                  className="h-10 w-10 rounded-full object-cover"
+                  src={userToken?.picture && userToken?.picture.length > 4 ? `${import.meta.env.VITE_API_URL_PHOTO}${userToken?.picture}` : "https://goodnewsmission.eu/wp-content/uploads/2017/03/p_posp.jpg?189db0"}
+                />
+                <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-400 ring-2 ring-white"></div>
+              </div>
+              {!sidebarCollapsed && <div className="flex flex-col">
+                <span className="text-sm font-medium text-gray-900 capitalize">{userToken?.firstname} {userToken?.lastname}</span>
+                <span className="text-xs text-gray-500">{userToken?.email}</span>
+              </div>}
             </div>
-            {!sidebarCollapsed && <div className="flex flex-col">
-              <span className="text-sm font-medium text-gray-900 capitalize">{userToken?.firstname} {userToken?.lastname}</span>
-              <span className="text-xs text-gray-500">{userToken?.email}</span>
-            </div>}
-          </div>
           </div>
 
           {/* Navigation Section with Scrollable Content */}
@@ -548,7 +550,7 @@ const DashboardLayout = ({ userRole }: {userRole: UserRole}) => {
             <Bars3CenterLeftIcon className="h-6 w-6" aria-hidden="true" />
             {/* <Bars3Icon className="h-6 w-6" aria-hidden="true" /> */}
           </button>
-          
+
           <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
             <motion.button
               type="button"
@@ -607,10 +609,10 @@ const DashboardLayout = ({ userRole }: {userRole: UserRole}) => {
                     <div className="flex items-center bg-teal-500 hover:bg-teal-600 text-white rounded-full px-4 py-2 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 cursor-pointer">
                       <div className="h-7 w-7 rounded-full bg-white/20 flex items-center justify-center mr-3 ring-2 ring-white/30">
                         <img
-                           className="h-6 w-6 rounded-full object-cover"
-                           src={userToken?.picture && userToken?.picture.length > 4 ? `${import.meta.env.VITE_API_URL_PHOTO}${userToken?.picture}` : "https://goodnewsmission.eu/wp-content/uploads/2017/03/p_posp.jpg?189db0"}
-                           alt="User Image"
-                         />
+                          className="h-6 w-6 rounded-full object-cover"
+                          src={userToken?.picture && userToken?.picture.length > 4 ? `${import.meta.env.VITE_API_URL_PHOTO}${userToken?.picture}` : "https://goodnewsmission.eu/wp-content/uploads/2017/03/p_posp.jpg?189db0"}
+                          alt="User Image"
+                        />
                       </div>
                       <div className="flex flex-col items-start">
                         <span className="text-sm font-bold leading-tight">
@@ -658,16 +660,16 @@ const DashboardLayout = ({ userRole }: {userRole: UserRole}) => {
                           className={`flex w-full items-center px-3 py-2 text-sm leading-6 ${active ? 'bg-gray-50' : ''}`}
                         >
                           <CogIcon className="h-5 w-5 mr-3 text-gray-400" />
-                           Paramètre
+                          Paramètre
                         </button>
                       )}
                     </Menu.Item>
                     <Menu.Item>
                       {({ active }) => (
                         <button
-                        onClick={() => {
-                          navigate("/tableau-de-bord/mon-compte/change-password")
-                        }}
+                          onClick={() => {
+                            navigate("/tableau-de-bord/mon-compte/change-password")
+                          }}
                           className={`flex w-full items-center px-3 py-2 text-sm leading-6 ${active ? 'bg-gray-50' : ''}`}
                         >
                           <BellIcon className="h-5 w-5 mr-3 text-gray-400" />
@@ -710,9 +712,9 @@ const DashboardLayout = ({ userRole }: {userRole: UserRole}) => {
         <main className="py-6 bg-gray-50">
           <div className="px-4 sm:px-6 lg:px-8">
             <div className=''>
-            <Outlet />
+              <Outlet />
             </div>
-        </div>
+          </div>
         </main>
       </motion.div>
     </div>

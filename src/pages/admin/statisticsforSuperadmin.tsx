@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { 
-  ChartBarIcon, 
-  UserGroupIcon, 
+import {
+  ChartBarIcon,
+  UserGroupIcon,
   // CalendarDaysIcon,
   // HeartIcon,
   // PresentationChartLineIcon,
@@ -16,7 +16,7 @@ import * as XLSX from 'xlsx';
 import { Document, Packer, Paragraph, Table, TableCell, TableRow, TextRun, WidthType, AlignmentType, HeadingLevel } from 'docx';
 
 // Import your API hooks (adjust imports based on your actual API structure)
-import { useGetUserByTokenQuery, useGetUsersQuery } from '../../store/services/authApi';
+import { useGetUserByTokenQuery } from '../../store/services/authApi';
 import { useGetBaptismsQuery } from '../../store/services/baptismApi';
 import { useGetCommitteesQuery } from '../../store/services/committeeApi';
 import { useGetFuneralsQuery } from '../../store/services/funeralApi';
@@ -27,7 +27,10 @@ import { useGetPresentationsQuery } from '../../store/services/presentationApi';
 import { useGetSundayClassesQuery } from '../../store/services/sundayClassApi';
 import { useGetTransfersQuery } from '../../store/services/transferApi';
 import { useGetGlobalStatsQuery } from '../../store/services/statsApi';
-import { useGetChurchesQuery } from '../../store/services/churchApi';
+import { useGetTotalChurchesQuery } from '../../store/services/churchApi';
+import { useGetTotalMembersQuery } from '../../store/services/authApi';
+import { useGetTotalPasteursQuery } from '../../store/services/pasteurApi';
+
 
 interface MetricCardProps {
   title: string;
@@ -77,7 +80,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) 
       <div className="bg-white rounded-lg p-6 w-96 max-w-md mx-4">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Exporter les Statistiques</h3>
         <p className="text-sm text-gray-600 mb-6">Choisissez le format d'exportation pour télécharger le rapport des statistiques.</p>
-        
+
         <div className="space-y-3">
           <button
             onClick={() => onExport('xlsx')}
@@ -86,7 +89,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) 
             <DocumentArrowDownIcon className="h-5 w-5 mr-2" />
             Exporter en Excel (.xlsx)
           </button>
-          
+
           <button
             onClick={() => onExport('pdf')}
             className="w-full flex items-center justify-center px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
@@ -94,7 +97,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) 
             <DocumentArrowDownIcon className="h-5 w-5 mr-2" />
             Exporter en PDF (.pdf)
           </button>
-          
+
           <button
             onClick={() => onExport('docx')}
             className="w-full flex items-center justify-center px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
@@ -103,7 +106,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) 
             Exporter en Word (.docx)
           </button>
         </div>
-        
+
         <button
           onClick={onClose}
           className="w-full mt-4 px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200"
@@ -118,10 +121,10 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) 
 export default function StatisticsForSuperAdmin() {
   const [showExportModal, setShowExportModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // Get user data and church ID
   const { data: userData } = useGetUserByTokenQuery();
-  
+
   // Fetch data from APIs
   const { data: baptismsData, isLoading: isBaptismsLoading } = useGetBaptismsQuery();
   const { data: groupsData, isLoading: isGroupsLoading } = useGetGroupsQuery();
@@ -130,26 +133,28 @@ export default function StatisticsForSuperAdmin() {
   const { data: funeralsData, isLoading: isFuneralsLoading } = useGetFuneralsQuery();
   const { data: committeesData, isLoading: isCommitteesLoading } = useGetCommitteesQuery();
   const { data: transfersData, isLoading: isTransfersLoading } = useGetTransfersQuery();
-  const { data: usersData, isLoading: isUsersLoading } = useGetUsersQuery();
+  const { data: totalChurches } = useGetTotalChurchesQuery()
+  // const { data: usersData, isLoading: isUsersLoading } = useGetUsersQuery();
   const { data: marriagesData, isLoading: isMarriagesLoading } = useGetMarriagesQuery();
   const { data: pasteursData, isLoading: isPasteursLoading } = useGetPasteursQuery();
-  const {data: globalStatsData, isLoading: isGlobalStatsLoading} = useGetGlobalStatsQuery({});
-  const {data: churchesData} = useGetChurchesQuery();
+  const { data: globalStatsData, isLoading: isGlobalStatsLoading } = useGetGlobalStatsQuery({});
+  const { data: total } = useGetTotalMembersQuery()
+  const { data: totalPasteurs } = useGetTotalPasteursQuery()
 
 
   // Check if any data is still loading
   useEffect(() => {
     const dataLoading = (
-      isBaptismsLoading || isGroupsLoading || isSundayClassesLoading || 
-      isPresentationsLoading || isFuneralsLoading || 
-      isCommitteesLoading || isTransfersLoading || isUsersLoading || 
+      isBaptismsLoading || isGroupsLoading || isSundayClassesLoading ||
+      isPresentationsLoading || isFuneralsLoading ||
+      isCommitteesLoading || isTransfersLoading ||
       isMarriagesLoading || isGlobalStatsLoading || isPasteursLoading
     );
     setIsLoading(dataLoading);
   }, [
     isBaptismsLoading, isGroupsLoading, isSundayClassesLoading,
     isPresentationsLoading, isFuneralsLoading,
-    isCommitteesLoading, isTransfersLoading, isUsersLoading,
+    isCommitteesLoading, isTransfersLoading,
     isMarriagesLoading, isGlobalStatsLoading, isPasteursLoading
   ]);
 
@@ -162,7 +167,7 @@ export default function StatisticsForSuperAdmin() {
   const committeesCount = useMemo(() => committeesData?.length || 0, [committeesData]);
   const transfersCount = useMemo(() => transfersData?.length || 0, [transfersData]);
   const marriagesCount = useMemo(() => marriagesData?.length || 0, [marriagesData]);
-  const totalMembers = useMemo(() => usersData?.length || 0, [usersData]);
+  // const totalMembers = useMemo(() => usersData?.length || 0, [usersData]);
   const pasteursCount = useMemo(() => pasteursData?.length || 0, [pasteursData]);
 
   // Function to generate PDF
@@ -174,75 +179,75 @@ export default function StatisticsForSuperAdmin() {
       month: 'long',
       day: 'numeric'
     });
-    
+
     // Set font size and add title
     doc.setFontSize(18);
     doc.setTextColor(44, 62, 80);
     doc.text('RAPPORT DES STATISTIQUES DE L\'ÉGLISE', 105, 20, { align: 'center' });
-    
+
     // Add church name
     doc.setFontSize(14);
     doc.setTextColor(127, 140, 141);
     doc.text(reportData.churchName, 105, 30, { align: 'center' });
-    
+
     // Add info section
     doc.setFontSize(12);
     doc.setTextColor(51, 51, 51);
     doc.text(`Église: ${reportData.churchName}`, 20, 45);
     doc.text(`Date du rapport: ${formattedDate}`, 20, 52);
-    
+
     // Add section title
     doc.setFontSize(14);
     doc.setTextColor(44, 62, 80);
     doc.text('STATISTIQUES DÉTAILLÉES', 20, 65);
-    
+
     // Draw a line under the section title
     doc.setDrawColor(238, 238, 238);
     doc.line(20, 67, 190, 67);
-    
+
     // Add table headers
     let yPos = 75;
     const colWidth = [100, 40];
     const startX = 20;
-    
+
     // Table header
     doc.setFillColor(248, 249, 250);
     doc.setDrawColor(221, 221, 221);
     doc.rect(startX, yPos - 5, colWidth[0] + colWidth[1], 10, 'FD');
-    
+
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(44, 62, 80);
     doc.text('Catégorie', startX + 5, yPos);
     doc.text('Valeur', startX + colWidth[0] + 5, yPos);
-    
+
     // Table rows
     yPos += 10;
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(51, 51, 51);
-    
+
     let rowCount = 0;
     Object.entries(reportData.statistics).forEach(([key, value]) => {
       const label = statLabels[key] || key;
-      
+
       // Alternate row background
       if (rowCount % 2 === 1) {
         doc.setFillColor(242, 242, 242);
         doc.rect(startX, yPos - 5, colWidth[0] + colWidth[1], 10, 'F');
       }
-      
+
       // Draw cell borders
       doc.setDrawColor(221, 221, 221);
       doc.rect(startX, yPos - 5, colWidth[0], 10);
       doc.rect(startX + colWidth[0], yPos - 5, colWidth[1], 10);
-      
+
       // Add text
       doc.text(label, startX + 5, yPos);
       doc.text(String(value), startX + colWidth[0] + 5, yPos);
-      
+
       yPos += 10;
       rowCount++;
     });
-    
+
     // Add footer
     const footerY = 270;
     doc.setFontSize(10);
@@ -251,7 +256,7 @@ export default function StatisticsForSuperAdmin() {
     doc.line(20, footerY - 10, 190, footerY - 10);
     doc.text('Rapport généré automatiquement par l\'application de gestion d\'église', 105, footerY, { align: 'center' });
     doc.text(`© ${currentDate.getFullYear()} - ${reportData.churchName}`, 105, footerY + 7, { align: 'center' });
-    
+
     return doc;
   };
 
@@ -271,11 +276,11 @@ export default function StatisticsForSuperAdmin() {
         transfers: transfersCount,
         marriages: marriagesCount,
         depense: globalStatsData?.totalExpenses || 0,
-        totalMembers: totalMembers,
+        // totalMembers: totalMembers,
         pasteurs: pasteursCount
       }
     };
-    
+
     const statLabels: { [key: string]: string } = {
       baptisms: 'Baptêmes',
       groups: 'Groupes',
@@ -290,12 +295,12 @@ export default function StatisticsForSuperAdmin() {
       totalMembers: 'Total des Membres',
       pasteurs: 'Pasteurs'
     };
-    
+
     try {
       if (type === 'xlsx') {
         // Create Excel workbook
         const workbook = XLSX.utils.book_new();
-        
+
         const headerData = [
           ['RAPPORT DES STATISTIQUES DE L\'ÉGLISE'],
           [reportData.churchName],
@@ -310,30 +315,30 @@ export default function StatisticsForSuperAdmin() {
           ['STATISTIQUES DÉTAILLÉES'],
           ['Catégorie', 'Valeur']
         ];
-        
+
         const statsData = Object.entries(reportData.statistics).map(([key, value]) => [
           statLabels[key] || key,
           value
         ]);
-        
+
         const allData = [...headerData, ...statsData];
         const worksheet = XLSX.utils.aoa_to_sheet(allData);
-        
+
         worksheet['!cols'] = [
           { width: 30 },
           { width: 15 }
         ];
-        
+
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Statistiques');
         XLSX.writeFile(workbook, `Statistiques_Eglise_${new Date().toISOString().split('T')[0]}.xlsx`);
-        
+
       } else if (type === 'pdf') {
         const doc = await generatePDF(reportData, statLabels);
         doc.save(`Rapport_Statistiques_${new Date().toISOString().split('T')[0]}.pdf`);
-        
+
       } else if (type === 'docx') {
         // Create Word document
-        const tableRows = Object.entries(reportData.statistics).map(([key, value]) => 
+        const tableRows = Object.entries(reportData.statistics).map(([key, value]) =>
           new TableRow({
             children: [
               new TableCell({
@@ -347,7 +352,7 @@ export default function StatisticsForSuperAdmin() {
             ]
           })
         );
-        
+
         const doc = new Document({
           sections: [{
             children: [
@@ -449,7 +454,7 @@ export default function StatisticsForSuperAdmin() {
             ]
           }]
         });
-        
+
         const blob = await Packer.toBlob(doc);
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -458,12 +463,12 @@ export default function StatisticsForSuperAdmin() {
         link.click();
         window.URL.revokeObjectURL(url);
       }
-      
+
       setShowExportModal(false);
-      
+
       // Show success notification (you can replace this with your notification system)
       alert(`Le rapport des statistiques a été téléchargé avec succès en format ${type.toUpperCase()}.`);
-      
+
     } catch (error) {
       console.error('Erreur lors de l\'exportation du fichier:', error);
       alert('Une erreur s\'est produite lors de l\'exportation.');
@@ -570,14 +575,14 @@ export default function StatisticsForSuperAdmin() {
           /> */}
           <MetricCard
             title="Pasteurs"
-            value={pasteursCount.toString().padStart(2, '0')}
+            value={totalPasteurs?.total ? `${totalPasteurs.total.toLocaleString()}` : '0'}
             icon={UserIcon}
             color="text-gray-600"
             bgColor="bg-gray-50"
           />
           <MetricCard
             title="Églises"
-            value={churchesData?.length ? `${churchesData.length.toLocaleString()}` : '0'}
+            value={totalChurches?.total ? `${totalChurches.total.toLocaleString()}` : '0'}
             icon={UserIcon}
             color="text-gray-600"
             bgColor="bg-gray-50"
@@ -589,7 +594,7 @@ export default function StatisticsForSuperAdmin() {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-medium opacity-90">Total des Membres</h3>
-              <p className="text-4xl font-bold mt-2">{totalMembers}</p>
+              <p className="text-4xl font-bold mt-2">{total?.total}</p>
               <p className="text-sm opacity-75 mt-1">Membres actifs</p>
             </div>
             <div className="bg-white bg-opacity-20 p-4 rounded-lg">

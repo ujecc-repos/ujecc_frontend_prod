@@ -36,10 +36,15 @@ interface Church {
   }
 }
 
+interface totalChurch {
+  total: number;
+}
+
 interface CreateChurchRequest {
   name: string;
   departement: string;
   commune: string;
+  foundationYear: string;
   sectionCommunale: string;
   longitude?: string;
   latitude?: string;
@@ -47,9 +52,9 @@ interface CreateChurchRequest {
 }
 
 interface createChurchResponse {
-    churchId: string;
-    churchName: string;
-    token: string;
+  churchId: string;
+  churchName: string;
+  token: string;
 }
 
 interface UpdateChurchRequest {
@@ -111,10 +116,10 @@ export const churchApi = authApi.injectEndpoints({
       query: (churchData) => {
         // Check if churchData is FormData
         const isFormData = churchData instanceof FormData;
-        const id = isFormData 
-          ? churchData.get('id')?.toString() 
+        const id = isFormData
+          ? churchData.get('id')?.toString()
           : (churchData as UpdateChurchRequest).id;
-        
+
         return {
           url: `/churches/${id}`,
           method: 'PUT',
@@ -142,7 +147,7 @@ export const churchApi = authApi.injectEndpoints({
       }),
       invalidatesTags: ['Church', 'Transfer', "User"],
     }),
-    
+
     getDepartementCommunes: builder.query<DepartementCommunesResponse, string>({
       query: (departementName) => `/departement/${departementName}`,
       providesTags: ['Church'],
@@ -163,6 +168,11 @@ export const churchApi = authApi.injectEndpoints({
 
     getAllTtis: builder.query<Tti[], void>({
       query: () => '/churches/ttis/all-tti',
+      providesTags: ['Church'],
+    }),
+
+    getTotalChurches: builder.query<totalChurch, void>({
+      query: () => '/churches/admin/total-churches',
       providesTags: ['Church'],
     }),
 
@@ -189,4 +199,5 @@ export const {
   useGetTtisByChurchQuery,
   useGetAllTtisQuery,
   useConnectChurchToMissionMutation,
+  useGetTotalChurchesQuery
 } = churchApi;

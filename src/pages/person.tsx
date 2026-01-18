@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeftIcon,
@@ -9,8 +9,11 @@ import {
   HomeIcon,
   GlobeAltIcon,
   IdentificationIcon,
-  StarIcon
+  StarIcon,
+  QrCodeIcon,
+  ArrowDownTrayIcon
 } from '@heroicons/react/24/outline';
+import { QRCodeSVG } from 'qrcode.react';
 import { useGetUserByIdQuery, useMakeTimotheeMutation, useRemoveTimotheeMutation } from '../store/services/authApi';
 import { useGetUserByTokenQuery } from '../store/services/authApi';
 
@@ -18,29 +21,63 @@ const PersonDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [isUpdatingTimothee, setIsUpdatingTimothee] = useState(false);
-  
+
   // Fetch member data by ID
   const { data: member, isLoading, error, refetch } = useGetUserByIdQuery(id as string, { skip: !id });
-  
+
   // Timothee mutations
   const [makeTimothee] = useMakeTimotheeMutation();
   const [removeTimothee] = useRemoveTimotheeMutation();
-  const {data: userToken} = useGetUserByTokenQuery()
+  const { data: userToken } = useGetUserByTokenQuery()
   console.log("user token : ", userToken)
+
+  const qrCodeRef = useRef<HTMLDivElement>(null);
 
   const calculateAge = (birthDate: string | undefined): number => {
     if (!birthDate) return 0;
-    
+
     const today = new Date();
     const birthDateObj = new Date(birthDate);
     let age = today.getFullYear() - birthDateObj.getFullYear();
     const monthDiff = today.getMonth() - birthDateObj.getMonth();
-    
+
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDateObj.getDate())) {
       age--;
     }
-    
+
     return age;
+  };
+
+  const downloadQRCode = () => {
+    if (!qrCodeRef.current || !id) return;
+
+    const svg = qrCodeRef.current.querySelector('svg');
+    if (!svg) return;
+
+    // Create a canvas from the SVG
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+
+    canvas.width = 256;
+    canvas.height = 256;
+
+    img.onload = () => {
+      ctx?.drawImage(img, 0, 0);
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.download = `qrcode-${member?.firstname}-${member?.lastname}.png`;
+          link.href = url;
+          link.click();
+          URL.revokeObjectURL(url);
+        }
+      });
+    };
+
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
   };
 
   const formatDate = (dateString: string | undefined): string => {
@@ -54,9 +91,9 @@ const PersonDetail: React.FC = () => {
 
   const handleTimotheeToggle = async () => {
     if (!id || isUpdatingTimothee) return;
-    
+
     setIsUpdatingTimothee(true);
-    
+
     try {
       if (member?.istimothee) {
         // Remove Timothee status
@@ -65,7 +102,7 @@ const PersonDetail: React.FC = () => {
         // Make Timothee
         await makeTimothee(id).unwrap();
       }
-      
+
       // Refetch member data to update UI
       await refetch();
     } catch (error) {
@@ -128,36 +165,34 @@ const PersonDetail: React.FC = () => {
               </h1>
             </div>
             <div className="flex items-center space-x-3">
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                 member.membreActif 
-                   ? 'bg-green-100 text-green-800' 
-                   : 'bg-gray-100 text-gray-800'
-               }`}>
-                 {member.membreActif ? 'Membre actif' : 'Membre inactif'}
-               </span>
-               
-               {/* Timothee Button */}
-               {userToken?.church?.ttiId && (
-               <button
-                 onClick={handleTimotheeToggle}
-                 disabled={isUpdatingTimothee}
-                 className={`flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                   member.timothee
-                     ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
-                     : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
-                 } ${isUpdatingTimothee ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-               >
-                 <StarIcon className="h-4 w-4" />
-                 <span>
-                   {isUpdatingTimothee 
-                     ? 'Mise à jour...' 
-                     : member.istimothee
-                       ? 'Retirer Timothée'
-                       : 'Devenir Timothée'
-                   }
-                 </span>
-               </button>
-               )}
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${member.membreActif
+                ? 'bg-green-100 text-green-800'
+                : 'bg-gray-100 text-gray-800'
+                }`}>
+                {member.membreActif ? 'Membre actif' : 'Membre inactif'}
+              </span>
+
+              {/* Timothee Button */}
+              {userToken?.church?.ttiId && (
+                <button
+                  onClick={handleTimotheeToggle}
+                  disabled={isUpdatingTimothee}
+                  className={`flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-medium transition-colors ${member.timothee
+                    ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
+                    : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                    } ${isUpdatingTimothee ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                >
+                  <StarIcon className="h-4 w-4" />
+                  <span>
+                    {isUpdatingTimothee
+                      ? 'Mise à jour...'
+                      : member.istimothee
+                        ? 'Retirer Timothée'
+                        : 'Devenir Timothée'
+                    }
+                  </span>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -193,7 +228,7 @@ const PersonDetail: React.FC = () => {
                   </p>
                 )}
               </div>
-              
+
               <div className="p-6 space-y-4">
                 {member.email && (
                   <div className="flex items-center space-x-3">
@@ -204,7 +239,7 @@ const PersonDetail: React.FC = () => {
                     </div>
                   </div>
                 )}
-                
+
                 {member.mobilePhone && (
                   <div className="flex items-center space-x-3">
                     <PhoneIcon className="h-5 w-5 text-gray-400" />
@@ -214,7 +249,7 @@ const PersonDetail: React.FC = () => {
                     </div>
                   </div>
                 )}
-                
+
                 {member.homePhone && (
                   <div className="flex items-center space-x-3">
                     <PhoneIcon className="h-5 w-5 text-gray-400" />
@@ -247,11 +282,10 @@ const PersonDetail: React.FC = () => {
                   <div>
                     <label className="block text-sm font-medium text-gray-500 mb-1">Groupe sanguin</label>
                     <p className="text-gray-900">
-                      <span className={`px-2 py-1 rounded-full text-sm font-medium ${
-                        member.groupeSanguin 
-                          ? 'bg-red-100 text-red-800' 
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
+                      <span className={`px-2 py-1 rounded-full text-sm font-medium ${member.groupeSanguin
+                        ? 'bg-red-100 text-red-800'
+                        : 'bg-gray-100 text-gray-800'
+                        }`}>
                         {member.groupeSanguin || 'Non renseigné'}
                       </span>
                     </p>
@@ -416,6 +450,40 @@ const PersonDetail: React.FC = () => {
                 </div>
               </div>
             )}
+
+            {/* QR Code for Presence */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                  <QrCodeIcon className="h-5 w-5 mr-2 text-teal-600" />
+                  QR Code de Présence
+                </h3>
+              </div>
+              <div className="p-6">
+                <div className="flex flex-col items-center space-y-4">
+                  <div className="bg-gray-50 p-4 rounded-lg" ref={qrCodeRef}>
+                    <QRCodeSVG
+                      value={id || ''}
+                      size={200}
+                      level="H"
+                      includeMargin={true}
+                    />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm text-gray-600 mb-3">
+                      Utilisez ce QR code pour marquer votre présence lors des services
+                    </p>
+                    <button
+                      onClick={downloadQRCode}
+                      className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors shadow-sm"
+                    >
+                      <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
+                      Télécharger le QR Code
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

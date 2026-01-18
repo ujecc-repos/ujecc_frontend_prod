@@ -14,6 +14,9 @@ import {
   ArrowRightIcon,
   CalendarIcon,
   PhotoIcon,
+  KeyIcon,
+  EyeIcon,
+  EyeSlashIcon,
 } from '@heroicons/react/24/outline';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
@@ -22,10 +25,10 @@ import { saveAs } from 'file-saver';
 import Calendar from 'react-calendar';
 import Select from 'react-select';
 import 'react-calendar/dist/Calendar.css';
-import {useGetDepartementCommunesQuery} from '../../store/services/churchApi';
+import { useGetDepartementCommunesQuery } from '../../store/services/churchApi';
 
 // Import API hooks (adjust based on your actual API structure)
-import { useGetUserByTokenQuery, useGetUsersByChurchQuery, useRegisterMutation, useUpdateUserMutation, useDeleteUserMutation, useBulkInsertUsersMutation } from '../../store/services/authApi';
+import { useGetUserByTokenQuery, useGetUsersByChurchQuery, useRegisterMutation, useUpdateUserMutation, useDeleteUserMutation, useBulkInsertUsersMutation, useAdminChangePasswordMutation } from '../../store/services/authApi';
 import { useGetMinistriesByChurchQuery } from '../../store/services/ministryApi';
 import { useGetGroupsByChurchQuery } from '../../store/services/groupApi';
 import { useGetSundayClassesByChurchQuery } from '../../store/services/sundayClassApi';
@@ -129,7 +132,7 @@ interface AddMemberModalProps {
 const FilterModal: React.FC<FilterModalProps> = ({ isOpen, onClose, filters, onApplyFilters, onClear }) => {
   const [localFilters, setLocalFilters] = useState<FilterState>(filters);
   const [activeSection, setActiveSection] = useState<string>('searchType');
-  
+
   useEffect(() => {
     if (isOpen) {
       setLocalFilters(filters);
@@ -158,11 +161,10 @@ const FilterModal: React.FC<FilterModalProps> = ({ isOpen, onClose, filters, onA
               <button
                 key={section.key}
                 onClick={() => setActiveSection(section.key)}
-                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                  activeSection === section.key
-                    ? 'bg-white text-teal-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${activeSection === section.key
+                  ? 'bg-white text-teal-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+                  }`}
               >
                 {section.label}
               </button>
@@ -342,7 +344,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) 
       <div className="bg-white rounded-lg p-6 w-96 max-w-md mx-4">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Exporter les Membres</h3>
         <p className="text-sm text-gray-600 mb-6">Choisissez le format d'exportation pour télécharger la liste des membres.</p>
-        
+
         <div className="space-y-3">
           <button
             onClick={() => onExport('xlsx')}
@@ -351,7 +353,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) 
             <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
             Exporter en Excel (.xlsx)
           </button>
-          
+
           <button
             onClick={() => onExport('pdf')}
             className="w-full flex items-center justify-center px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
@@ -359,7 +361,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) 
             <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
             Exporter en PDF (.pdf)
           </button>
-          
+
           <button
             onClick={() => onExport('docx')}
             className="w-full flex items-center justify-center px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
@@ -368,7 +370,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) 
             Exporter en Word (.docx)
           </button>
         </div>
-        
+
         <button
           onClick={onClose}
           className="w-full mt-4 px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200"
@@ -426,10 +428,10 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
   // Get user data and church ID for fetching ministries
   const { data: userData } = useGetUserByTokenQuery();
   const churchId = userData?.church?.id;
-  
+
   // Fetch ministries for the church
   const { data: ministriesData } = useGetMinistriesByChurchQuery(churchId || '', { skip: !churchId });
-  
+
   // Fetch groups and sunday classes
   const { data: groupsData } = useGetGroupsByChurchQuery(churchId || '', { skip: !churchId });
   const { data: sundayClassesData } = useGetSundayClassesByChurchQuery({ churchId: churchId || '' }, { skip: !churchId });
@@ -451,21 +453,21 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
     }));
   }, [sundayClassesData]);
 
-  
+
   // Fetch department communes data
-  const {data: Ouest} = useGetDepartementCommunesQuery("Ouest")
-  const {data: Nord} = useGetDepartementCommunesQuery(`Nord`)
-  const {data: NordEst} = useGetDepartementCommunesQuery("Nord-Est")
-  const {data: NordOuest} = useGetDepartementCommunesQuery("Nord-Ouest")
-  const {data: Sude} = useGetDepartementCommunesQuery("Sude")
-  const {data: SudEst} = useGetDepartementCommunesQuery("Sud-Est")
-  const {data: Artibonite} = useGetDepartementCommunesQuery("Artibonite")
-  const {data: Centre} = useGetDepartementCommunesQuery("Centre")
-  const {data: GrandAnse} = useGetDepartementCommunesQuery("Grand'Anse")
-  const {data: Nippes} = useGetDepartementCommunesQuery("Nippes")
+  const { data: Ouest } = useGetDepartementCommunesQuery("Ouest")
+  const { data: Nord } = useGetDepartementCommunesQuery(`Nord`)
+  const { data: NordEst } = useGetDepartementCommunesQuery("Nord-Est")
+  const { data: NordOuest } = useGetDepartementCommunesQuery("Nord-Ouest")
+  const { data: Sude } = useGetDepartementCommunesQuery("Sude")
+  const { data: SudEst } = useGetDepartementCommunesQuery("Sud-Est")
+  const { data: Artibonite } = useGetDepartementCommunesQuery("Artibonite")
+  const { data: Centre } = useGetDepartementCommunesQuery("Centre")
+  const { data: GrandAnse } = useGetDepartementCommunesQuery("Grand'Anse")
+  const { data: Nippes } = useGetDepartementCommunesQuery("Nippes")
 
   const villeAndVilleDenaissance = Object.keys(Ouest || {}).concat(Object.keys(Nord || {}), Object.keys(NordEst || {}), Object.keys(NordOuest || {}), Object.keys(Sude || {}), Object.keys(SudEst || {}), Object.keys(Artibonite || {}), Object.keys(Centre || {}), Object.keys(GrandAnse || {}), Object.keys(Nippes || {}))
-  
+
   // Transform ministries data for react-select
   const ministryOptions = useMemo(() => {
     if (!ministriesData) return [];
@@ -489,19 +491,19 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    
+
     if (!formData.firstname.trim()) newErrors.firstname = 'Le nom est obligatoire';
     if (!formData.lastname.trim()) newErrors.lastname = 'Le prénom est obligatoire';
     // if (!formData.email.trim()) newErrors.email = "L'adresse électronique est obligatoire";
     // if (!formData.password.trim()) newErrors.password = 'Le mot de passe est obligatoire';
     // if (!formData.role.trim()) newErrors.role = 'Le rôle est obligatoire';
-    
+
     // Email validation
     // const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     // if (formData.email && !emailRegex.test(formData.email)) {
     //   newErrors.email = 'Format d\'email invalide';
     // }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -602,11 +604,10 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex-1 py-3 px-4 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === tab.key
-                  ? 'border-teal-500 text-teal-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
+              className={`flex-1 py-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.key
+                ? 'border-teal-500 text-teal-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
             >
               {tab.label}
             </button>
@@ -665,9 +666,8 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                       type="text"
                       value={formData.firstname}
                       onChange={(e) => setFormData(prev => ({ ...prev, firstname: e.target.value }))}
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 ${
-                        errors.firstname ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 ${errors.firstname ? 'border-red-500' : 'border-gray-300'
+                        }`}
                       placeholder="Nom"
                     />
                     {errors.firstname && <p className="mt-1 text-sm text-red-500">{errors.firstname}</p>}
@@ -682,9 +682,8 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                       type="text"
                       value={formData.lastname}
                       onChange={(e) => setFormData(prev => ({ ...prev, lastname: e.target.value }))}
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 ${
-                        errors.lastname ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 ${errors.lastname ? 'border-red-500' : 'border-gray-300'
+                        }`}
                       placeholder="Prénom"
                     />
                     {errors.lastname && <p className="mt-1 text-sm text-red-500">{errors.lastname}</p>}
@@ -779,20 +778,20 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                       {showBirthCalendar && (
                         <div className="absolute top-full left-0 mt-1 z-50">
                           <Calendar
-                             onChange={(date) => {
-                               if (date) {
-                                 const selectedDate = Array.isArray(date) ? date[0] : date;
-                                 if (selectedDate) {
-                                   // Format date as YYYY-MM-DD without timezone issues
-                                   const year = selectedDate.getFullYear();
-                                   const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-                                   const day = String(selectedDate.getDate()).padStart(2, '0');
-                                   const dateString = `${year}-${month}-${day}`;
-                                   setFormData(prev => ({ ...prev, birthDate: dateString }));
-                                   setShowBirthCalendar(false);
-                                 }
-                               }
-                             }}
+                            onChange={(date) => {
+                              if (date) {
+                                const selectedDate = Array.isArray(date) ? date[0] : date;
+                                if (selectedDate) {
+                                  // Format date as YYYY-MM-DD without timezone issues
+                                  const year = selectedDate.getFullYear();
+                                  const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+                                  const day = String(selectedDate.getDate()).padStart(2, '0');
+                                  const dateString = `${year}-${month}-${day}`;
+                                  setFormData(prev => ({ ...prev, birthDate: dateString }));
+                                  setShowBirthCalendar(false);
+                                }
+                              }
+                            }}
                             value={formData.birthDate ? new Date(formData.birthDate + 'T00:00:00') : null}
                             minDate={undefined}
                             maxDate={undefined}
@@ -1083,9 +1082,8 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                     <select
                       value={formData.role}
                       onChange={(e) => setFormData(prev => ({ ...prev, role: e.target.value }))}
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 ${
-                        errors.role ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 ${errors.role ? 'border-red-500' : 'border-gray-300'
+                        }`}
                     >
                       <option value="">Sélectionner un rôle</option>
                       <option value="Membre">Membre</option>
@@ -1096,94 +1094,94 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                     {errors.role && <p className="mt-1 text-sm text-red-500">{errors.role}</p>}
                   </div>
 
-                {/* Minister */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Ministère au sein de l'église</label>
-                  <Select
-                    value={ministryOptions.find(option => option.value === formData.minister) || null}
-                    onChange={(selectedOption) => setFormData(prev => ({ ...prev, minister: selectedOption?.value || '' }))}
-                    options={ministryOptions}
-                    placeholder="Sélectionner un ministère"
-                    isClearable
-                    isSearchable
-                    className="react-select-container"
-                    classNamePrefix="react-select"
-                    styles={{
-                      control: (provided) => ({
-                        ...provided,
-                        borderColor: '#d1d5db',
-                        '&:hover': {
-                          borderColor: '#d1d5db'
-                        },
-                        '&:focus-within': {
-                          borderColor: '#14b8a6',
-                          boxShadow: '0 0 0 2px rgba(20, 184, 166, 0.2)'
-                        }
-                      })
-                    }}
-                  />
-                </div>
-                
-                {/* Groupe */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Groupe</label>
-                  <Select
-                    value={groupOptions.find(option => option.value === formData.groupId) || null}
-                    onChange={(selectedOption) => setFormData(prev => ({ ...prev, groupId: selectedOption?.value || '' }))}
-                    options={groupOptions}
-                    placeholder="Sélectionner un groupe"
-                    isClearable
-                    isSearchable
-                    className="react-select-container"
-                    classNamePrefix="react-select"
-                    styles={{
-                      control: (provided) => ({
-                        ...provided,
-                        borderColor: '#d1d5db',
-                        '&:hover': {
-                          borderColor: '#d1d5db'
-                        },
-                        '&:focus-within': {
-                          borderColor: '#14b8a6',
-                          boxShadow: '0 0 0 2px rgba(20, 184, 166, 0.2)'
-                        }
-                      })
-                    }}
-                  />
-                </div>
-                
-                {/* Classe du dimanche */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Classe du dimanche</label>
-                  <Select
-                    value={sundayClassOptions.find(option => option.value === formData.sundayClassId) || null}
-                    onChange={(selectedOption) => setFormData(prev => ({ ...prev, sundayClassId: selectedOption?.value || '' }))}
-                    options={sundayClassOptions}
-                    placeholder="Sélectionner une classe"
-                    isClearable
-                    isSearchable
-                    className="react-select-container"
-                    classNamePrefix="react-select"
-                    styles={{
-                      control: (provided) => ({
-                        ...provided,
-                        borderColor: '#d1d5db',
-                        '&:hover': {
-                          borderColor: '#d1d5db'
-                        },
-                        '&:focus-within': {
-                          borderColor: '#14b8a6',
-                          boxShadow: '0 0 0 2px rgba(20, 184, 166, 0.2)'
-                        }
-                      })
-                    }}
-                  />
-                </div>
+                  {/* Minister */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Ministère au sein de l'église</label>
+                    <Select
+                      value={ministryOptions.find(option => option.value === formData.minister) || null}
+                      onChange={(selectedOption) => setFormData(prev => ({ ...prev, minister: selectedOption?.value || '' }))}
+                      options={ministryOptions}
+                      placeholder="Sélectionner un ministère"
+                      isClearable
+                      isSearchable
+                      className="react-select-container"
+                      classNamePrefix="react-select"
+                      styles={{
+                        control: (provided) => ({
+                          ...provided,
+                          borderColor: '#d1d5db',
+                          '&:hover': {
+                            borderColor: '#d1d5db'
+                          },
+                          '&:focus-within': {
+                            borderColor: '#14b8a6',
+                            boxShadow: '0 0 0 2px rgba(20, 184, 166, 0.2)'
+                          }
+                        })
+                      }}
+                    />
+                  </div>
 
-                {/* Join Date */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Date d'adhésion</label>
-                  <div className="relative">
+                  {/* Groupe */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Groupe</label>
+                    <Select
+                      value={groupOptions.find(option => option.value === formData.groupId) || null}
+                      onChange={(selectedOption) => setFormData(prev => ({ ...prev, groupId: selectedOption?.value || '' }))}
+                      options={groupOptions}
+                      placeholder="Sélectionner un groupe"
+                      isClearable
+                      isSearchable
+                      className="react-select-container"
+                      classNamePrefix="react-select"
+                      styles={{
+                        control: (provided) => ({
+                          ...provided,
+                          borderColor: '#d1d5db',
+                          '&:hover': {
+                            borderColor: '#d1d5db'
+                          },
+                          '&:focus-within': {
+                            borderColor: '#14b8a6',
+                            boxShadow: '0 0 0 2px rgba(20, 184, 166, 0.2)'
+                          }
+                        })
+                      }}
+                    />
+                  </div>
+
+                  {/* Classe du dimanche */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Classe du dimanche</label>
+                    <Select
+                      value={sundayClassOptions.find(option => option.value === formData.sundayClassId) || null}
+                      onChange={(selectedOption) => setFormData(prev => ({ ...prev, sundayClassId: selectedOption?.value || '' }))}
+                      options={sundayClassOptions}
+                      placeholder="Sélectionner une classe"
+                      isClearable
+                      isSearchable
+                      className="react-select-container"
+                      classNamePrefix="react-select"
+                      styles={{
+                        control: (provided) => ({
+                          ...provided,
+                          borderColor: '#d1d5db',
+                          '&:hover': {
+                            borderColor: '#d1d5db'
+                          },
+                          '&:focus-within': {
+                            borderColor: '#14b8a6',
+                            boxShadow: '0 0 0 2px rgba(20, 184, 166, 0.2)'
+                          }
+                        })
+                      }}
+                    />
+                  </div>
+
+                  {/* Join Date */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Date d'adhésion</label>
+                    <div className="relative">
                       <input
                         type="text"
                         value={formData.joinDate ? formData.joinDate.split('-').reverse().join('/') : ''}
@@ -1240,56 +1238,56 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                     <>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Date de Baptême</label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={formData.baptismDate ? formData.baptismDate.split('-').reverse().join('/') : ''}
-                        onClick={() => setShowBaptismCalendar(!showBaptismCalendar)}
-                        readOnly
-                        data-calendar-trigger
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer"
-                        placeholder="Sélectionner une date"
-                      />
-                      <CalendarIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
-                      {showBaptismCalendar && (
-                        <div className="absolute z-50 mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
-                          <Calendar
-                            onChange={(date) => {
-                              if (date instanceof Date) {
-                                // Format date as YYYY-MM-DD without timezone issues
-                                const year = date.getFullYear();
-                                const month = String(date.getMonth() + 1).padStart(2, '0');
-                                const day = String(date.getDate()).padStart(2, '0');
-                                const dateString = `${year}-${month}-${day}`;
-                                setFormData(prev => ({ ...prev, baptismDate: dateString }));
-                                setShowBaptismCalendar(false);
-                              }
-                            }}
-                            value={formData.baptismDate ? new Date(formData.baptismDate + 'T00:00:00') : null}
-                            minDate={undefined}
-                            maxDate={undefined}
-                            tileDisabled={() => false}
-                            selectRange={false}
-                            allowPartialRange={false}
-                            locale="fr-FR"
+                        <div className="relative">
+                          <input
+                            type="text"
+                            value={formData.baptismDate ? formData.baptismDate.split('-').reverse().join('/') : ''}
+                            onClick={() => setShowBaptismCalendar(!showBaptismCalendar)}
+                            readOnly
+                            data-calendar-trigger
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer"
+                            placeholder="Sélectionner une date"
                           />
+                          <CalendarIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+                          {showBaptismCalendar && (
+                            <div className="absolute z-50 mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
+                              <Calendar
+                                onChange={(date) => {
+                                  if (date instanceof Date) {
+                                    // Format date as YYYY-MM-DD without timezone issues
+                                    const year = date.getFullYear();
+                                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                                    const day = String(date.getDate()).padStart(2, '0');
+                                    const dateString = `${year}-${month}-${day}`;
+                                    setFormData(prev => ({ ...prev, baptismDate: dateString }));
+                                    setShowBaptismCalendar(false);
+                                  }
+                                }}
+                                value={formData.baptismDate ? new Date(formData.baptismDate + 'T00:00:00') : null}
+                                minDate={undefined}
+                                maxDate={undefined}
+                                tileDisabled={() => false}
+                                selectRange={false}
+                                allowPartialRange={false}
+                                locale="fr-FR"
+                              />
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  </div>
+                      </div>
 
-                  {/* Baptism Location */}
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Lieu de Baptême</label>
-                    <input
-                      type="text"
-                      value={formData.baptismLocation}
-                      onChange={(e) => setFormData(prev => ({ ...prev, baptismLocation: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      placeholder="Lieu de baptême"
-                    />
-                  </div>
-                  </>
+                      {/* Baptism Location */}
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Lieu de Baptême</label>
+                        <input
+                          type="text"
+                          value={formData.baptismLocation}
+                          onChange={(e) => setFormData(prev => ({ ...prev, baptismLocation: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                          placeholder="Lieu de baptême"
+                        />
+                      </div>
+                    </>
                   )}
                 </div>
               </div>
@@ -1330,6 +1328,183 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
   );
 };
 
+// Change Password Modal Component
+interface ChangePasswordModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  member: Member | null;
+  onSubmit: (newPassword: string) => Promise<void>;
+}
+
+function ChangePasswordModal({ isOpen, onClose, member, onSubmit }: ChangePasswordModalProps) {
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!isOpen) {
+      // Reset form when modal closes
+      setNewPassword('');
+      setConfirmPassword('');
+      setShowPassword(false);
+      setShowConfirmPassword(false);
+      setError('');
+    }
+  }, [isOpen]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    // Validation
+    if (!newPassword || !confirmPassword) {
+      setError('Veuillez remplir tous les champs');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setError('Le mot de passe doit contenir au moins 6 caractères');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setError('Les mots de passe ne correspondent pas');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await onSubmit(newPassword);
+      onClose();
+    } catch (err: any) {
+      setError(err?.data?.message || 'Erreur lors du changement de mot de passe');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!isOpen || !member) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-900">
+            Changer le mot de passe
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-500 transition-colors"
+          >
+            <XMarkIcon className="h-6 w-6" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6">
+          <div className="mb-4">
+            <p className="text-sm text-gray-600 mb-4">
+              Changer le mot de passe pour <span className="font-semibold">{member.firstname} {member.lastname}</span>
+            </p>
+
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nouveau mot de passe
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
+                    placeholder="Entrez le nouveau mot de passe"
+                    disabled={isSubmitting}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? (
+                      <EyeSlashIcon className="h-5 w-5" />
+                    ) : (
+                      <EyeIcon className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Confirmer le mot de passe
+                </label>
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
+                    placeholder="Confirmez le mot de passe"
+                    disabled={isSubmitting}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showConfirmPassword ? (
+                      <EyeSlashIcon className="h-5 w-5" />
+                    ) : (
+                      <EyeIcon className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+            >
+              {isSubmitting ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Changement...
+                </>
+              ) : (
+                'Changer le mot de passe'
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 export default function Membres() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
@@ -1348,6 +1523,7 @@ export default function Membres() {
   const [isTransferringMember, setIsTransferringMember] = useState(false);
   const [isBulkImportModalOpen, setIsBulkImportModalOpen] = useState(false);
   const [isBulkImporting, setIsBulkImporting] = useState(false);
+  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const [selectedMemberForAction, setSelectedMemberForAction] = useState<Member | null>(null);
   const itemsPerPage = 7;
 
@@ -1362,18 +1538,21 @@ export default function Membres() {
 
   // Register mutation for adding new members
   const [register] = useRegisterMutation();
-  
+
   // Update user mutation for editing members
   const [updateUser] = useUpdateUserMutation();
-  
+
   // Delete user mutation for deleting members
   const [deleteUser] = useDeleteUserMutation();
-  
+
   // Create transfer mutation for transferring members
   const [createTransfer] = useCreateTransferMutation();
-  
+
   // Bulk insert mutation for importing members
   const [bulkInsertUsers] = useBulkInsertUsersMutation();
+
+  // Admin change password mutation
+  const [adminChangePassword] = useAdminChangePasswordMutation();
 
   const getApiErrorMessage = (error: any, fallbackMessage: string) => {
     const pickString = (...values: any[]) => values.find((v) => typeof v === 'string' && v.trim().length > 0);
@@ -1384,12 +1563,12 @@ export default function Membres() {
       typeof data === 'string'
         ? data
         : pickString(
-            data?.message,
-            data?.error,
-            data?.details,
-            data?.errors?.[0]?.message,
-            data?.errors?.[0]
-          );
+          data?.message,
+          data?.error,
+          data?.details,
+          data?.errors?.[0]?.message,
+          data?.errors?.[0]
+        );
 
     return (
       pickString(
@@ -1421,25 +1600,25 @@ export default function Membres() {
   // Calculate age from birthDate
   const calculateAge = (birthDate: string | undefined): number => {
     if (!birthDate) return 0;
-    
+
     const today = new Date();
     const birthDateObj = new Date(birthDate);
     let age = today.getFullYear() - birthDateObj.getFullYear();
     const monthDiff = today.getMonth() - birthDateObj.getMonth();
-    
+
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDateObj.getDate())) {
       age--;
     }
-    
+
     return age;
   };
 
   // Get age category from birthDate
   const getAgeCategoryFromBirthDate = (birthDate: string | undefined): AgeCategory => {
     if (!birthDate) return 'adulte';
-    
+
     const age = calculateAge(birthDate);
-    
+
     if (age >= 0 && age <= 12) return 'enfant';
     if (age >= 13 && age <= 17) return 'adolescent';
     if (age >= 18 && age <= 35) return 'jeune';
@@ -1449,13 +1628,13 @@ export default function Membres() {
   // Filter members based on all criteria
   const filteredMembers = useMemo(() => {
     if (!membersData) return [];
-    
+
     return membersData.filter((member: Member) => {
       // Basic search by name, email, or phone based on searchType
       let basicSearchMatch = true;
       if (searchQuery) {
         if (filters.searchType === 'name') {
-          basicSearchMatch = 
+          basicSearchMatch =
             (member.firstname?.toLowerCase().includes(searchQuery.toLowerCase()) || false) ||
             (member.lastname?.toLowerCase().includes(searchQuery.toLowerCase()) || false);
         } else if (filters.searchType === 'email') {
@@ -1465,37 +1644,37 @@ export default function Membres() {
         }
       }
       if (!basicSearchMatch) return false;
-      
+
       // Age category filter
       if (filters.ageCategory !== 'all') {
         const category = getAgeCategoryFromBirthDate(member.birthDate);
         if (category !== filters.ageCategory) return false;
       }
-      
+
       // Gender filter
       if (filters.gender !== 'all' && member.sex !== filters.gender) return false;
-      
+
       // Civil state filter
       if (filters.civilState !== 'all' && member.etatCivil !== filters.civilState) return false;
-      
+
       // City filter
       if (filters.city && filters.city.trim() !== '') {
         if (!member.city) return false;
         if (!member.city.toLowerCase().includes(filters.city.toLowerCase())) return false;
       }
-      
+
       // Profession filter
       if (filters.profession && filters.profession.trim() !== '') {
         if (!member.profession) return false;
         if (!member.profession.toLowerCase().includes(filters.profession.toLowerCase())) return false;
       }
-      
+
       // Country filter
       if (filters.country && filters.country.trim() !== '') {
         if (!member.country) return false;
         if (!member.country.toLowerCase().includes(filters.country.toLowerCase())) return false;
       }
-      
+
       return true;
     });
   }, [membersData, searchQuery, filters]);
@@ -1548,16 +1727,45 @@ export default function Membres() {
       // Call the delete user API
       await deleteUser(memberId).unwrap();
       console.log(`Successfully deleted member with ID: ${memberId}`);
-      
+
       // Close modal and reset selected member
       setIsDeleteModalOpen(false);
       setSelectedMemberForAction(null);
-      
+
       // Refetch data to update the list
       refetch();
     } catch (error) {
       console.error('Error deleting member:', error);
       throw error; // Re-throw to let the modal handle the error
+    }
+  };
+
+  const handleChangePassword = (member: Member) => {
+    setSelectedMemberForAction(member);
+    setIsChangePasswordModalOpen(true);
+  };
+
+  const handlePasswordChangeSubmit = async (newPassword: string) => {
+    if (!selectedMemberForAction) return;
+
+    try {
+      const result = await adminChangePassword({
+        userId: selectedMemberForAction.id,
+        newPassword: newPassword
+      }).unwrap();
+
+      // Show success message
+      alert(result.message || 'Mot de passe modifié avec succès');
+
+      // Close modal and reset
+      setIsChangePasswordModalOpen(false);
+      setSelectedMemberForAction(null);
+
+      // Optionally refetch data
+      refetch();
+    } catch (error: any) {
+      console.error('Error changing password:', error);
+      throw error; // Re-throw to let modal handle the error
     }
   };
 
@@ -1568,7 +1776,7 @@ export default function Membres() {
 
   const handleEditSubmit = async (formData: any) => {
     if (!selectedMemberForAction) return;
-    
+
     setIsEditingMember(true);
     try {
       // Map frontend field names to backend field names
@@ -1577,21 +1785,21 @@ export default function Membres() {
         sex: formData.gender, // Map gender to sex
         membreActif: formData.isActiveMember, // Map isActiveMember to membreActif
       };
-      
+
       // Remove the old field names
       delete mappedFormData.gender;
       delete mappedFormData.isActiveMember;
-      
+
       // If there's a profile image, use FormData to handle the multipart request
       if (formData.profileImage) {
         const formDataObj = new FormData();
-        
+
         // Add the member ID
         formDataObj.append('id', selectedMemberForAction.id);
-        
+
         // Add the image file
         formDataObj.append('profileImage', formData.profileImage);
-        
+
         // Add all other form fields with proper mapping
         Object.keys(mappedFormData).forEach(key => {
           if (key !== 'profileImage') {
@@ -1602,7 +1810,7 @@ export default function Membres() {
             }
           }
         });
-        
+
         await updateUser(formDataObj).unwrap();
       } else {
         // No image, use regular JSON request
@@ -1612,14 +1820,14 @@ export default function Membres() {
           profileImage: undefined
         };
         delete updateData.profileImage;
-        
+
         await updateUser(updateData).unwrap();
       }
-      
+
       // Close modal and reset selected member
       setIsEditModalOpen(false);
       setSelectedMemberForAction(null);
-      
+
       // Refetch data to show updated information
       refetch();
     } catch (error: any) {
@@ -1639,7 +1847,7 @@ export default function Membres() {
 
   const handleTransferSubmit = async (formData: any) => {
     if (!selectedMemberForAction || !userData?.church?.id) return;
-    
+
     setIsTransferringMember(true);
     try {
       // Prepare the transfer data
@@ -1650,14 +1858,14 @@ export default function Membres() {
         type: formData.type,
         reason: formData.reason || ''
       };
-      
+
       // Call the API to create the transfer
       await createTransfer(transferData).unwrap();
-      
+
       // Close modal and reset selected member
       setIsTransferModalOpen(false);
       setSelectedMemberForAction(null);
-      
+
       // Refetch data to show updated information
       refetch();
     } catch (error) {
@@ -1707,11 +1915,11 @@ export default function Membres() {
 
       // Refetch data to show new members
       refetch();
-      
-      return { 
-        success: true, 
-        insertedCount: result.summary?.created || result.createdUsers?.length || usersData.length, 
-        data: result 
+
+      return {
+        success: true,
+        insertedCount: result.summary?.created || result.createdUsers?.length || usersData.length,
+        data: result
       };
     } catch (error: any) {
       console.error('Error during bulk import:', error);
@@ -1730,65 +1938,65 @@ export default function Membres() {
       month: 'long',
       day: 'numeric'
     });
-    
+
     // Set font size and add title
     doc.setFontSize(18);
     doc.setTextColor(44, 62, 80);
     doc.text('LISTE DES MEMBRES DE L\'ÉGLISE', 105, 20, { align: 'center' });
-    
+
     // Add church name
     doc.setFontSize(14);
     doc.setTextColor(127, 140, 141);
     doc.text(userData?.church?.name || 'Église', 105, 30, { align: 'center' });
-    
+
     // Add info section
     doc.setFontSize(12);
     doc.setTextColor(51, 51, 51);
     doc.text(`Date du rapport: ${formattedDate}`, 20, 45);
     doc.text(`Nombre total de membres: ${members.length}`, 20, 52);
-    
+
     // Add table headers
     let yPos = 65;
     const colWidths = [40, 40, 50, 60];
     const startX = 20;
-    
+
     // Table header
     doc.setFillColor(248, 249, 250);
     doc.setDrawColor(221, 221, 221);
     doc.rect(startX, yPos - 5, colWidths.reduce((a, b) => a + b, 0), 10, 'FD');
-    
+
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(44, 62, 80);
     doc.text('Prénom', startX + 5, yPos);
     doc.text('Nom', startX + colWidths[0] + 5, yPos);
     doc.text('Email', startX + colWidths[0] + colWidths[1] + 5, yPos);
     doc.text('Téléphone', startX + colWidths[0] + colWidths[1] + colWidths[2] + 5, yPos);
-    
+
     // Table rows
     yPos += 10;
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(51, 51, 51);
-    
+
     members.forEach((member, index) => {
       if (yPos > 270) {
         doc.addPage();
         yPos = 20;
       }
-      
+
       // Alternate row background
       if (index % 2 === 1) {
         doc.setFillColor(248, 249, 250);
         doc.rect(startX, yPos - 5, colWidths.reduce((a, b) => a + b, 0), 10, 'F');
       }
-      
+
       doc.text(member.firstname || '', startX + 5, yPos);
       doc.text(member.lastname || '', startX + colWidths[0] + 5, yPos);
       doc.text(member.email || '', startX + colWidths[0] + colWidths[1] + 5, yPos);
       doc.text(member.mobilePhone || '', startX + colWidths[0] + colWidths[1] + colWidths[2] + 5, yPos);
-      
+
       yPos += 10;
     });
-    
+
     doc.save('membres-eglise.pdf');
   };
 
@@ -1807,7 +2015,7 @@ export default function Membres() {
         'Rôle': member.role || ''
       }))
     );
-    
+
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Membres');
     XLSX.writeFile(workbook, 'membres-eglise.xlsx');
@@ -1886,7 +2094,7 @@ export default function Membres() {
         ]
       }]
     });
-    
+
     const blob = await Packer.toBlob(doc);
     saveAs(blob, 'membres-eglise.docx');
   };
@@ -1918,22 +2126,22 @@ export default function Membres() {
         alert('Le nom est obligatoire');
         return;
       }
-      
+
       if (!formData.lastname) {
         alert('Le prénom est obligatoire');
         return;
       }
-      
-      
-    
-      
+
+
+
+
       // If there's a profile image, use FormData to handle the multipart request
       if (formData.profileImage) {
         const formDataObj = new FormData();
-        
+
         // Add the image file
         formDataObj.append('profileImage', formData.profileImage);
-        
+
         // Add all other form fields
         Object.keys(formData).forEach(key => {
           if (key === 'profileImage') return;
@@ -1947,12 +2155,12 @@ export default function Membres() {
             formDataObj.append(key, String(value));
           }
         });
-        
+
         // Add church ID
         if (churchId) {
           formDataObj.append('churchId', churchId);
         }
-        
+
         await register(formDataObj).unwrap();
       } else {
         // No image, use regular JSON request
@@ -1968,14 +2176,14 @@ export default function Membres() {
           churchId: churchId || '',
           profileImage: undefined
         };
-        
+
         await register(userData).unwrap();
       }
-      
+
       // Close modal and show success message
       setIsAddMemberModalOpen(false);
       // alert('Membre ajouté avec succès!');
-      
+
       // Refetch users to update the list
       // refetch();
     } catch (error: any) {
@@ -1988,7 +2196,7 @@ export default function Membres() {
     }
   };
 
-  const hasActiveFilters = Object.values(filters).some(value => 
+  const hasActiveFilters = Object.values(filters).some(value =>
     (typeof value === 'string' && value !== 'all' && value !== '' && value !== 'name')
   );
 
@@ -2027,11 +2235,10 @@ export default function Membres() {
           <div className="flex items-center space-x-3">
             <button
               onClick={() => setFilterVisible(true)}
-              className={`relative flex items-center px-4 py-2 border rounded-lg transition-colors ${
-                hasActiveFilters
-                  ? 'border-teal-600 text-teal-600 bg-teal-50'
-                  : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-              }`}
+              className={`relative flex items-center px-4 py-2 border rounded-lg transition-colors ${hasActiveFilters
+                ? 'border-teal-600 text-teal-600 bg-teal-50'
+                : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
             >
               <FunnelIcon className="h-5 w-5 mr-2" />
               Filtres
@@ -2101,7 +2308,7 @@ export default function Membres() {
               '0 membre trouvé'
             )}
           </span>
-          
+
           {/* Quick Navigation */}
           <div className="flex items-center space-x-2">
             <button
@@ -2167,8 +2374,8 @@ export default function Membres() {
                 </tr>
               ) : (
                 currentPageMembers.map((member) => (
-                  <tr 
-                    key={member.id} 
+                  <tr
+                    key={member.id}
                     className="hover:bg-gray-50 cursor-pointer transition-colors"
                     onClick={() => handleRowClick(member)}
                   >
@@ -2179,7 +2386,7 @@ export default function Membres() {
                             <img
                               className="h-10 w-10 rounded-full object-cover"
                               src={`${import.meta.env.VITE_API_URL_PHOTO}${member.picture}`}
-                             
+
                               alt={`${member.firstname} ${member.lastname}`}
                             />
                           ) : (
@@ -2212,11 +2419,10 @@ export default function Membres() {
                       <div className="text-sm text-gray-500">{member.country}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        member.role === 'Admin' ? 'bg-purple-100 text-purple-800' :
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${member.role === 'Admin' ? 'bg-purple-100 text-purple-800' :
                         member.role === 'Directeur' ? 'bg-blue-100 text-blue-800' :
-                        'bg-green-100 text-green-800'
-                      }`}>
+                          'bgreen-100 text-green-800'
+                        }`}>
                         {member.role || 'Membre'}
                       </span>
                     </td>
@@ -2233,7 +2439,7 @@ export default function Membres() {
                           <PencilIcon className="h-5 w-5" />
                           <span className="absolute bottom-full right-0 mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">Modifier</span>
                         </button>
-                        
+
                         {/* <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -2245,7 +2451,7 @@ export default function Membres() {
                           <UserIcon className="h-5 w-5" />
                           <span className="absolute bottom-full right-0 mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">Changer rôle</span>
                         </button> */}
-                        
+
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -2257,7 +2463,19 @@ export default function Membres() {
                           <IdentificationIcon className="h-5 w-5" />
                           <span className="absolute bottom-full right-0 mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">Créer badge</span>
                         </button>
-                        
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleChangePassword(member);
+                          }}
+                          className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-full transition-colors group relative"
+                          title="Changer mot de passe"
+                        >
+                          <KeyIcon className="h-5 w-5" />
+                          <span className="absolute bottom-full right-0 mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">Changer mot de passe</span>
+                        </button>
+
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -2269,7 +2487,7 @@ export default function Membres() {
                           <ArrowRightIcon className="h-5 w-5" />
                           <span className="absolute bottom-full right-0 mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">Transférer</span>
                         </button>
-                        
+
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -2377,11 +2595,10 @@ export default function Membres() {
                         key={page}
                         onClick={() => handlePageChange(page)}
                         disabled={totalPages <= 1}
-                        className={`relative inline-flex items-center justify-center w-12 h-10 font-bold rounded-xl shadow-md transform hover:scale-110 transition-all duration-200 ${
-                          page === currentPage
-                            ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg ring-2 ring-indigo-300 ring-offset-2'
-                            : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-indigo-400 hover:text-indigo-600 hover:shadow-lg'
-                        } ${totalPages <= 1 ? 'cursor-not-allowed opacity-40' : ''}`}
+                        className={`relative inline-flex items-center justify-center w-12 h-10 font-bold rounded-xl shadow-md transform hover:scale-110 transition-all duration-200 ${page === currentPage
+                          ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg ring-2 ring-indigo-300 ring-offset-2'
+                          : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-indigo-400 hover:text-indigo-600 hover:shadow-lg'
+                          } ${totalPages <= 1 ? 'cursor-not-allowed opacity-40' : ''}`}
                       >
                         {page}
                       </button>
@@ -2518,6 +2735,16 @@ export default function Membres() {
         onClose={() => setIsBulkImportModalOpen(false)}
         onImport={handleBulkImport}
         isLoading={isBulkImporting}
+      />
+
+      <ChangePasswordModal
+        isOpen={isChangePasswordModalOpen}
+        onClose={() => {
+          setIsChangePasswordModalOpen(false);
+          setSelectedMemberForAction(null);
+        }}
+        member={selectedMemberForAction}
+        onSubmit={handlePasswordChangeSubmit}
       />
     </div>
   );
