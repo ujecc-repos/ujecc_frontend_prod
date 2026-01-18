@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import {  Tab } from '@headlessui/react';
+import { Tab } from '@headlessui/react';
 import { CalendarIcon } from '@heroicons/react/24/outline';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/solid';
 import Calendar from 'react-calendar';
@@ -29,6 +29,7 @@ interface CreateChurchFormData {
   longitude: string;
   latitude: string;
   option: string;
+  foundationYear: string;
 }
 
 interface SelectOption {
@@ -93,7 +94,7 @@ const GestionPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   // State for active tab
   const [activeTab, setActiveTab] = useState<string>('church');
-  
+
   // Handle URL tab parameter
   useEffect(() => {
     const tabParam = searchParams.get('tab');
@@ -101,19 +102,19 @@ const GestionPage: React.FC = () => {
       setActiveTab(tabParam);
     }
   }, [searchParams]);
-  
+
   console.log(activeTab)
-  const {data: Ouest} = useGetDepartementCommunesQuery("Ouest")
-  const {data: Nord} = useGetDepartementCommunesQuery(`Nord`)
-  const {data: NordEst} = useGetDepartementCommunesQuery("Nord-Est")
-  const {data: NordOuest} = useGetDepartementCommunesQuery("Nord-Ouest")
-  const {data: Sude} = useGetDepartementCommunesQuery("Sude")
-  const {data: SudEst} = useGetDepartementCommunesQuery("Sud-Est")
-  const {data: Artibonite} = useGetDepartementCommunesQuery("Artibonite")
-  const {data: Centre} = useGetDepartementCommunesQuery("Centre")
-  const {data: GrandAnse} = useGetDepartementCommunesQuery("Grand'Anse")
-  const {data: Nippes} = useGetDepartementCommunesQuery("Nippes")
-  
+  const { data: Ouest } = useGetDepartementCommunesQuery("Ouest")
+  const { data: Nord } = useGetDepartementCommunesQuery(`Nord`)
+  const { data: NordEst } = useGetDepartementCommunesQuery("Nord-Est")
+  const { data: NordOuest } = useGetDepartementCommunesQuery("Nord-Ouest")
+  const { data: Sude } = useGetDepartementCommunesQuery("Sude")
+  const { data: SudEst } = useGetDepartementCommunesQuery("Sud-Est")
+  const { data: Artibonite } = useGetDepartementCommunesQuery("Artibonite")
+  const { data: Centre } = useGetDepartementCommunesQuery("Centre")
+  const { data: GrandAnse } = useGetDepartementCommunesQuery("Grand'Anse")
+  const { data: Nippes } = useGetDepartementCommunesQuery("Nippes")
+
   // Static Data for locations
   const data: DataType = {
     "Ouest": {
@@ -147,23 +148,23 @@ const GestionPage: React.FC = () => {
       communes: Nippes || {}
     },
   };
-  
+
   // Location selector state
   const [selectedCountry, setSelectedCountry] = useState<SelectOption | null>(null);
   const [departement, setDepartement] = useState<SelectOption | null>(null);
   const [commune, setCommune] = useState<SelectOption | null>(null);
   const [sectionCommunale, setSectionCommunale] = useState<SelectOption | null>(null);
-  
+
   // Check if Haiti is selected
   const isHaitiSelected = selectedCountry?.value === 'Haiti';
-  
+
   // Transform data for react-select
   const countryOptions: SelectOption[] = Country.getAllCountries().map((country) => ({
     value: country.name,
     label: country.name,
     isoCode: country.isoCode // Keep isoCode for API calls
   }));
-  
+
   // Location options based on selected country
   const departementOptions: SelectOption[] = useMemo(() => {
     if (isHaitiSelected) {
@@ -175,7 +176,7 @@ const GestionPage: React.FC = () => {
       // Find the selected country's isoCode for API call
       const countryIsoCode = selectedCountry.isoCode || Country.getAllCountries().find(country => country.name === selectedCountry.value)?.isoCode;
       if (!countryIsoCode) return [];
-      
+
       return State.getStatesOfCountry(countryIsoCode).map((state) => ({
         value: state.name,
         label: state.name,
@@ -184,7 +185,7 @@ const GestionPage: React.FC = () => {
     }
     return [];
   }, [isHaitiSelected, selectedCountry, data]);
-  
+
   const communeOptions: SelectOption[] = useMemo(() => {
     if (isHaitiSelected && departement) {
       return Object.keys(data[departement.value].communes).map((commune) => ({
@@ -195,10 +196,10 @@ const GestionPage: React.FC = () => {
       // Find the selected country's isoCode and state's isoCode for API call
       const countryIsoCode = selectedCountry.isoCode || Country.getAllCountries().find(country => country.name === selectedCountry.value)?.isoCode;
       if (!countryIsoCode) return [];
-      
+
       const selectedState = State.getStatesOfCountry(countryIsoCode).find(state => state.name === departement.value);
       const stateIsoCode = selectedState?.isoCode || departement.isoCode || departement.value;
-      
+
       return City.getCitiesOfState(countryIsoCode, stateIsoCode).map((city) => ({
         value: city.name,
         label: city.name,
@@ -206,7 +207,7 @@ const GestionPage: React.FC = () => {
     }
     return [];
   }, [isHaitiSelected, selectedCountry, departement, data]);
-  
+
   const sectionCommunaleOptions: SelectOption[] = useMemo(() => {
     if (isHaitiSelected && departement && commune) {
       return data[departement.value].communes[commune.value].map((section) => ({
@@ -229,16 +230,17 @@ const GestionPage: React.FC = () => {
     missionId: '',
     longitude: '',
     latitude: '',
-    option: ''
+    option: '',
+    foundationYear: ''
   });
-  
+
   // Handle location selection changes
   const handleCountryChange = (selectedOption: SelectOption | null) => {
     setSelectedCountry(selectedOption);
     setDepartement(null);
     setCommune(null);
     setSectionCommunale(null);
-    
+
     // Update church form data
     setChurchFormData(prev => ({
       ...prev,
@@ -248,12 +250,12 @@ const GestionPage: React.FC = () => {
       sectionCommunale: ''
     }));
   };
-  
+
   const handleDepartementChange = (selectedOption: SelectOption | null) => {
     setDepartement(selectedOption);
     setCommune(null);
     setSectionCommunale(null);
-    
+
     // Update church form data
     setChurchFormData(prev => ({
       ...prev,
@@ -262,11 +264,11 @@ const GestionPage: React.FC = () => {
       sectionCommunale: ''
     }));
   };
-  
+
   const handleCommuneChange = (selectedOption: SelectOption | null) => {
     setCommune(selectedOption);
     setSectionCommunale(null);
-    
+
     // Update church form data
     setChurchFormData(prev => ({
       ...prev,
@@ -274,17 +276,17 @@ const GestionPage: React.FC = () => {
       sectionCommunale: ''
     }));
   };
-  
+
   const handleSectionCommunaleChange = (selectedOption: SelectOption | null) => {
     setSectionCommunale(selectedOption);
-    
+
     // Update church form data
     setChurchFormData(prev => ({
       ...prev,
       sectionCommunale: selectedOption?.value || ''
     }));
   };
-  
+
   // User form state
   const [userFormData, setUserFormData] = useState<CreateUserFormData>({
     email: '',
@@ -294,22 +296,22 @@ const GestionPage: React.FC = () => {
     role: 'Admin',
     membreActif: true
   });
-  
+
   // Calendar states
   const [showBirthCalendar, setShowBirthCalendar] = useState<boolean>(false);
   const [showJoinCalendar, setShowJoinCalendar] = useState<boolean>(false);
   const [showBaptismCalendar, setShowBaptismCalendar] = useState<boolean>(false);
-  
+
   // Password visibility state
   const [showPassword, setShowPassword] = useState<boolean>(false);
-  
+
   // User form active tab
   const [userActiveTab, setUserActiveTab] = useState<string>('personal');
-  
+
   // Form errors
   const [churchErrors, setChurchErrors] = useState<Record<string, string>>({});
   const [userErrors, setUserErrors] = useState<Record<string, string>>({});
-  
+
   // Loading states
   const [isChurchLoading, setIsChurchLoading] = useState<boolean>(false);
   const [isUserLoading, setIsUserLoading] = useState<boolean>(false);
@@ -324,16 +326,16 @@ const GestionPage: React.FC = () => {
   const [addUserToChurch] = useAddUserToChurchMutation();
   const [connectTtiToChurch] = useConnectTtiToChurchMutation();
   const [connectChurchToMission] = useConnectChurchToMissionMutation();
-  
+
   // Add User To Church form state
   const [addUserToChurchFormData, setAddUserToChurchFormData] = useState<AddUserToChurchFormData>({
     userId: '',
     churchId: ''
   });
-  
+
   // Loading state for add user to church
   const [isAddUserToChurchLoading, setIsAddUserToChurchLoading] = useState<boolean>(false);
-  
+
   // Form errors for add user to church
   const [addUserToChurchErrors, setAddUserToChurchErrors] = useState<Record<string, string>>({});
 
@@ -391,7 +393,7 @@ const GestionPage: React.FC = () => {
     }
     if (!churchFormData.option) errors.option = "L'option est requise";
     // if (!churchFormData.missionId) errors.missionId = 'La mission est requise';
-    
+
     setChurchErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -404,13 +406,13 @@ const GestionPage: React.FC = () => {
     if (!userFormData.email.trim()) errors.email = 'L\'email est requis';
     if (!userFormData.password.trim()) errors.password = 'Le mot de passe est requis';
     // if (!userFormData.role.trim()) errors.role = 'Le rôle est requis';
-    
+
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (userFormData.email && !emailRegex.test(userFormData.email)) {
       errors.email = 'Format d\'email invalide';
     }
-    
+
     setUserErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -419,7 +421,7 @@ const GestionPage: React.FC = () => {
   const handleChurchSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateChurchForm()) return;
-    
+
     setIsChurchLoading(true);
     try {
       await createChurch(churchFormData).unwrap();
@@ -436,7 +438,8 @@ const GestionPage: React.FC = () => {
         missionId: '',
         longitude: '',
         latitude: '',
-        option: ''
+        option: '',
+        foundationYear: ''
       });
       // Reset location states
       setSelectedCountry(null);
@@ -455,7 +458,7 @@ const GestionPage: React.FC = () => {
   const handleUserSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateUserForm()) return;
-    
+
     setIsUserLoading(true);
     try {
       await registerUser(userFormData).unwrap();
@@ -483,16 +486,16 @@ const GestionPage: React.FC = () => {
     const errors: Record<string, string> = {};
     if (!addUserToChurchFormData.userId) errors.userId = 'L\'utilisateur est requis';
     if (!addUserToChurchFormData.churchId) errors.churchId = 'L\'église est requise';
-    
+
     setAddUserToChurchErrors(errors);
     return Object.keys(errors).length === 0;
   };
-  
+
   // Handle add user to church form submission
   const handleAddUserToChurchSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateAddUserToChurchForm()) return;
-    
+
     setIsAddUserToChurchLoading(true);
     try {
       const { userId, churchId } = addUserToChurchFormData;
@@ -524,13 +527,13 @@ const GestionPage: React.FC = () => {
   const handleConnectTtiSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateConnectTtiForm()) return;
-    
+
     // Use the single TTI ID automatically
     if (!singleTtiId) {
       toast.error('Aucun TTI disponible');
       return;
     }
-    
+
     setIsConnectTtiLoading(true);
     try {
       const { churchId } = connectTtiFormData;
@@ -564,7 +567,7 @@ const GestionPage: React.FC = () => {
   const handleConnectChurchToMissionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateConnectChurchToMissionForm()) return;
-    
+
     setIsConnectChurchToMissionLoading(true);
     try {
       await connectChurchToMission(connectChurchToMissionFormData).unwrap();
@@ -578,10 +581,10 @@ const GestionPage: React.FC = () => {
       console.error('Error connecting church to mission:', error);
       toast.error('Erreur lors de la connexion de l\'église à la mission');
     } finally {
-       setIsConnectChurchToMissionLoading(false);
-     }
-   };
-  
+      setIsConnectChurchToMissionLoading(false);
+    }
+  };
+
   // Transform users for react-select
   const userOptions = useMemo(() => {
     const message = "pas d'église"
@@ -591,7 +594,7 @@ const GestionPage: React.FC = () => {
       label: `${user.firstname} ${user.lastname} (${user.church ? user.church.name : message})`
     }));
   }, [users]);
-  
+
   // Transform churches for react-select
   const churchOptions = useMemo(() => {
     if (!churches) return [];
@@ -646,49 +649,49 @@ const GestionPage: React.FC = () => {
   return (
     <div className="container mx-auto">
       <h1 className="text-3xl font-bold text-gray-800 mb-8">Gestion des Églises et Utilisateurs</h1>
-      
+
       <Tab.Group selectedIndex={getTabIndex(activeTab)} onChange={handleTabChange}>
         <Tab.List className="flex  space-x-1">
           <Tab
-            // className={({ selected }) =>
-            //   `w-full py-3 text-sm font-medium rounded-lg transition-all duration-200 ${selected ? 'bg-teal-600 text-white shadow' : 'text-gray-700 hover:bg-teal-100'}`
-            // }
+          // className={({ selected }) =>
+          //   `w-full py-3 text-sm font-medium rounded-lg transition-all duration-200 ${selected ? 'bg-teal-600 text-white shadow' : 'text-gray-700 hover:bg-teal-100'}`
+          // }
           >
             {/* Créer une Église */}
           </Tab>
           <Tab
-            // s
+          // s
           >
             {/* Créer un Utilisateur */}
           </Tab>
           <Tab
-            // className={({ selected }) =>
-            //   `w-full py-[0px] text-sm font-medium rounded-lg transition-all duration-200 ${selected ? 'bg-teal-600 text-white shadow' : 'text-gray-700 hover:bg-teal-100'}`
-            // }
+          // className={({ selected }) =>
+          //   `w-full py-[0px] text-sm font-medium rounded-lg transition-all duration-200 ${selected ? 'bg-teal-600 text-white shadow' : 'text-gray-700 hover:bg-teal-100'}`
+          // }
           >
             {/* Ajouter un Utilisateur à une Église */}
           </Tab>
           <Tab
-            // className={({ selected }) =>
-            //   `w-full py-3 text-sm font-medium rounded-lg transition-all duration-200 ${selected ? 'bg-teal-600 text-white shadow' : 'text-gray-700 hover:bg-teal-100'}`
-            // }
+          // className={({ selected }) =>
+          //   `w-full py-3 text-sm font-medium rounded-lg transition-all duration-200 ${selected ? 'bg-teal-600 text-white shadow' : 'text-gray-700 hover:bg-teal-100'}`
+          // }
           >
             {/* Connecter à TTI */}
           </Tab>
           <Tab
-            // className={({ selected }) =>
-            //   `w-full py-3 text-sm font-medium rounded-lg transition-all duration-200 ${selected ? 'bg-teal-600 text-white shadow' : 'text-gray-700 hover:bg-teal-100'}`
-            // }
+          // className={({ selected }) =>
+          //   `w-full py-3 text-sm font-medium rounded-lg transition-all duration-200 ${selected ? 'bg-teal-600 text-white shadow' : 'text-gray-700 hover:bg-teal-100'}`
+          // }
           >
             {/* Connecter Église à Mission */}
           </Tab>
         </Tab.List>
-        
+
         <Tab.Panels className="mt-2">
           {/* Church Creation Panel */}
           <Tab.Panel className="bg-white rounded-xl shadow-lg p-6 ring-1 ring-teal-500/5">
             <h2 className="text-2xl font-semibold text-gray-800 mb-6">Créer une Nouvelle Église</h2>
-            
+
             <form onSubmit={handleChurchSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Church Name */}
@@ -723,7 +726,29 @@ const GestionPage: React.FC = () => {
                   />
                   {churchErrors.option && <p className="mt-1 text-sm text-red-600">{churchErrors.option}</p>}
                 </div>
-                
+
+                {/* Foundation Year */}
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Année de Fondation</label>
+                  <Select
+                    value={
+                      churchFormData.foundationYear
+                        ? { value: churchFormData.foundationYear, label: churchFormData.foundationYear }
+                        : null
+                    }
+                    onChange={(selectedOption: any) => setChurchFormData(prev => ({ ...prev, foundationYear: selectedOption?.value || '' }))}
+                    options={Array.from({ length: 227 }, (_, i) => {
+                      const year = (2026 - i).toString();
+                      return { value: year, label: year };
+                    })}
+                    placeholder="Sélectionner l'année de fondation"
+                    isClearable
+                    isSearchable
+                    className="react-select-container"
+                    classNamePrefix="react-select"
+                  />
+                </div>
+
                 {/* Country */}
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Pays</label>
@@ -739,7 +764,7 @@ const GestionPage: React.FC = () => {
                   />
                   {churchErrors.country && <p className="mt-1 text-sm text-red-600">{churchErrors.country}</p>}
                 </div>
-                
+
                 {/* Department/State */}
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -758,7 +783,7 @@ const GestionPage: React.FC = () => {
                   />
                   {churchErrors.departement && <p className="mt-1 text-sm text-red-600">{churchErrors.departement}</p>}
                 </div>
-                
+
                 {/* Commune/City */}
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -777,7 +802,7 @@ const GestionPage: React.FC = () => {
                   />
                   {churchErrors.commune && <p className="mt-1 text-sm text-red-600">{churchErrors.commune}</p>}
                 </div>
-                
+
                 {/* Section Communale - Only for Haiti */}
                 {isHaitiSelected && (
                   <div className="col-span-2">
@@ -795,7 +820,7 @@ const GestionPage: React.FC = () => {
                     />
                   </div>
                 )}
-                
+
                 {/* Rue - Only for non-Haiti countries */}
                 {!isHaitiSelected && (
                   <div className="col-span-2">
@@ -809,7 +834,7 @@ const GestionPage: React.FC = () => {
                     />
                   </div>
                 )}
-                
+
                 {/* Telephone - Only for non-Haiti countries */}
                 {!isHaitiSelected && (
                   <div className="col-span-2">
@@ -823,7 +848,7 @@ const GestionPage: React.FC = () => {
                     />
                   </div>
                 )}
-                
+
                 {/* Mission */}
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Mission</label>
@@ -839,7 +864,7 @@ const GestionPage: React.FC = () => {
                   />
                   {churchErrors.missionId && <p className="mt-1 text-sm text-red-600">{churchErrors.missionId}</p>}
                 </div>
-                
+
                 {/* Longitude */}
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Longitude</label>
@@ -851,7 +876,7 @@ const GestionPage: React.FC = () => {
                     placeholder="Ex: -72.3388"
                   />
                 </div>
-                
+
                 {/* Latitude */}
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Latitude</label>
@@ -864,7 +889,7 @@ const GestionPage: React.FC = () => {
                   />
                 </div>
               </div>
-              
+
               <div className="flex justify-end mt-6">
                 <button
                   type="submit"
@@ -886,11 +911,11 @@ const GestionPage: React.FC = () => {
               </div>
             </form>
           </Tab.Panel>
-          
+
           {/* User Creation Panel */}
           <Tab.Panel className="bg-white rounded-xl shadow-lg p-6 ring-1 ring-teal-500/5">
             <h2 className="text-2xl font-semibold text-gray-800 mb-6">Créer un Nouvel Utilisateur</h2>
-            
+
             <form onSubmit={handleUserSubmit} className="space-y-6">
               {/* User Form Tabs */}
               <div className="border-b border-gray-200 mb-6">
@@ -918,7 +943,7 @@ const GestionPage: React.FC = () => {
                   </button>
                 </nav>
               </div>
-              
+
               {/* Personal Information Tab */}
               {userActiveTab === 'personal' && (
                 <div className="space-y-6">
@@ -935,7 +960,7 @@ const GestionPage: React.FC = () => {
                       />
                     </button>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* First Name */}
                     <div>
@@ -949,7 +974,7 @@ const GestionPage: React.FC = () => {
                       />
                       {userErrors.firstname && <p className="mt-1 text-sm text-red-600">{userErrors.firstname}</p>}
                     </div>
-                    
+
                     {/* Last Name */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Nom</label>
@@ -962,7 +987,7 @@ const GestionPage: React.FC = () => {
                       />
                       {userErrors.lastname && <p className="mt-1 text-sm text-red-600">{userErrors.lastname}</p>}
                     </div>
-                    
+
                     {/* Email */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Adresse Électronique</label>
@@ -975,7 +1000,7 @@ const GestionPage: React.FC = () => {
                       />
                       {userErrors.email && <p className="mt-1 text-sm text-red-600">{userErrors.email}</p>}
                     </div>
-                    
+
                     {/* Password */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Mot de Passe</label>
@@ -1001,7 +1026,7 @@ const GestionPage: React.FC = () => {
                       </div>
                       {userErrors.password && <p className="mt-1 text-sm text-red-600">{userErrors.password}</p>}
                     </div>
-                    
+
                     {/* Gender */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Genre</label>
@@ -1032,7 +1057,7 @@ const GestionPage: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                    
+
                     {/* Birth Date */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Date de Naissance</label>
@@ -1068,7 +1093,7 @@ const GestionPage: React.FC = () => {
                         )}
                       </div>
                     </div>
-                    
+
                     {/* Civil State */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">État Civil</label>
@@ -1084,7 +1109,7 @@ const GestionPage: React.FC = () => {
                         <option value="veuf/veuve">Veuf/Veuve</option>
                       </select>
                     </div>
-                    
+
                     {/* Spouse Name (conditional) */}
                     {userFormData.civilState === 'marié(e)' && (
                       <div>
@@ -1098,7 +1123,7 @@ const GestionPage: React.FC = () => {
                         />
                       </div>
                     )}
-                    
+
                     {/* Profession */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Profession</label>
@@ -1113,7 +1138,7 @@ const GestionPage: React.FC = () => {
                   </div>
                 </div>
               )}
-              
+
               {/* Contact & Location Tab */}
               {userActiveTab === 'contact' && (
                 <div className="space-y-6">
@@ -1129,7 +1154,7 @@ const GestionPage: React.FC = () => {
                         placeholder="Téléphone mobile"
                       />
                     </div>
-                    
+
                     {/* Home Phone */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Téléphone Fixe</label>
@@ -1141,7 +1166,7 @@ const GestionPage: React.FC = () => {
                         placeholder="Téléphone fixe"
                       />
                     </div>
-                    
+
                     {/* Address */}
                     <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-gray-700 mb-2">Adresse</label>
@@ -1153,7 +1178,7 @@ const GestionPage: React.FC = () => {
                         placeholder="Adresse complète"
                       />
                     </div>
-                    
+
                     {/* City */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Ville</label>
@@ -1165,7 +1190,7 @@ const GestionPage: React.FC = () => {
                         placeholder="Ville"
                       />
                     </div>
-                    
+
                     {/* Country */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Pays</label>
@@ -1177,7 +1202,7 @@ const GestionPage: React.FC = () => {
                         placeholder="Pays"
                       />
                     </div>
-                    
+
                     {/* Birth City */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Ville de Naissance</label>
@@ -1189,7 +1214,7 @@ const GestionPage: React.FC = () => {
                         placeholder="Ville de naissance"
                       />
                     </div>
-                    
+
                     {/* Birth Country */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Pays de Naissance</label>
@@ -1201,7 +1226,7 @@ const GestionPage: React.FC = () => {
                         placeholder="Pays de naissance"
                       />
                     </div>
-                    
+
                     {/* Person to Contact */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Personne à Contacter</label>
@@ -1213,7 +1238,7 @@ const GestionPage: React.FC = () => {
                         placeholder="Personne à contacter en cas d'urgence"
                       />
                     </div>
-                    
+
                     {/* Facebook */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Facebook</label>
@@ -1228,7 +1253,7 @@ const GestionPage: React.FC = () => {
                   </div>
                 </div>
               )}
-              
+
               {/* Church Information Tab */}
               {userActiveTab === 'church' && (
                 <div className="space-y-6">
@@ -1247,7 +1272,7 @@ const GestionPage: React.FC = () => {
                       </select>
                       {userErrors.role && <p className="mt-1 text-sm text-red-600">{userErrors.role}</p>}
                     </div>
-                    
+
                     {/* Join Date */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Date d'Adhésion</label>
@@ -1283,7 +1308,7 @@ const GestionPage: React.FC = () => {
                         )}
                       </div>
                     </div>
-                    
+
                     {/* Baptism Date */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Date de Baptême</label>
@@ -1319,7 +1344,7 @@ const GestionPage: React.FC = () => {
                         )}
                       </div>
                     </div>
-                    
+
                     {/* Baptism Location */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Lieu de Baptême</label>
@@ -1334,7 +1359,7 @@ const GestionPage: React.FC = () => {
                   </div>
                 </div>
               )}
-              
+
               <div className="flex justify-end mt-6">
                 <button
                   type="submit"
@@ -1359,7 +1384,7 @@ const GestionPage: React.FC = () => {
           {/* Add User To Church Panel */}
           <Tab.Panel className="bg-white rounded-xl shadow-lg p-6 ring-1 ring-teal-500/5">
             <h2 className="text-2xl font-semibold text-gray-800 mb-6">Ajouter un Utilisateur à une Église</h2>
-            
+
             <form onSubmit={handleAddUserToChurchSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* User Selection */}
@@ -1377,7 +1402,7 @@ const GestionPage: React.FC = () => {
                   />
                   {addUserToChurchErrors.userId && <p className="mt-1 text-sm text-red-600">{addUserToChurchErrors.userId}</p>}
                 </div>
-                
+
                 {/* Church Selection */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Église</label>
@@ -1394,7 +1419,7 @@ const GestionPage: React.FC = () => {
                   {addUserToChurchErrors.churchId && <p className="mt-1 text-sm text-red-600">{addUserToChurchErrors.churchId}</p>}
                 </div>
               </div>
-              
+
               <div className="flex justify-end mt-6">
                 <button
                   type="submit"
@@ -1416,11 +1441,11 @@ const GestionPage: React.FC = () => {
               </div>
             </form>
           </Tab.Panel>
-          
+
           {/* Connect TTI to Church Panel */}
           <Tab.Panel className="bg-white rounded-xl shadow-lg p-6 ring-1 ring-teal-500/5">
             <h2 className="text-2xl font-semibold text-gray-800 mb-6">Connecter une Église à un tti</h2>
-            
+
             <form onSubmit={handleConnectTtiSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
                 {/* Church Selection */}
@@ -1438,7 +1463,7 @@ const GestionPage: React.FC = () => {
                   />
                   {connectTtiErrors.churchId && <p className="mt-1 text-sm text-red-600">{connectTtiErrors.churchId}</p>}
                 </div>
-                
+
                 {/* TTI Display */}
                 {/* <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">TTI (Timothee Training Institute)</label>
@@ -1448,7 +1473,7 @@ const GestionPage: React.FC = () => {
                   <p className="mt-1 text-sm text-gray-500">TTI sélectionné automatiquement</p>
                 </div> */}
               </div>
-              
+
               <div className="flex justify-end mt-6">
                 <button
                   type="submit"
@@ -1470,11 +1495,11 @@ const GestionPage: React.FC = () => {
               </div>
             </form>
           </Tab.Panel>
-          
+
           {/* Connect Church to Mission Panel */}
           <Tab.Panel className="bg-white rounded-xl shadow-lg p-6 ring-1 ring-teal-500/5">
             <h2 className="text-2xl font-semibold text-gray-800 mb-6">Connecter une Église à une Mission</h2>
-            
+
             <form onSubmit={handleConnectChurchToMissionSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Church Selection */}
@@ -1492,7 +1517,7 @@ const GestionPage: React.FC = () => {
                   />
                   {connectChurchToMissionErrors.churchId && <p className="mt-1 text-sm text-red-600">{connectChurchToMissionErrors.churchId}</p>}
                 </div>
-                
+
                 {/* Mission Selection */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Mission</label>
@@ -1509,7 +1534,7 @@ const GestionPage: React.FC = () => {
                   {connectChurchToMissionErrors.missionId && <p className="mt-1 text-sm text-red-600">{connectChurchToMissionErrors.missionId}</p>}
                 </div>
               </div>
-              
+
               <div className="flex justify-end mt-6">
                 <button
                   type="submit"
@@ -1533,7 +1558,7 @@ const GestionPage: React.FC = () => {
           </Tab.Panel>
         </Tab.Panels>
       </Tab.Group>
-      
+
       <ToastContainer position="top-right" autoClose={3000} />
     </div>
   );

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Tab } from '@headlessui/react';
 import {
@@ -10,13 +10,16 @@ import {
   TrashIcon,
   ExclamationTriangleIcon,
   EyeIcon,
-  UserGroupIcon
+  UserGroupIcon,
+  QrCodeIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 import { Dialog, Transition } from '@headlessui/react';
 import { toast } from 'react-toastify';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import Select from 'react-select';
+import { Html5QrcodeScanner } from 'html5-qrcode';
 
 // Import API hooks
 import { useGetUserByTokenQuery, useGetUsersByChurchQuery } from '../../store/services/authApi';
@@ -46,25 +49,25 @@ function classNames(...classes: string[]) {
 export default function ServiceAndPresence() {
   const navigate = useNavigate();
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
-  
+
   // Get user token to get church ID
   const { data: userToken } = useGetUserByTokenQuery();
   const churchId = userToken?.church?.id || '';
-  
+
   // Fetch data
   const { data: services, isLoading: servicesLoading, refetch: refetchServices } = useGetServicesByChurchQuery(churchId);
   const { data: users } = useGetUsersByChurchQuery(churchId);
-  
+
   // Mutations
   const [createService] = useCreateServiceMutation();
   const [deleteService, { isLoading: isDeletingService }] = useDeleteServiceMutation();
   const [updateService] = useUpdateServiceMutation();
   const [createPresence] = useCreatePresenceMutation();
-  
+
   // Create Service Tab State
   const [serviceName, setServiceName] = useState('');
   const [isCreatingService, setIsCreatingService] = useState(false);
-  
+
   // View Services Tab State
   const [searchQuery, setSearchQuery] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -72,13 +75,22 @@ export default function ServiceAndPresence() {
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [editServiceName, setEditServiceName] = useState('');
   const [isUpdatingService, setIsUpdatingService] = useState(false);
-  
+
   // Mark Presence Tab State
   const [selectedService, setSelectedService] = useState<any>(null);
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [presenceStatus, setPresenceStatus] = useState('PRESENT');
   const [isMarkingPresence, setIsMarkingPresence] = useState(false);
-  
+
+  // QR Scanner State
+  const [showQrScanner, setShowQrScanner] = useState(false);
+  const [selectedServiceForQr, setSelectedServiceForQr] = useState<string | null>(null);
+  const [isScanning, setIsScanning] = useState(false);
+
+  // Error Dialog State
+  const [showErrorDialog, setShowErrorDialog] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
   // Filter services based on search query
   const filteredServices = useMemo(() => {
     if (!services) return [];
@@ -86,24 +98,24 @@ export default function ServiceAndPresence() {
       service.nom.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [services, searchQuery]);
-  
+
   // Prepare options for Select components
   const serviceOptions = services?.map(service => ({
     value: service.id,
     label: service.nom
   })) || [];
-  
+
   const userOptions = users?.filter(user => user.membreActif).map(user => ({
     value: user.id,
     label: `${user.firstname} ${user.lastname}`
   })) || [];
-  
+
   const statusOptions = [
     { value: 'PRESENT', label: 'Présent' },
     { value: 'ABSENT', label: 'Absent' },
     { value: 'MOTIVE', label: 'Excusé' }
   ];
-  
+
   // Handle create service
   const handleCreateService = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,7 +123,7 @@ export default function ServiceAndPresence() {
       toast.error('Veuillez entrer un nom de service');
       return;
     }
-    
+
     setIsCreatingService(true);
     try {
       await createService({ nom: serviceName, churchId: `${userToken?.church?.id}` }).unwrap();
@@ -124,11 +136,11 @@ export default function ServiceAndPresence() {
       setIsCreatingService(false);
     }
   };
-  
+
   // Handle delete service
   const handleDeleteService = async () => {
     if (!serviceToDelete) return;
-    
+
     try {
       await deleteService(serviceToDelete.id).unwrap();
       toast.success('Service supprimé avec succès!');
@@ -139,14 +151,14 @@ export default function ServiceAndPresence() {
       toast.error('Erreur lors de la suppression du service');
     }
   };
-  
+
   // Handle edit service
   const handleEditService = async () => {
     if (!editingService || !editServiceName.trim()) {
       toast.error('Veuillez entrer un nom de service valide');
       return;
     }
-    
+
     setIsUpdatingService(true);
     try {
       await updateService({ id: editingService.id, nom: editServiceName }).unwrap();
@@ -161,7 +173,7 @@ export default function ServiceAndPresence() {
       setIsUpdatingService(false);
     }
   };
-  
+
   // Handle mark presence
   const handleMarkPresence = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -169,7 +181,7 @@ export default function ServiceAndPresence() {
       toast.error('Veuillez sélectionner un service et un utilisateur');
       return;
     }
-    
+
     setIsMarkingPresence(true);
     try {
       await createPresence({
@@ -181,26 +193,102 @@ export default function ServiceAndPresence() {
       setSelectedService(null);
       setSelectedUser(null);
       setPresenceStatus('PRESENT');
-    } catch (error) {
-      toast.error('Erreur lors du marquage de la présence');
+    } catch (error: any) {
+      console.log('Full error object:', error);
+      console.log('Error data:', error?.data);
+      const errorMsg = error?.data?.error || error?.data?.message || error?.message || 'Erreur lors du marquage de la présence';
+      setErrorMessage(errorMsg);
+      setShowErrorDialog(true);
     } finally {
       setIsMarkingPresence(false);
     }
   };
-  
+
   // Handle view service details
   const handleViewServiceDetails = (service: Service) => {
     navigate(`/tableau-de-bord/admin/service-details/${service.id}`, {
       state: { service }
     });
   };
-  
+
+  // Handle open QR scanner
+  const handleOpenQrScanner = (serviceId: string) => {
+    setSelectedServiceForQr(serviceId);
+    setShowQrScanner(true);
+  };
+
+  // Initialize QR Scanner when modal opens
+  useEffect(() => {
+    if (!showQrScanner) return;
+
+    // Wait for DOM to render the qr-reader element
+    const timer = setTimeout(() => {
+      const element = document.getElementById('qr-reader');
+      if (!element) {
+        console.error('QR reader element not found');
+        return;
+      }
+
+      const scanner = new Html5QrcodeScanner(
+        'qr-reader',
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        false
+      );
+
+      scanner.render(
+        (decodedText) => {
+          handleQrScan(decodedText);
+          scanner.clear();
+        },
+        (_error) => {
+          // Silent error handling - scanning errors are normal
+        }
+      );
+    }, 100);
+
+    return () => {
+      clearTimeout(timer);
+      const element = document.getElementById('qr-reader');
+      if (element) {
+        element.innerHTML = ''; // Clear the scanner
+      }
+    };
+  }, [showQrScanner]);
+
+  // Handle QR scan
+  const handleQrScan = async (result: string) => {
+    if (!result || !selectedServiceForQr || isScanning) return;
+
+    setIsScanning(true);
+    try {
+      await createPresence({
+        serviceId: selectedServiceForQr,
+        utilisateurId: result,
+        statut: 'PRESENT'
+      }).unwrap();
+
+      toast.success('Présence marquée avec succès via QR code!');
+      setShowQrScanner(false);
+      setSelectedServiceForQr(null);
+    } catch (error: any) {
+      console.error('Error marking presence:', error);
+      console.log('Error data:', error?.data);
+      const errorMsg = error?.data?.error || error?.data?.message || error?.message || 'Erreur lors du marquage de la présence';
+      setErrorMessage(errorMsg);
+      setShowErrorDialog(true);
+      setShowQrScanner(false);
+      setSelectedServiceForQr(null);
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
   const tabs = [
     { name: 'Créer un Service', icon: PlusIcon },
     { name: 'Voir les Services', icon: EyeIcon },
     { name: 'Marquer Présence', icon: UserGroupIcon }
   ];
-  
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto">
@@ -211,7 +299,7 @@ export default function ServiceAndPresence() {
             Créez des services, consultez la liste et marquez les présences des membres
           </p>
         </div>
-        
+
         {/* Tabs */}
         <Tab.Group selectedIndex={selectedTabIndex} onChange={setSelectedTabIndex}>
           <Tab.List className="flex space-x-1 rounded-xl bg-teal-900/10  p-1 mb-8">
@@ -235,7 +323,7 @@ export default function ServiceAndPresence() {
               </Tab>
             ))}
           </Tab.List>
-          
+
           <Tab.Panels>
             {/* Create Service Tab */}
             <Tab.Panel className="rounded-xl bg-white p-6 shadow-lg">
@@ -243,7 +331,7 @@ export default function ServiceAndPresence() {
                 <h2 className="text-xl font-semibold text-gray-900 mb-6 text-center">
                   Créer un Nouveau Service
                 </h2>
-                
+
                 <form onSubmit={handleCreateService} className="space-y-6">
                   <div>
                     <label htmlFor="serviceName" className="block text-sm font-medium text-gray-700 mb-2">
@@ -259,7 +347,7 @@ export default function ServiceAndPresence() {
                       required
                     />
                   </div>
-                  
+
                   <button
                     type="submit"
                     disabled={isCreatingService}
@@ -274,7 +362,7 @@ export default function ServiceAndPresence() {
                 </form>
               </div>
             </Tab.Panel>
-            
+
             {/* View Services Tab */}
             <Tab.Panel className="rounded-xl bg-white p-6 shadow-lg">
               <div className="mb-6">
@@ -295,7 +383,7 @@ export default function ServiceAndPresence() {
                     </div>
                   </div>
                 </div>
-                
+
                 {servicesLoading ? (
                   <div className="flex justify-center py-12">
                     <ArrowPathIcon className="h-8 w-8 animate-spin text-teal-600" />
@@ -349,7 +437,16 @@ export default function ServiceAndPresence() {
                               </div>
                             ) : (
                               <>
-                                <h3 className="font-medium text-gray-900 mb-2">{service.nom}</h3>
+                                <div className="flex items-center justify-between mb-2">
+                                  <h3 className="font-medium text-gray-900">{service.nom}</h3>
+                                  <button
+                                    onClick={() => handleOpenQrScanner(service.id)}
+                                    className="text-teal-600 hover:text-teal-800 transition-colors"
+                                    title="Scanner QR code pour marquer présence"
+                                  >
+                                    <QrCodeIcon className="h-5 w-5" />
+                                  </button>
+                                </div>
                                 <p className="text-sm text-gray-500 mb-1">
                                   Créé le: {format(new Date(service.createdAt), 'dd/MM/yyyy', { locale: fr })}
                                 </p>
@@ -359,7 +456,7 @@ export default function ServiceAndPresence() {
                               </>
                             )}
                           </div>
-                          
+
                           {editingService?.id !== service.id && (
                             <div className="flex space-x-2 ml-4">
                               <button
@@ -398,14 +495,14 @@ export default function ServiceAndPresence() {
                 )}
               </div>
             </Tab.Panel>
-            
+
             {/* Mark Presence Tab */}
             <Tab.Panel className="rounded-xl bg-white p-6 shadow-lg">
               <div className="max-w-md mx-auto">
                 <h2 className="text-xl font-semibold text-gray-900 mb-6 text-center">
                   Marquer la Présence
                 </h2>
-                
+
                 <form onSubmit={handleMarkPresence} className="space-y-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -421,7 +518,7 @@ export default function ServiceAndPresence() {
                       isClearable
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Membre
@@ -437,7 +534,7 @@ export default function ServiceAndPresence() {
                       isSearchable
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Statut de Présence
@@ -450,7 +547,7 @@ export default function ServiceAndPresence() {
                       classNamePrefix="react-select"
                     />
                   </div>
-                  
+
                   <button
                     type="submit"
                     disabled={isMarkingPresence}
@@ -467,7 +564,7 @@ export default function ServiceAndPresence() {
             </Tab.Panel>
           </Tab.Panels>
         </Tab.Group>
-        
+
         {/* Delete Confirmation Modal */}
         <Transition appear show={showDeleteModal} as={React.Fragment}>
           <Dialog as="div" className="relative z-10" onClose={() => setShowDeleteModal(false)}>
@@ -482,7 +579,7 @@ export default function ServiceAndPresence() {
             >
               <div className="fixed inset-0 bg-black bg-opacity-25" />
             </Transition.Child>
-            
+
             <div className="fixed inset-0 overflow-y-auto">
               <div className="flex min-h-full items-center justify-center p-4 text-center">
                 <Transition.Child
@@ -501,14 +598,14 @@ export default function ServiceAndPresence() {
                         Confirmer la suppression
                       </Dialog.Title>
                     </div>
-                    
+
                     <div className="mb-6">
                       <p className="text-sm text-gray-500">
                         Êtes-vous sûr de vouloir supprimer le service "{serviceToDelete?.nom}" ?
                         Cette action est irréversible.
                       </p>
                     </div>
-                    
+
                     <div className="flex justify-end space-x-3">
                       <button
                         type="button"
@@ -532,6 +629,143 @@ export default function ServiceAndPresence() {
                         ) : (
                           <span>Supprimer</span>
                         )}
+                      </button>
+                    </div>
+                  </Dialog.Panel>
+                </Transition.Child>
+              </div>
+            </div>
+          </Dialog>
+        </Transition>
+
+        {/* QR Scanner Modal */}
+        <Transition appear show={showQrScanner} as={React.Fragment}>
+          <Dialog as="div" className="relative z-10" onClose={() => setShowQrScanner(false)}>
+            <Transition.Child
+              as={React.Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0"
+              enterTo="opacity-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100"
+              leaveTo="opacity-0"
+            >
+              <div className="fixed inset-0 bg-black bg-opacity-25" />
+            </Transition.Child>
+
+            <div className="fixed inset-0 overflow-y-auto">
+              <div className="flex min-h-full items-center justify-center p-4 text-center">
+                <Transition.Child
+                  as={React.Fragment}
+                  enter="ease-out duration-300"
+                  enterFrom="opacity-0 scale-95"
+                  enterTo="opacity-100 scale-100"
+                  leave="ease-in duration-200"
+                  leaveFrom="opacity-100 scale-100"
+                  leaveTo="opacity-0 scale-95"
+                >
+                  <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center space-x-3">
+                        <QrCodeIcon className="h-6 w-6 text-teal-600" />
+                        <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900">
+                          Scanner le QR Code
+                        </Dialog.Title>
+                      </div>
+                      <button
+                        onClick={() => setShowQrScanner(false)}
+                        className="text-gray-400 hover:text-gray-600"
+                      >
+                        <XMarkIcon className="h-6 w-6" />
+                      </button>
+                    </div>
+
+                    <div className="mb-4">
+                      <p className="text-sm text-gray-600">
+                        Scannez le QR code d'un membre pour marquer sa présence automatiquement.
+                      </p>
+                    </div>
+
+                    <div id="qr-reader" className="mb-4"></div>
+
+                    {isScanning && (
+                      <div className="flex items-center justify-center space-x-2 text-teal-600">
+                        <ArrowPathIcon className="h-5 w-5 animate-spin" />
+                        <span>Marquage de la présence...</span>
+                      </div>
+                    )}
+
+                    <div className="mt-4">
+                      <button
+                        type="button"
+                        className="w-full px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                        onClick={() => setShowQrScanner(false)}
+                      >
+                        Fermer
+                      </button>
+                    </div>
+                  </Dialog.Panel>
+                </Transition.Child>
+              </div>
+            </div>
+          </Dialog>
+        </Transition>
+
+        {/* Error Dialog Modal */}
+        <Transition appear show={showErrorDialog} as={React.Fragment}>
+          <Dialog as="div" className="relative z-10" onClose={() => setShowErrorDialog(false)}>
+            <Transition.Child
+              as={React.Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0"
+              enterTo="opacity-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100"
+              leaveTo="opacity-0"
+            >
+              <div className="fixed inset-0 bg-black bg-opacity-25 backdrop-blur-sm" />
+            </Transition.Child>
+
+            <div className="fixed inset-0 overflow-y-auto">
+              <div className="flex min-h-full items-center justify-center p-4 text-center">
+                <Transition.Child
+                  as={React.Fragment}
+                  enter="ease-out duration-300"
+                  enterFrom="opacity-0 scale-95"
+                  enterTo="opacity-100 scale-100"
+                  leave="ease-in duration-200"
+                  leaveFrom="opacity-100 scale-100"
+                  leaveTo="opacity-0 scale-95"
+                >
+                  <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
+                    {/* Icon with gradient background */}
+                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-red-400 to-red-600 mb-4">
+                      <ExclamationTriangleIcon className="h-8 w-8 text-white" />
+                    </div>
+
+                    {/* Title */}
+                    <Dialog.Title
+                      as="h3"
+                      className="text-xl font-bold text-center text-gray-900 mb-3"
+                    >
+                      Présence déjà marquée
+                    </Dialog.Title>
+
+                    {/* Message */}
+                    <div className="mb-6">
+                      <p className="text-sm text-center text-gray-600 leading-relaxed">
+                        {errorMessage}
+                      </p>
+                    </div>
+
+                    {/* Action button */}
+                    <div className="flex justify-center">
+                      <button
+                        type="button"
+                        className="w-full px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-teal-500 to-teal-600 rounded-lg hover:from-teal-600 hover:to-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transform transition-all duration-200 hover:scale-105 shadow-md"
+                        onClick={() => setShowErrorDialog(false)}
+                      >
+                        J'ai compris
                       </button>
                     </div>
                   </Dialog.Panel>

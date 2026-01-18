@@ -52,11 +52,11 @@ export interface User {
 }
 
 const UserProfile: React.FC = () => {
-  const {data: userToken} = useGetUserByTokenQuery()
+  const { data: userToken } = useGetUserByTokenQuery()
   const [isEditing, setIsEditing] = useState(false);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  
+
   // Fetch user data
   const { data: user, isLoading, error, refetch } = useGetUserByIdQuery(`${userToken?.id}`, { skip: !userToken?.id });
   const [updateUser, { isLoading: isUpdating }] = useUpdateUserMutation();
@@ -102,7 +102,7 @@ const UserProfile: React.FC = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target as HTMLInputElement;
-    
+
     if (type === 'checkbox') {
       const { checked } = e.target as HTMLInputElement;
       setFormData(prev => ({ ...prev, [name]: checked }));
@@ -126,19 +126,19 @@ const UserProfile: React.FC = () => {
       const submitData = new FormData();
       // Add the ID to the form data
       submitData.append('id', userToken?.id);
-      
+
       // Add all form fields to the form data
       Object.entries(formData).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
           submitData.append(key, value.toString());
         }
       });
-      
+
       // Add the image if one was selected
       if (selectedImage) {
         submitData.append('profileImage', selectedImage);
       }
-      
+
       await updateUser(submitData).unwrap();
       setIsEditing(false);
       refetch(); // Refresh user data
@@ -182,7 +182,7 @@ const UserProfile: React.FC = () => {
         setImagePreview(null);
       }
     }
-    
+
     setSelectedImage(null);
     setIsEditing(false);
   };
@@ -198,16 +198,16 @@ const UserProfile: React.FC = () => {
 
   const calculateAge = (birthDate: string | undefined): number => {
     if (!birthDate) return 0;
-    
+
     const today = new Date();
     const birthDateObj = new Date(birthDate);
     let age = today.getFullYear() - birthDateObj.getFullYear();
     const monthDiff = today.getMonth() - birthDateObj.getMonth();
-    
+
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDateObj.getDate())) {
       age--;
     }
-    
+
     return age;
   };
 
@@ -318,7 +318,7 @@ const UserProfile: React.FC = () => {
                   </p>
                 )}
               </div>
-              
+
               <div className="p-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-gray-500">Statut</span>
@@ -339,7 +339,7 @@ const UserProfile: React.FC = () => {
                     </span>
                   )}
                 </div>
-                
+
                 {user.email && (
                   <div className="flex items-center space-x-3">
                     <EnvelopeIcon className="h-5 w-5 text-gray-400" />
@@ -359,7 +359,7 @@ const UserProfile: React.FC = () => {
                     </div>
                   </div>
                 )}
-                
+
                 <div className="flex items-center space-x-3">
                   <PhoneIcon className="h-5 w-5 text-gray-400" />
                   <div className="flex-1">
@@ -377,7 +377,7 @@ const UserProfile: React.FC = () => {
                     )}
                   </div>
                 </div>
-                
+
                 {(user.homePhone || isEditing) && (
                   <div className="flex items-center space-x-3">
                     <PhoneIcon className="h-5 w-5 text-gray-400" />

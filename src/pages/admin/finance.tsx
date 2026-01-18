@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from "react"
 import {
   MagnifyingGlassIcon,
   PlusIcon,
@@ -19,10 +19,10 @@ import FinanceModal from '../../components/modals/FinanceModal';
 
 // Import API hooks
 import { useGetUserByTokenQuery } from '../../store/services/authApi';
-import { useGetOfferingsByChurchQuery, useGetOfferingsByDateRangeQuery, useDeleteOfferingMutation } from '../../store/services/offeringApi';
-import { useGetTithesByChurchQuery, useGetTithesByDateRangeQuery,  useDeleteTitheMutation } from '../../store/services/titheApi';
-import { useGetDonationsByChurchQuery, useGetDonationsByDateRangeQuery, useDeleteDonationMutation } from '../../store/services/donationApi';
-import { useGetMoissonsByChurchQuery, useGetMoissonsByDateRangeQuery, useDeleteMoissonMutation } from '../../store/services/moissonApi';
+import { useGetOfferingsByChurchQuery, useDeleteOfferingMutation, useUpdateOfferingMutation } from '../../store/services/offeringApi';
+import { useGetTithesByChurchQuery, useDeleteTitheMutation, useUpdateTitheMutation } from '../../store/services/titheApi';
+import { useGetDonationsByChurchQuery, useDeleteDonationMutation, useUpdateDonationMutation } from '../../store/services/donationApi';
+import { useGetMoissonsByChurchQuery, useDeleteMoissonMutation, useUpdateMoissonMutation } from '../../store/services/moissonApi';
 
 // Define interfaces for financial data
 interface FinanceItem {
@@ -68,7 +68,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport, ac
       <div className="bg-white rounded-lg p-6 w-96 max-w-md mx-4">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Exporter les {activeTab}</h3>
         <p className="text-sm text-gray-600 mb-6">Choisissez le format d'exportation pour télécharger la liste des {activeTab}.</p>
-        
+
         <div className="space-y-3">
           <button
             onClick={() => onExport('xlsx')}
@@ -77,7 +77,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport, ac
             <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
             Exporter en Excel (.xlsx)
           </button>
-          
+
           <button
             onClick={() => onExport('pdf')}
             className="w-full flex items-center justify-center px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
@@ -85,7 +85,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport, ac
             <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
             Exporter en PDF (.pdf)
           </button>
-          
+
           <button
             onClick={() => onExport('docx')}
             className="w-full flex items-center justify-center px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
@@ -94,7 +94,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport, ac
             Exporter en Word (.docx)
           </button>
         </div>
-        
+
         <button
           onClick={onClose}
           className="w-full mt-4 px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200"
@@ -231,6 +231,7 @@ const Finance: React.FC = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<FinanceItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const [filters, setFilters] = useState<FilterState>({
     startDate: '',
     endDate: '',
@@ -247,51 +248,75 @@ const Finance: React.FC = () => {
   const { data: userData } = useGetUserByTokenQuery();
   const churchId = userData?.church?.id || '';
 
-  // Fetch financial data based on churchId and filters
-  const { data: offeringData, isLoading: isOfferingLoading, refetch: refetchOfferings } = 
-    filters.startDate && filters.endDate
-      ? useGetOfferingsByDateRangeQuery({
-          churchId,
-          startDate: filters.startDate,
-          endDate: filters.endDate
-        }, { skip: !churchId })
-      : useGetOfferingsByChurchQuery(churchId, { skip: !churchId });
+  //Fetch financial data based on churchId and filters
+  const offeringQueryParams = {
+    churchId,
+    page: currentPage,
+    limit: itemsPerPage,
+    search: searchQuery,
+    status: filters.status,
+    minAmount: filters.minAmount ? parseFloat(filters.minAmount) : undefined,
+    maxAmount: filters.maxAmount ? parseFloat(filters.maxAmount) : undefined,
+    startDate: filters.startDate,
+    endDate: filters.endDate
+  };
 
-  const { data: titheData, isLoading: isTitheLoading, refetch: refetchTithes } = 
-    filters.startDate && filters.endDate
-      ? useGetTithesByDateRangeQuery({
-          churchId,
-          startDate: filters.startDate,
-          endDate: filters.endDate
-        }, { skip: !churchId })
-      : useGetTithesByChurchQuery(churchId, { skip: !churchId });
+  const { data: offeringData, isLoading: isOfferingLoading, refetch: refetchOfferings } =
+    useGetOfferingsByChurchQuery(offeringQueryParams, { skip: !churchId });
 
-  const { data: donationData, isLoading: isDonationLoading, refetch: refetchDonations } = 
-    filters.startDate && filters.endDate
-      ? useGetDonationsByDateRangeQuery({
-          churchId,
-          startDate: filters.startDate,
-          endDate: filters.endDate
-        }, { skip: !churchId })
-      : useGetDonationsByChurchQuery(churchId, { skip: !churchId });
+  const titheQueryParams = {
+    churchId,
+    page: currentPage,
+    limit: itemsPerPage,
+    search: searchQuery,
+    minAmount: filters.minAmount ? parseFloat(filters.minAmount) : undefined,
+    maxAmount: filters.maxAmount ? parseFloat(filters.maxAmount) : undefined,
+    startDate: filters.startDate,
+    endDate: filters.endDate
+  };
 
-  const { data: moissonData, isLoading: isMoissonLoading, refetch: refetchMoissons } = 
-    filters.startDate && filters.endDate
-      ? useGetMoissonsByDateRangeQuery({
-          churchId,
-          startDate: filters.startDate,
-          endDate: filters.endDate
-        }, { skip: !churchId })
-      : useGetMoissonsByChurchQuery(churchId, { skip: !churchId });
+  const { data: titheData, isLoading: isTitheLoading, refetch: refetchTithes } =
+    useGetTithesByChurchQuery(titheQueryParams, { skip: !churchId });
+
+  const donationQueryParams = {
+    churchId,
+    page: currentPage,
+    limit: itemsPerPage,
+    search: searchQuery,
+    minAmount: filters.minAmount ? parseFloat(filters.minAmount) : undefined,
+    maxAmount: filters.maxAmount ? parseFloat(filters.maxAmount) : undefined,
+    startDate: filters.startDate,
+    endDate: filters.endDate
+  };
+
+  const { data: donationData, isLoading: isDonationLoading, refetch: refetchDonations } =
+    useGetDonationsByChurchQuery(donationQueryParams, { skip: !churchId });
+
+  const moissonQueryParams = {
+    churchId,
+    page: currentPage,
+    limit: itemsPerPage,
+    search: searchQuery,
+    status: filters.status,
+    minAmount: filters.minAmount ? parseFloat(filters.minAmount) : undefined,
+    maxAmount: filters.maxAmount ? parseFloat(filters.maxAmount) : undefined,
+    startDate: filters.startDate,
+    endDate: filters.endDate
+  };
+
+  const { data: moissonData, isLoading: isMoissonLoading, refetch: refetchMoissons } =
+    useGetMoissonsByChurchQuery(moissonQueryParams, { skip: !churchId });
 
   // Loading state
   const isLoading = isOfferingLoading || isTitheLoading || isDonationLoading || isMoissonLoading;
 
-  // Process and filter data based on active tab
-  const getFilteredData = (): { data: FinanceItem[], totalAmount: number, totalItems: number, paginatedData: FinanceItem[] } => {
+  // Process and display data based on active tab - backend handles pagination and filtering
+  const getDisplayedData = (): { data: FinanceItem[]; totalAmount: number; totalItems: number; totalPages: number } => {
     let data: FinanceItem[] = [];
     let totalAmount = 0;
-    
+    let totalItems = 0;
+    let totalPages = 0;
+
     switch (activeTab) {
       case 'offrandes':
         data = offeringData?.offerings?.map(offering => ({
@@ -304,6 +329,8 @@ const Finance: React.FC = () => {
           statusType: 'offering'
         })) || [];
         totalAmount = offeringData?.totalAmount || 0;
+        totalItems = offeringData?.pagination?.totalCount || data.length;
+        totalPages = offeringData?.pagination?.totalPages || 1;
         break;
       case 'dimes':
         data = titheData?.tithings?.map(tithe => ({
@@ -316,6 +343,8 @@ const Finance: React.FC = () => {
           statusType: 'tithe'
         })) || [];
         totalAmount = titheData?.totalAmount || 0;
+        totalItems = titheData?.pagination?.totalCount || data.length;
+        totalPages = titheData?.pagination?.totalPages || 1;
         break;
       case 'dons':
         data = donationData?.donations?.map(donation => ({
@@ -328,6 +357,8 @@ const Finance: React.FC = () => {
           statusType: 'donation'
         })) || [];
         totalAmount = donationData?.totalAmount || 0;
+        totalItems = donationData?.pagination?.totalCount || data.length;
+        totalPages = donationData?.pagination?.totalPages || 1;
         break;
       case 'moissons':
         data = moissonData?.moissons?.map(moisson => ({
@@ -340,46 +371,18 @@ const Finance: React.FC = () => {
           statusType: 'moisson'
         })) || [];
         totalAmount = moissonData?.totalAmount || 0;
+        totalItems = moissonData?.pagination?.totalCount || data.length;
+        totalPages = moissonData?.pagination?.totalPages || 1;
         break;
     }
 
-    // Apply search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      data = data.filter(item => 
-        item.contributor.toLowerCase().includes(query) || 
-        item.date.toLowerCase().includes(query)
-      );
-    }
-
-    // Apply amount filters
-    if (filters.minAmount) {
-      data = data.filter(item => item.amount >= parseFloat(filters.minAmount));
-    }
-    if (filters.maxAmount) {
-      data = data.filter(item => item.amount <= parseFloat(filters.maxAmount));
-    }
-
-    // Apply status filter
-    if (filters.status) {
-      data = data.filter(item => item.status === filters.status);
-    }
-
-    const totalItems = data.length;
-    
-    // Apply pagination
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const paginatedData = data.slice(startIndex, endIndex);
-
-    return { data, totalAmount, totalItems, paginatedData };
+    return { data, totalAmount, totalItems, totalPages };
   };
 
-  const { data: filteredData, totalAmount, totalItems, paginatedData } = getFilteredData();
-console.log(totalAmount)
-  // Pagination calculations
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const startItem = (currentPage - 1) * itemsPerPage + 1;
+  const { data: paginatedData, totalAmount, totalItems, totalPages } = getDisplayedData();
+  console.log(totalAmount)
+  // Pagination calculations from backend metadata
+  const startItem = totalItems > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
   const endItem = Math.min(currentPage * itemsPerPage, totalItems);
 
   // Reset to first page when filters change
@@ -412,13 +415,13 @@ console.log(totalAmount)
   };
 
   // Initialize mutation hooks
-  // const [updateOffering] = useUpdateOfferingMutation();
+  const [updateOffering] = useUpdateOfferingMutation();
   const [deleteOffering] = useDeleteOfferingMutation();
-  // const [updateTithe] = useUpdateTitheMutation();
+  const [updateTithe] = useUpdateTitheMutation();
   const [deleteTithe] = useDeleteTitheMutation();
-  // const [updateDonation] = useUpdateDonationMutation();
+  const [updateDonation] = useUpdateDonationMutation();
   const [deleteDonation] = useDeleteDonationMutation();
-  // const [updateMoisson] = useUpdateMoissonMutation();
+  const [updateMoisson] = useUpdateMoissonMutation();
   const [deleteMoisson] = useDeleteMoissonMutation();
 
   // Action handlers for edit and delete
@@ -434,7 +437,7 @@ console.log(totalAmount)
 
   const confirmDeleteItem = async () => {
     if (!selectedItem) return;
-    
+
     setIsDeleting(true);
     try {
       switch (selectedItem.statusType) {
@@ -490,16 +493,18 @@ console.log(totalAmount)
 
   // Export functions
   const handleExport = (type: 'xlsx' | 'pdf' | 'docx') => {
-    const { data } = getFilteredData();
+    // For export, we need to fetch all data without pagination
+    // Using the current paginatedData for quick export
+    const data = paginatedData;
     const fileName = `${activeTab}_${new Date().toISOString().split('T')[0]}`;
     const date = new Date().toLocaleDateString('fr-FR');
 
     // Calculate totals by currency
-    const totalsByCurrency = data.reduce((acc, item) => {
+    const totalsByCurrency = data.reduce((acc: Record<string, number>, item) => {
       const currency = item.currency || 'HTG';
       acc[currency] = (acc[currency] || 0) + item.amount;
       return acc;
-    }, {} as Record<string, number>);
+    }, {});
 
     const totalString = Object.entries(totalsByCurrency)
       .map(([currency, amount]) => `${amount.toLocaleString()} ${currency}`)
@@ -507,7 +512,7 @@ console.log(totalAmount)
 
     if (type === 'xlsx') {
       const wb = XLSX.utils.book_new();
-      
+
       const wsData: any[][] = [
         [`Liste des ${activeTab}`],
         [`Date: ${date}`],
@@ -523,28 +528,28 @@ console.log(totalAmount)
           row.amount,
           row.currency || 'HTG',
           row.date,
-          row.status === 'completed' ? 'Complété' : 
-          row.status === 'pending' ? 'En cours' : 
-          row.status === 'service' ? 'Service' : 'Moisson'
+          row.status === 'completed' ? 'Complété' :
+            row.status === 'pending' ? 'En cours' :
+              row.status === 'service' ? 'Service' : 'Moisson'
         ]);
       });
 
       const ws = XLSX.utils.aoa_to_sheet(wsData);
       XLSX.utils.book_append_sheet(wb, ws, activeTab);
       XLSX.writeFile(wb, `${fileName}.xlsx`);
-    } 
+    }
     else if (type === 'pdf') {
       const doc = new jsPDF();
-      
+
       doc.setFontSize(20);
       doc.setTextColor(0, 128, 128);
       doc.text(`Liste des ${activeTab}`, 105, 20, { align: "center" });
-      
+
       doc.setFontSize(12);
       doc.setTextColor(0, 0, 0);
       doc.text(`Date: ${date}`, 14, 30);
       doc.text(`Total: ${totalString}`, 14, 37);
-      
+
       // Add table headers
       doc.setFontSize(10);
       doc.setFillColor(240, 240, 240);
@@ -555,7 +560,7 @@ console.log(totalAmount)
       doc.text('Date', 120, 51);
       doc.text('Statut', 160, 51);
       doc.setFont("helvetica", "normal");
-      
+
       // Add table rows
       let y = 60;
       data.forEach((item) => {
@@ -566,14 +571,14 @@ console.log(totalAmount)
         doc.text(item.contributor, 16, y);
         doc.text(`${item.amount} ${item.currency || 'HTG'}`, 80, y);
         doc.text(item.date, 120, y);
-        doc.text(item.status === 'completed' ? 'Complété' : 
-                item.status === 'pending' ? 'En cours' : 
-                item.status === 'service' ? 'Service' : 'Moisson', 160, y);
+        doc.text(item.status === 'completed' ? 'Complété' :
+          item.status === 'pending' ? 'En cours' :
+            item.status === 'service' ? 'Service' : 'Moisson', 160, y);
         y += 10;
       });
-      
+
       doc.save(`${fileName}.pdf`);
-    } 
+    }
     else if (type === 'docx') {
       // Create table rows
       const rows = data.map(item => {
@@ -593,9 +598,9 @@ console.log(totalAmount)
             }),
             new TableCell({
               children: [new Paragraph(
-                item.status === 'completed' ? 'Complété' : 
-                item.status === 'pending' ? 'En cours' : 
-                item.status === 'service' ? 'Service' : 'Moisson'
+                item.status === 'completed' ? 'Complété' :
+                  item.status === 'pending' ? 'En cours' :
+                    item.status === 'service' ? 'Service' : 'Moisson'
               )],
               width: { size: 25, type: WidthType.PERCENTAGE }
             })
@@ -632,11 +637,11 @@ console.log(totalAmount)
           children: [
             new Paragraph({
               children: [
-                new TextRun({ 
-                  text: `Liste des ${activeTab}`, 
-                  bold: true, 
-                  size: 32, 
-                  color: "008080" 
+                new TextRun({
+                  text: `Liste des ${activeTab}`,
+                  bold: true,
+                  size: 32,
+                  color: "008080"
                 })
               ],
               alignment: AlignmentType.CENTER,
@@ -797,7 +802,7 @@ console.log(totalAmount)
             </div>
           ) : (
             <>
-             
+
 
               {/* Data table */}
               {totalItems > 0 ? (
@@ -836,7 +841,7 @@ console.log(totalAmount)
                                     Modifier
                                   </div>
                                 </div>
-                                
+
                                 {/* Delete Button with Tooltip */}
                                 <div className="relative group">
                                   <button
@@ -859,82 +864,81 @@ console.log(totalAmount)
 
                   {/* Pagination */}
                   {/* {totalPages > 1 && ( */}
-                    <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 mt-4 rounded-lg shadow">
-                      <div className="flex-1 flex justify-between sm:hidden">
-                        <button
-                          onClick={goToPreviousPage}
-                          disabled={currentPage === 1}
-                          className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          Précédent
-                        </button>
-                        <button
-                          onClick={goToNextPage}
-                          disabled={currentPage === totalPages}
-                          className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          Suivant
-                        </button>
+                  <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 mt-4 rounded-lg shadow">
+                    <div className="flex-1 flex justify-between sm:hidden">
+                      <button
+                        onClick={goToPreviousPage}
+                        disabled={currentPage === 1}
+                        className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Précédent
+                      </button>
+                      <button
+                        onClick={goToNextPage}
+                        disabled={currentPage === totalPages}
+                        className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Suivant
+                      </button>
+                    </div>
+                    <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                      <div>
+                        <p className="text-sm text-gray-700">
+                          Affichage de <span className="font-medium">{startItem}</span> à{' '}
+                          <span className="font-medium">{endItem}</span> sur{' '}
+                          <span className="font-medium">{totalItems}</span> résultats
+                        </p>
                       </div>
-                      <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                        <div>
-                          <p className="text-sm text-gray-700">
-                            Affichage de <span className="font-medium">{startItem}</span> à{' '}
-                            <span className="font-medium">{endItem}</span> sur{' '}
-                            <span className="font-medium">{totalItems}</span> résultats
-                          </p>
-                        </div>
-                        <div>
-                          <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                            <button
-                              onClick={goToPreviousPage}
-                              disabled={currentPage === 1}
-                              className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              <span className="sr-only">Précédent</span>
-                              <ChevronLeftIcon className="h-5 w-5" aria-hidden="true" />
-                            </button>
-                            {Array.from({ length: totalPages }, (_, i) => i + 1)
-                              .filter(page => {
-                                if (totalPages <= 7) return true;
-                                if (page === 1 || page === totalPages) return true;
-                                if (page >= currentPage - 1 && page <= currentPage + 1) return true;
-                                return false;
-                              })
-                              .map((page, index, array) => {
-                                const showEllipsis = index > 0 && page - array[index - 1] > 1;
-                                return (
-                                  <div key={page} className="flex">
-                                    {showEllipsis && (
-                                      <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
-                                        ...
-                                      </span>
-                                    )}
-                                    <button
-                                      onClick={() => goToPage(page)}
-                                      className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                                        currentPage === page
-                                          ? 'z-10 bg-teal-50 border-teal-500 text-teal-600'
-                                          : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                      <div>
+                        <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                          <button
+                            onClick={goToPreviousPage}
+                            disabled={currentPage === 1}
+                            className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <span className="sr-only">Précédent</span>
+                            <ChevronLeftIcon className="h-5 w-5" aria-hidden="true" />
+                          </button>
+                          {Array.from({ length: totalPages }, (_, i) => i + 1)
+                            .filter(page => {
+                              if (totalPages <= 7) return true;
+                              if (page === 1 || page === totalPages) return true;
+                              if (page >= currentPage - 1 && page <= currentPage + 1) return true;
+                              return false;
+                            })
+                            .map((page, index, array) => {
+                              const showEllipsis = index > 0 && page - array[index - 1] > 1;
+                              return (
+                                <div key={page} className="flex">
+                                  {showEllipsis && (
+                                    <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                                      ...
+                                    </span>
+                                  )}
+                                  <button
+                                    onClick={() => goToPage(page)}
+                                    className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${currentPage === page
+                                      ? 'z-10 bg-teal-50 border-teal-500 text-teal-600'
+                                      : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
                                       }`}
-                                    >
-                                      {page}
-                                    </button>
-                                  </div>
-                                );
-                              })}
-                            <button
-                              onClick={goToNextPage}
-                              disabled={currentPage === totalPages}
-                              className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              <span className="sr-only">Suivant</span>
-                              <ChevronRightIcon className="h-5 w-5" aria-hidden="true" />
-                            </button>
-                          </nav>
-                        </div>
+                                  >
+                                    {page}
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          <button
+                            onClick={goToNextPage}
+                            disabled={currentPage === totalPages}
+                            className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <span className="sr-only">Suivant</span>
+                            <ChevronRightIcon className="h-5 w-5" aria-hidden="true" />
+                          </button>
+                        </nav>
                       </div>
                     </div>
+                  </div>
                   {/* )} */}
                 </>
               ) : (
@@ -952,7 +956,7 @@ console.log(totalAmount)
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
         onExport={handleExport}
-        data={filteredData}
+        data={paginatedData}
         activeTab={activeTab}
       />
 
@@ -963,7 +967,7 @@ console.log(totalAmount)
         onApplyFilters={handleFiltersChange}
         onClear={handleClearFilters}
       />
-      
+
       <FinanceModal
         isOpen={isFinanceModalOpen}
         onClose={() => setIsFinanceModalOpen(false)}
@@ -989,34 +993,144 @@ console.log(totalAmount)
                   <XMarkIcon className="h-6 w-6" />
                 </button>
               </div>
-              
-              {/* Content */}
-              <div className="mt-2 px-7 py-3">
-                <p className="text-sm text-gray-500 mb-4">
-                  La fonctionnalité d'édition sera bientôt disponible.
-                </p>
-                {selectedItem && (
-                  <div className="text-sm text-gray-700">
-                    <p><strong>Contributeur:</strong> {selectedItem.contributor}</p>
-                    <p><strong>Montant:</strong> {selectedItem.amount} HTG</p>
-                    <p><strong>Date:</strong> {selectedItem.date}</p>
-                    <p><strong>Type:</strong> {selectedItem.statusType}</p>
-                  </div>
-                )}
-              </div>
-              
-              {/* Actions */}
-              <div className="flex items-center justify-end px-4 py-3">
-                <button
-                  onClick={() => {
+
+              {/* Edit Form */}
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  setIsUpdating(true);
+                  const formData = new FormData(e.currentTarget);
+                  const updatedData = {
+                    id: selectedItem.id,
+                    contributorName: formData.get('contributor') as string,
+                    amount: parseFloat(formData.get('amount') as string),
+                    date: formData.get('date') as string,
+                    note: formData.get('note') as string,
+                    paymentMethod: formData.get('paymentMethod') as string || 'cash',
+                  };
+
+                  try {
+                    switch (selectedItem.statusType) {
+                      case 'offering':
+                        await updateOffering(updatedData).unwrap();
+                        break;
+                      case 'tithe':
+                        await updateTithe(updatedData).unwrap();
+                        break;
+                      case 'donation':
+                        await updateDonation(updatedData).unwrap();
+                        break;
+                      case 'moisson':
+                        await updateMoisson(updatedData).unwrap();
+                        break;
+                    }
                     setIsEditModalOpen(false);
                     setSelectedItem(null);
-                  }}
-                  className="px-4 py-2 bg-gray-300 text-gray-700 text-base font-medium rounded-md shadow-sm hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 transition-colors"
-                >
-                  Fermer
-                </button>
-              </div>
+                  } catch (error) {
+                    console.error('Error updating finance item:', error);
+                    alert('Erreur lors de la mise à jour');
+                  } finally {
+                    setIsUpdating(false);
+                  }
+                }}
+                className="mt-4 px-7 py-3 space-y-4"
+              >
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Contributeur
+                  </label>
+                  <input
+                    type="text"
+                    name="contributor"
+                    defaultValue={selectedItem.contributor}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Montant ({selectedItem.currency || 'HTG'})
+                  </label>
+                  <input
+                    type="number"
+                    name="amount"
+                    defaultValue={selectedItem.amount}
+                    required
+                    step="0.01"
+                    min="0"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Date
+                  </label>
+                  <input
+                    type="date"
+                    name="date"
+                    defaultValue={selectedItem.date}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Méthode de paiement
+                  </label>
+                  <select
+                    name="paymentMethod"
+                    defaultValue="cash"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  >
+                    <option value="cash">Espèces</option>
+                    <option value="bank">Banque</option>
+                    <option value="mobile">Mobile Money</option>
+                    <option value="check">Chèque</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Note (optionnelle)
+                  </label>
+                  <textarea
+                    name="note"
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    placeholder="Ajouter une note..."
+                  />
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center justify-end gap-3 mt-5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsEditModalOpen(false);
+                      setSelectedItem(null);
+                    }}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isUpdating}
+                    className="px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-md hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {isUpdating && (
+                      <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    )}
+                    {isUpdating ? 'Enregistrement...' : 'Enregistrer'}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
@@ -1037,7 +1151,7 @@ console.log(totalAmount)
                   <XMarkIcon className="h-6 w-6" />
                 </button>
               </div>
-              
+
               {/* Content */}
               <div className="mt-2 px-7 py-3">
                 <div className="flex items-center mb-4">
@@ -1059,7 +1173,7 @@ console.log(totalAmount)
                   </div>
                 </div>
               </div>
-              
+
               {/* Actions */}
               <div className="flex items-center justify-end px-4 py-3 space-x-3">
                 <button

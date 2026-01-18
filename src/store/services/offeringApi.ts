@@ -19,6 +19,14 @@ interface OfferingsByChurchResponse {
   offerings: Offering[];
   totalAmount: number;
   period: string;
+  pagination?: {
+    currentPage: number;
+    totalPages: number;
+    totalCount: number;
+    limit: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  };
 }
 
 interface CreateOfferingRequest {
@@ -75,8 +83,33 @@ export const offeringApi = authApi.injectEndpoints({
       invalidatesTags: ['Offering'],
     }),
 
-    getOfferingsByChurch: builder.query<OfferingsByChurchResponse, string>({
-      query: (churchId) => `/offerings/church/${churchId}`,
+    getOfferingsByChurch: builder.query<OfferingsByChurchResponse, {
+      churchId: string;
+      page?: number;
+      limit?: number;
+      search?: string;
+      status?: string;
+      minAmount?: number;
+      maxAmount?: number;
+      sortBy?: string;
+      sortOrder?: string;
+      startDate?: string;
+      endDate?: string;
+    }>({
+      query: ({ churchId, page, limit, search, status, minAmount, maxAmount, sortBy, sortOrder, startDate, endDate }) => {
+        const params = new URLSearchParams();
+        if (page) params.append('page', page.toString());
+        if (limit) params.append('limit', limit.toString());
+        if (search) params.append('search', search);
+        if (status) params.append('status', status);
+        if (minAmount !== undefined) params.append('minAmount', minAmount.toString());
+        if (maxAmount !== undefined) params.append('maxAmount', maxAmount.toString());
+        if (sortBy) params.append('sortBy', sortBy);
+        if (sortOrder) params.append('sortOrder', sortOrder);
+        if (startDate) params.append('startDate', startDate);
+        if (endDate) params.append('endDate', endDate);
+        return `/offerings/church/${churchId}?${params.toString()}`;
+      },
       providesTags: ['Offering'],
     }),
 
