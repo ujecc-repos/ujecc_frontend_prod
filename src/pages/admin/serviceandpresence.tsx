@@ -87,6 +87,10 @@ export default function ServiceAndPresence() {
   const [selectedServiceForQr, setSelectedServiceForQr] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
 
+  // Error Dialog State
+  const [showErrorDialog, setShowErrorDialog] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
   // Filter services based on search query
   const filteredServices = useMemo(() => {
     if (!services) return [];
@@ -189,8 +193,12 @@ export default function ServiceAndPresence() {
       setSelectedService(null);
       setSelectedUser(null);
       setPresenceStatus('PRESENT');
-    } catch (error) {
-      toast.error('Erreur lors du marquage de la présence');
+    } catch (error: any) {
+      console.log('Full error object:', error);
+      console.log('Error data:', error?.data);
+      const errorMsg = error?.data?.error || error?.data?.message || error?.message || 'Erreur lors du marquage de la présence';
+      setErrorMessage(errorMsg);
+      setShowErrorDialog(true);
     } finally {
       setIsMarkingPresence(false);
     }
@@ -264,7 +272,12 @@ export default function ServiceAndPresence() {
       setSelectedServiceForQr(null);
     } catch (error: any) {
       console.error('Error marking presence:', error);
-      toast.error(error?.data?.message || 'Erreur lors du marquage de la présence');
+      console.log('Error data:', error?.data);
+      const errorMsg = error?.data?.error || error?.data?.message || error?.message || 'Erreur lors du marquage de la présence';
+      setErrorMessage(errorMsg);
+      setShowErrorDialog(true);
+      setShowQrScanner(false);
+      setSelectedServiceForQr(null);
     } finally {
       setIsScanning(false);
     }
@@ -689,6 +702,70 @@ export default function ServiceAndPresence() {
                         onClick={() => setShowQrScanner(false)}
                       >
                         Fermer
+                      </button>
+                    </div>
+                  </Dialog.Panel>
+                </Transition.Child>
+              </div>
+            </div>
+          </Dialog>
+        </Transition>
+
+        {/* Error Dialog Modal */}
+        <Transition appear show={showErrorDialog} as={React.Fragment}>
+          <Dialog as="div" className="relative z-10" onClose={() => setShowErrorDialog(false)}>
+            <Transition.Child
+              as={React.Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0"
+              enterTo="opacity-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100"
+              leaveTo="opacity-0"
+            >
+              <div className="fixed inset-0 bg-black bg-opacity-25 backdrop-blur-sm" />
+            </Transition.Child>
+
+            <div className="fixed inset-0 overflow-y-auto">
+              <div className="flex min-h-full items-center justify-center p-4 text-center">
+                <Transition.Child
+                  as={React.Fragment}
+                  enter="ease-out duration-300"
+                  enterFrom="opacity-0 scale-95"
+                  enterTo="opacity-100 scale-100"
+                  leave="ease-in duration-200"
+                  leaveFrom="opacity-100 scale-100"
+                  leaveTo="opacity-0 scale-95"
+                >
+                  <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
+                    {/* Icon with gradient background */}
+                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-red-400 to-red-600 mb-4">
+                      <ExclamationTriangleIcon className="h-8 w-8 text-white" />
+                    </div>
+
+                    {/* Title */}
+                    <Dialog.Title
+                      as="h3"
+                      className="text-xl font-bold text-center text-gray-900 mb-3"
+                    >
+                      Présence déjà marquée
+                    </Dialog.Title>
+
+                    {/* Message */}
+                    <div className="mb-6">
+                      <p className="text-sm text-center text-gray-600 leading-relaxed">
+                        {errorMessage}
+                      </p>
+                    </div>
+
+                    {/* Action button */}
+                    <div className="flex justify-center">
+                      <button
+                        type="button"
+                        className="w-full px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-teal-500 to-teal-600 rounded-lg hover:from-teal-600 hover:to-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transform transition-all duration-200 hover:scale-105 shadow-md"
+                        onClick={() => setShowErrorDialog(false)}
+                      >
+                        J'ai compris
                       </button>
                     </div>
                   </Dialog.Panel>

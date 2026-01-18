@@ -27,6 +27,25 @@ interface CreatePresenceRequest {
   statut: string;
 }
 
+interface PresencesQueryParams {
+  serviceId: string;
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: string;
+  date?: string;
+}
+
+interface PaginatedPresenceResponse {
+  data: Presence[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
 export const presenceApi = authApi.injectEndpoints({
   endpoints: (builder) => ({
     createPresence: builder.mutation<Presence, CreatePresenceRequest>({
@@ -43,8 +62,17 @@ export const presenceApi = authApi.injectEndpoints({
       providesTags: ['Presence'],
     }),
 
-    getPresencesByService: builder.query<Presence[], string>({
-      query: (serviceId) => `/presences/services/${serviceId}/presences`,
+    getPresencesByService: builder.query<PaginatedPresenceResponse, PresencesQueryParams>({
+      query: ({ serviceId, page = 1, limit = 10, search = '', status = '', date = '' }) => {
+        const params = new URLSearchParams();
+        params.append('page', page.toString());
+        params.append('limit', limit.toString());
+        if (search) params.append('search', search);
+        if (status) params.append('status', status);
+        if (date) params.append('date', date);
+
+        return `/presences/services/${serviceId}/presences?${params.toString()}`;
+      },
       providesTags: ['Presence'],
     }),
   }),

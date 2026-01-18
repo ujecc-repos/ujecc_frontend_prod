@@ -19,6 +19,10 @@ interface CreatePasteurRequest {
   [index: string]: string;
 }
 
+interface TotalPasteurs {
+  total: number;
+}
+
 export const pasteurApi = authApi.injectEndpoints({
   endpoints: (builder) => ({
     getPasteurs: builder.query<Pasteur[], void>({
@@ -61,6 +65,10 @@ export const pasteurApi = authApi.injectEndpoints({
       query: (churchId) => `/pasteurs/church/${churchId}`,
       providesTags: ['Pasteur'],
     }),
+    getTotalPasteurs: builder.query<TotalPasteurs, void>({
+      query: () => `/pasteurs/admin/total-pasteurs`,
+      providesTags: ['Pasteur'],
+    }),
   }),
   overrideExisting: true
 });
@@ -72,4 +80,5 @@ export const {
   useUpdatePasteurMutation,
   useDeletePasteurMutation,
   useGetPasteursByChurchQuery,
+  useGetTotalPasteursQuery,
 } = pasteurApi;

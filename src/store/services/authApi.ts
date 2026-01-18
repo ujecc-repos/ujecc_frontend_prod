@@ -12,6 +12,10 @@ interface church {
   ttiId?: string;
 }
 
+interface totalMembers {
+  total: number;
+}
+
 export interface User {
   id: string;
   createdAt: Date;
@@ -93,17 +97,17 @@ export const authApi = createApi({
     prepareHeaders: async (headers, { getState }) => {
       console.log(getState)
 
-        try {
-            const token = await localStorage.getItem('token');
-            console.log("token : ", token)
-            if (token) {
-              headers.set('authorization', `Bearer ${token}`);
-            }
-            return headers;
-          } catch (error) {
-            console.error('Error getting token from AsyncStorage:', error);
-            return headers;
-          }
+      try {
+        const token = await localStorage.getItem('token');
+        console.log("token : ", token)
+        if (token) {
+          headers.set('authorization', `Bearer ${token}`);
+        }
+        return headers;
+      } catch (error) {
+        console.error('Error getting token from AsyncStorage:', error);
+        return headers;
+      }
 
     },
   }),
@@ -126,11 +130,20 @@ export const authApi = createApi({
       invalidatesTags: ['User'],
     }),
 
+    adminChangePassword: builder.mutation<{ message: string, state: string }, { userId: string, newPassword: string }>({
+      query: (data) => ({
+        url: `/users/admin/change-password/${data.userId}`,
+        method: 'PUT',
+        body: { newPassword: data.newPassword },
+      }),
+      invalidatesTags: ['User'],
+    }),
+
     register: builder.mutation<User, RegisterRequest | FormData>({
       query: (userData) => {
         // Check if userData is FormData (for image uploads)
         const isFormData = userData instanceof FormData;
-        
+
         return {
           url: '/users',
           method: 'POST',
@@ -158,6 +171,11 @@ export const authApi = createApi({
       query: () => '/users/members/recovery',
       providesTags: ['User'],
     }),
+    getTotalMembers: builder.query<totalMembers, void>({
+      query: () => '/users/admin/total-members',
+      providesTags: ['User'],
+    }),
+
 
     // get users and administrators
     getUsersAndAdministrators: builder.query<User[], void>({
@@ -180,20 +198,21 @@ export const authApi = createApi({
       providesTags: ["User"],
     }),
 
-    updateUser: builder.mutation<User, UpdateUserRequest | FormData>({      query: (userData) => {
+    updateUser: builder.mutation<User, UpdateUserRequest | FormData>({
+      query: (userData) => {
         // Check if userData is FormData (for image uploads)
         const isFormData = userData instanceof FormData;
-        
+
         // Extract id from userData
-        const id = isFormData 
-          ? userData.get('id') 
+        const id = isFormData
+          ? userData.get('id')
           : (userData as UpdateUserRequest).id;
-        
+
         // Remove id from body if it's not FormData
         // const body = isFormData 
         //   ? userData 
         //   : { ...(userData as UpdateUserRequest), id: undefined };
-        
+
         return {
           url: `/users/${id}`,
           method: 'PUT',
@@ -202,7 +221,7 @@ export const authApi = createApi({
           body: isFormData ? userData : { ...(userData as UpdateUserRequest), id: undefined },
         };
       },
-      invalidatesTags: ['User', 'Transfer'],   
+      invalidatesTags: ['User', 'Transfer'],
     }),
 
     deleteUser: builder.mutation<{ message: string }, string>({
@@ -217,13 +236,14 @@ export const authApi = createApi({
       query: (churchId) => `/users/church/${churchId}`,
       providesTags: ['User'],
     }),
-    
-    getUpcomingBirthdays: builder.query<User[], { churchId: string, days?: number }>({      query: ({ churchId, days = 30 }) => `/users/birthdays/upcoming/${churchId}?days=${days}`,
+
+    getUpcomingBirthdays: builder.query<User[], { churchId: string, days?: number }>({
+      query: ({ churchId, days = 30 }) => `/users/birthdays/upcoming/${churchId}?days=${days}`,
       providesTags: ['User'],
       transformResponse: (response: any) => {
         // Extract users from the response object
         const users = response.users || [];
-        
+
         // Ensure all users have the required properties
         return users.map((user: any) => ({
           ...user,
@@ -234,7 +254,8 @@ export const authApi = createApi({
     }),
 
     // Connect tithe to timothee
-    connectTithe: builder.mutation<User, { titheId: string, timotheeId: string }>({      query: ({ titheId, timotheeId }) => ({
+    connectTithe: builder.mutation<User, { titheId: string, timotheeId: string }>({
+      query: ({ titheId, timotheeId }) => ({
         url: '/users/connect-tithe',
         method: 'PUT',
         body: { titheId, timotheeId },
@@ -243,12 +264,14 @@ export const authApi = createApi({
     }),
 
     // Get all tithes of a specific timothee
-    getTimotheeTithes: builder.query<any[], { id: string, churchId: string }>({      query: ({ id, churchId }) => `/users/timothee/${id}/tithes/${churchId}`,
+    getTimotheeTithes: builder.query<any[], { id: string, churchId: string }>({
+      query: ({ id, churchId }) => `/users/timothee/${id}/tithes/${churchId}`,
       providesTags: ['User'],
     }),
 
     // Get all tithes of all timothees
-    getAllTimotheesTithes: builder.query<User[], string>({      query: (churchId) => `/users/timothees/tithes/${churchId}`,
+    getAllTimotheesTithes: builder.query<User[], string>({
+      query: (churchId) => `/users/timothees/tithes/${churchId}`,
       providesTags: ['User'],
     }),
     bulkInsertUsers: builder.mutation<{ message: string, createdUsers: User[], errors: any[], summary?: { total: number, created: number, failed: number } }, { users: any[], churchId: string }>({
@@ -261,7 +284,8 @@ export const authApi = createApi({
     }),
 
     // Make a user a timothee
-    makeTimothee: builder.mutation<{ message: string, user: User }, string>({query: (id) => ({
+    makeTimothee: builder.mutation<{ message: string, user: User }, string>({
+      query: (id) => ({
         url: `/users/user/${id}/make-timothee`,
         method: 'PUT',
       }),
@@ -299,6 +323,7 @@ export const {
   useGetUsersAndAdministratorsQuery,
   useGetLogoutMutation,
   useChangePasswordMutation,
+  useAdminChangePasswordMutation,
   useConnectTitheMutation,
   useGetTimotheeTithesQuery,
   useGetAllTimotheesTithesQuery,
@@ -307,4 +332,5 @@ export const {
   useGetTimotheesByChurchQuery,
   useBulkInsertUsersMutation,
   useGetMembersRecoveryQuery,
+  useGetTotalMembersQuery,
 } = authApi;
