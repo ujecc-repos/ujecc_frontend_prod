@@ -12,12 +12,16 @@ import EventDetails from "../pages/admin/event-details";
 import Sanction from "../pages/admin/sanction";
 import Mariage from "../pages/admin/mariage";
 import CreationMariage from "../pages/admin/creation-mariage";
+import EditMariage from "../pages/admin/edit-mariage";
 import Funeraille from "../pages/admin/funeraille";
 import CreationFuneraille from "../pages/admin/creation-funeraille";
+import EditFuneraille from "../pages/admin/edit-funeraille";
 import Presentation from "../pages/admin/presentation";
 import CreationPresentation from "../pages/admin/creation-presentation";
+import EditPresentation from "../pages/admin/edit-presentation";
 import Bapteme from "../pages/admin/bapteme";
 import CreationBapteme from "../pages/admin/creation-bapteme";
+import EditBapteme from "../pages/admin/edit-bapteme";
 import Comite from "../pages/admin/comite";
 import EcoleDuDimanche from "../pages/admin/ecole-du-dimanche";
 import Anniversaire from "../pages/admin/anniversaire";
@@ -50,7 +54,7 @@ import Recovery from "../pages/super-admin/recovery";
 const router = createBrowserRouter([
     {
         path: "/",
-        element: <App/>
+        element: <App />
     },
     {
         element: <ProtectedRoute />,
@@ -61,117 +65,133 @@ const router = createBrowserRouter([
                 children: [
                     {
                         index: true,
-                        element: <MainPage/>
-                        
+                        element: <MainPage />
+
                     },
                     {
                         path: "/tableau-de-bord/admin/membres",
-                        element: <Membres/>
+                        element: <Membres />
                     },
                     {
                         path: "/tableau-de-bord/admin/membres/invite",
-                        element: <Invitation/>
+                        element: <Invitation />
                     },
                     {
                         path: "/tableau-de-bord/admin/person/:id",
-                        element: <PersonDetail/>
+                        element: <PersonDetail />
                     },
                     {
                         path: "/tableau-de-bord/admin/groupes",
-                        element: <Groupe/>
+                        element: <Groupe />
                     },
                     {
                         path: "/tableau-de-bord/admin/groupe/:id",
-                        element: <Onegroupe/>
+                        element: <Onegroupe />
                     },
                     {
                         path: "/tableau-de-bord/admin/pasteurs",
-                        element: <Pasteur/>
-                    }, 
+                        element: <Pasteur />
+                    },
                     {
                         path: "/tableau-de-bord/admin/ministères",
-                        element: <Ministere/>
+                        element: <Ministere />
                     },
                     {
                         path: "/tableau-de-bord/admin/evenements",
-                        element: <Evenements/>
+                        element: <Evenements />
                     },
                     {
                         path: "/tableau-de-bord/admin/evenements/:id",
-                        element: <EventDetails/>
+                        element: <EventDetails />
                     },
                     {
                         path: "/tableau-de-bord/admin/sanctions",
-                        element: <Sanction/>
+                        element: <Sanction />
                     },
                     {
                         path: "/tableau-de-bord/admin/mariages",
-                        element: <Mariage/>
+                        element: <Mariage />
                     },
                     {
                         path: "/tableau-de-bord/admin/mariages/creation",
-                        element: <CreationMariage/>
+                        element: <CreationMariage />
+                    },
+                    {
+                        path: "/tableau-de-bord/admin/mariage/edit/:id",
+                        element: <EditMariage />
                     },
                     {
                         path: "/tableau-de-bord/admin/funerailles",
-                        element: <Funeraille/>
+                        element: <Funeraille />
                     },
                     {
                         path: "/tableau-de-bord/admin/funerailles/creation",
-                        element: <CreationFuneraille/>
+                        element: <CreationFuneraille />
+                    },
+                    {
+                        path: "/tableau-de-bord/admin/funeraille/edit/:id",
+                        element: <EditFuneraille />
                     },
                     {
                         path: "/tableau-de-bord/admin/presentation",
-                        element: <Presentation/>
+                        element: <Presentation />
                     },
                     {
                         path: "/tableau-de-bord/admin/presentation/creation",
-                        element: <CreationPresentation/>
+                        element: <CreationPresentation />
+                    },
+                    {
+                        path: "/tableau-de-bord/admin/presentation/edit/:id",
+                        element: <EditPresentation />
                     },
                     {
                         path: "/tableau-de-bord/admin/bapteme",
-                        element: <Bapteme/>
+                        element: <Bapteme />
                     },
                     {
                         path: "/tableau-de-bord/admin/bapteme/creation",
-                        element: <CreationBapteme/>
+                        element: <CreationBapteme />
+                    },
+                    {
+                        path: "/tableau-de-bord/admin/bapteme/edit/:id",
+                        element: <EditBapteme />
                     },
                     {
                         path: "/tableau-de-bord/super-admin/recovery",
-                        element: <Recovery/>
+                        element: <Recovery />
                     },
                     {
                         path: "/tableau-de-bord/admin/comite",
-                        element: <Comite/>
+                        element: <Comite />
                     },
                     {
                         path: "/tableau-de-bord/admin/ecole-du-dimanche",
-                        element: <EcoleDuDimanche/>
+                        element: <EcoleDuDimanche />
                     },
-                    { path: "/tableau-de-bord/admin/anniversaires",element: <Anniversaire/> },
-                    { path: "/tableau-de-bord/admin/transferts", element: <Transfert/>  },
-                    { path: "/tableau-de-bord/admin/rendez-vous", element: <RendezVous/> },
-                    { path: "/tableau-de-bord/admin/rendez-vous/creation", element: <CreationRendezVous/> },
-                    { path: "/tableau-de-bord/admin/finances", element: <Finance/> },
-                    { path: "/tableau-de-bord/admin/depense", element: <Depense/> },
-                    { path: "/tableau-de-bord/mon-compte", element: <UserProfile/> },
-                    { path: "/tableau-de-bord/mon-compte/change-password", element: <ChangePassword/> },
-                    { path: "/tableau-de-bord/admin/tti", element: <TTI/> },
-                    
+                    { path: "/tableau-de-bord/admin/anniversaires", element: <Anniversaire /> },
+                    { path: "/tableau-de-bord/admin/transferts", element: <Transfert /> },
+                    { path: "/tableau-de-bord/admin/rendez-vous", element: <RendezVous /> },
+                    { path: "/tableau-de-bord/admin/rendez-vous/creation", element: <CreationRendezVous /> },
+                    { path: "/tableau-de-bord/admin/finances", element: <Finance /> },
+                    { path: "/tableau-de-bord/admin/depense", element: <Depense /> },
+                    { path: "/tableau-de-bord/mon-compte", element: <UserProfile /> },
+                    { path: "/tableau-de-bord/mon-compte/change-password", element: <ChangePassword /> },
+                    { path: "/tableau-de-bord/admin/tti", element: <TTI /> },
+
                     // { path: "/tableau-de-bord/mon-compte/edit", element: <EditMonCompte/> },
-                    { path: "/tableau-de-bord/parametre", element: <Parametre/> },
-                    { path: "/tableau-de-bord/super-admin/missions", element: <MissionPage/> },
-                    { path: "/tableau-de-bord/super-admin/gestions", element: <GestionPage/> },
-                    { path: "/tableau-de-bord/super-admin/gestion-utilisateurs", element: <GestionUtilisateursPage/> },
-                    { path: "/tableau-de-bord/admin/timothee/:timotheeId/tithes", element: <TimotheeTithes/> },                   
+                    { path: "/tableau-de-bord/parametre", element: <Parametre /> },
+                    { path: "/tableau-de-bord/super-admin/missions", element: <MissionPage /> },
+                    { path: "/tableau-de-bord/super-admin/gestions", element: <GestionPage /> },
+                    { path: "/tableau-de-bord/super-admin/gestion-utilisateurs", element: <GestionUtilisateursPage /> },
+                    { path: "/tableau-de-bord/admin/timothee/:timotheeId/tithes", element: <TimotheeTithes /> },
                     // 
-                    { path: "/tableau-de-bord/pasteurs", element: <PasteurPage/> },
-                    { path: "/tableau-de-bord/super-admin/allchurches", element: <AllChurches/> },
-                    { path: "/tableau-de-bord/super-admin/church/:churchId", element: <ChurchDetails/> },
-                    { path: "/tableau-de-bord/admin/serviceandpresence", element: <ServiceAndPresence/> },
-                    { path: "/tableau-de-bord/admin/service-details/:serviceId", element: <ServiceDetails/> },
-                    { path: "/tableau-de-bord/directeur/eglises", element: <Eglise />},
-                    { path: "/tableau-de-bord/super-admin/map", element: <ChurchMap/>}                   
+                    { path: "/tableau-de-bord/pasteurs", element: <PasteurPage /> },
+                    { path: "/tableau-de-bord/super-admin/allchurches", element: <AllChurches /> },
+                    { path: "/tableau-de-bord/super-admin/church/:churchId", element: <ChurchDetails /> },
+                    { path: "/tableau-de-bord/admin/serviceandpresence", element: <ServiceAndPresence /> },
+                    { path: "/tableau-de-bord/admin/service-details/:serviceId", element: <ServiceDetails /> },
+                    { path: "/tableau-de-bord/directeur/eglises", element: <Eglise /> },
+                    { path: "/tableau-de-bord/super-admin/map", element: <ChurchMap /> }
                 ]
             }
         ]

@@ -9,6 +9,7 @@ import {
   PlusIcon,
   MagnifyingGlassIcon,
   TrashIcon,
+  PencilIcon,
 } from '@heroicons/react/24/outline';
 import { UserCircleIcon } from '@heroicons/react/24/solid';
 
@@ -43,7 +44,7 @@ export default function Funeraille() {
 
   // API hooks
   const { data: userData } = useGetUserByTokenQuery();
-  const { data: funerals = [], isLoading: isLoadingFunerals } = 
+  const { data: funerals = [], isLoading: isLoadingFunerals } =
     useGetFuneralsByChurchQuery(userData?.church?.id || '', { skip: !userData?.church?.id });
   const [deleteFuneral] = useDeleteFuneralMutation();
 
@@ -88,15 +89,20 @@ export default function Funeraille() {
     }
   };
 
-  // Handle export
   const handleExport = (format: string) => {
     // Implement export functionality
     console.log(`Exporting funerals in ${format} format`);
     setShowExportModal(false);
   };
 
+  // Handle edit funeral
+  const handleEditClick = (funeral: Funeral, e: React.MouseEvent) => {
+    e.stopPropagation();
+    window.location.href = `/tableau-de-bord/admin/funeraille/edit/${funeral.id}`;
+  };
+
   // Determine status based on funeral date
-  const getStatus = (funeral: Funeral) => {    
+  const getStatus = (funeral: Funeral) => {
     const funeralDate = new Date(funeral.funeralDate);
     const today = new Date();
     return funeralDate > today ? 'en attente' : 'complété';
@@ -261,6 +267,13 @@ export default function Funeraille() {
                               Voir les détails
                             </Link> */}
                             <button
+                              onClick={(e) => handleEditClick(funeral, e)}
+                              className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-md hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                            >
+                              <PencilIcon className="h-3 w-3 mr-1" />
+                              Modifier
+                            </button>
+                            <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleDeleteClick(funeral);
@@ -306,21 +319,20 @@ export default function Funeraille() {
               >
                 Précédent
               </button>
-              
+
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                 <button
                   key={page}
                   onClick={() => paginate(page)}
-                  className={`px-3 py-2 text-sm font-medium rounded-md ${
-                    currentPage === page
-                      ? 'bg-teal-600 text-white'
-                      : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'
-                  }`}
+                  className={`px-3 py-2 text-sm font-medium rounded-md ${currentPage === page
+                    ? 'bg-teal-600 text-white'
+                    : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'
+                    }`}
                 >
                   {page}
                 </button>
               ))}
-              
+
               <button
                 onClick={() => paginate(Math.min(totalPages, currentPage + 1))}
                 disabled={currentPage === totalPages}

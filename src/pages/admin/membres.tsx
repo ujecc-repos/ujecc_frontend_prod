@@ -103,7 +103,7 @@ interface AddMemberFormData {
   baptismLocation: string;
   civilState: string;
   spouseFullName: string;
-  minister: string;
+  ministryId: string;
   country: string;
   birthCountry: string;
   city: string;
@@ -398,7 +398,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
     baptismLocation: '',
     civilState: '',
     spouseFullName: '',
-    minister: '',
+    ministryId: '',
     country: '',
     birthCountry: '',
     city: '',
@@ -472,7 +472,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
   const ministryOptions = useMemo(() => {
     if (!ministriesData) return [];
     return ministriesData.map(ministry => ({
-      value: ministry.name,
+      value: ministry.id,
       label: ministry.name
     }));
   }, [ministriesData]);
@@ -531,7 +531,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
       baptismLocation: '',
       civilState: '',
       spouseFullName: '',
-      minister: '',
+      ministryId: '',
       country: '',
       birthCountry: '',
       city: '',
@@ -1094,12 +1094,12 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                     {errors.role && <p className="mt-1 text-sm text-red-500">{errors.role}</p>}
                   </div>
 
-                  {/* Minister */}
+                  {/* Ministry */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Ministère au sein de l'église</label>
                     <Select
-                      value={ministryOptions.find(option => option.value === formData.minister) || null}
-                      onChange={(selectedOption) => setFormData(prev => ({ ...prev, minister: selectedOption?.value || '' }))}
+                      value={ministryOptions.find(option => option.value === formData.ministryId) || null}
+                      onChange={(selectedOption) => setFormData(prev => ({ ...prev, ministryId: selectedOption?.value || '' }))}
                       options={ministryOptions}
                       placeholder="Sélectionner un ministère"
                       isClearable

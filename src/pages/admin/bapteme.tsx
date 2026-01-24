@@ -10,10 +10,11 @@ import {
   ArrowRightIcon,
   TrashIcon,
   ExclamationTriangleIcon,
+  PencilIcon,
 } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 import { useGetUserByTokenQuery } from '../../store/services/authApi';
-import { 
+import {
   useGetBaptismsByChurchQuery,
   useDeleteBaptismMutation,
 } from '../../store/services/baptismApi';
@@ -56,13 +57,13 @@ export default function Bapteme() {
   const [showExportModal, setShowExportModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [baptismToDelete, setBaptismToDelete] = useState<Baptism | null>(null);
-  
+
   // Get current user and church ID
   const { data: userData } = useGetUserByTokenQuery();
   const churchId = userData?.church?.id || '';
 
   // Fetch baptisms data
-  const { data: baptisms = [], isLoading} = useGetBaptismsByChurchQuery(churchId, {
+  const { data: baptisms = [], isLoading } = useGetBaptismsByChurchQuery(churchId, {
     skip: !churchId,
   });
 
@@ -73,15 +74,15 @@ export default function Bapteme() {
   // Filter baptisms based on search query and filter type
   const filteredBaptisms = useMemo(() => {
     return baptisms.filter((baptism: Baptism) => {
-      const matchesSearch = 
+      const matchesSearch =
         baptism.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         baptism.baptismLocation.toLowerCase().includes(searchQuery.toLowerCase()) ||
         baptism.officiantName.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      const matchesFilter = 
+
+      const matchesFilter =
         selectedFilter === 'all' ||
         baptism.status === selectedFilter;
-      
+
       return matchesSearch && matchesFilter;
     });
   }, [baptisms, searchQuery, selectedFilter]);
@@ -128,7 +129,7 @@ export default function Bapteme() {
 
   const confirmDelete = async () => {
     if (!baptismToDelete) return;
-    
+
     try {
       await deleteBaptism(baptismToDelete.id).unwrap();
       toast.success('Baptême supprimé avec succès');
@@ -145,6 +146,12 @@ export default function Bapteme() {
     setBaptismToDelete(null);
   };
 
+  // Handle edit baptism
+  const handleEditClick = (baptism: Baptism, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent row click
+    navigate(`/tableau-de-bord/admin/bapteme/edit/${baptism.id}`);
+  };
+
   // Export functions
   const handleExport = (type: 'xlsx' | 'pdf' | 'docx') => {
     if (type === 'xlsx') {
@@ -159,30 +166,30 @@ export default function Bapteme() {
   const generatePDF = () => {
     const doc = new jsPDF();
     doc.text('Liste des Baptêmes', 105, 15, { align: 'center' });
-    
+
     if (userData?.church?.name) {
       doc.text(`Église: ${userData.church.name}`, 105, 25, { align: 'center' });
     }
-    
+
     doc.text(`Date: ${new Date().toLocaleDateString('fr-FR')}`, 105, 35, { align: 'center' });
     doc.text(`Total: ${filteredBaptisms.length} baptême(s)`, 105, 45, { align: 'center' });
-    
+
     // Table headers
     const headers = ['Nom', 'Date de baptême', 'Lieu', 'Officiant', 'Statut'];
     let y = 60;
-    
+
     doc.setFontSize(10);
     doc.setTextColor(100);
-    
+
     // Draw headers
     headers.forEach((header, i) => {
       const x = 10 + (i * 38);
       doc.text(header, x, y);
     });
-    
+
     y += 10;
     doc.setTextColor(0);
-    
+
     // Draw rows
     filteredBaptisms.forEach((baptism: Baptism) => {
       doc.text(baptism.fullName.substring(0, 18), 10, y);
@@ -191,13 +198,13 @@ export default function Bapteme() {
       doc.text(baptism.officiantName.substring(0, 18), 124, y);
       doc.text(getStatus(baptism), 162, y);
       y += 10;
-      
+
       if (y > 280) {
         doc.addPage();
         y = 20;
       }
     });
-    
+
     doc.save('baptemes.pdf');
     setShowExportModal(false);
   };
@@ -213,7 +220,7 @@ export default function Bapteme() {
         'Statut': getStatus(baptism)
       }))
     );
-    
+
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Baptêmes');
     XLSX.writeFile(workbook, 'baptemes.xlsx');
@@ -232,19 +239,19 @@ export default function Bapteme() {
               heading: HeadingLevel.HEADING_1,
               alignment: AlignmentType.CENTER,
             }),
-            
+
             ...(userData?.church?.name ? [
               new Paragraph({
                 text: `Église: ${userData?.church.name}`,
                 alignment: AlignmentType.CENTER,
               })
             ] : []),
-            
+
             new Paragraph({
               text: `Date: ${new Date().toLocaleDateString('fr-FR')}`,
               alignment: AlignmentType.CENTER,
             }),
-            
+
             new Paragraph({
               text: `Total: ${filteredBaptisms.length} baptême(s)`,
               alignment: AlignmentType.CENTER,
@@ -252,7 +259,7 @@ export default function Bapteme() {
                 after: 400,
               },
             }),
-            
+
             new Table({
               width: {
                 size: 100,
@@ -299,7 +306,7 @@ export default function Bapteme() {
                     }),
                   ],
                 }),
-                
+
                 // Data rows
                 ...filteredBaptisms.map((baptism: Baptism) => (
                   new TableRow({
@@ -437,13 +444,13 @@ export default function Bapteme() {
                       <DocumentTextIcon className="h-12 w-12 text-gray-400 mb-4" />
                       <h3 className="text-lg font-medium text-gray-900 mb-2">Aucun baptême trouvé</h3>
                       <p className="text-gray-500 mb-4">
-                        {searchQuery ? 
+                        {searchQuery ?
                           'Aucun résultat pour cette recherche. Essayez avec d\'autres termes.' :
-                          selectedFilter === 'pending' ? 
+                          selectedFilter === 'pending' ?
                             'Aucun baptême avec le statut "En attente".' :
-                          selectedFilter === 'completed' ?
-                            'Aucun baptême avec le statut "Complété".' :
-                            'Ajoutez des baptêmes pour les voir apparaître ici.'}
+                            selectedFilter === 'completed' ?
+                              'Aucun baptême avec le statut "Complété".' :
+                              'Ajoutez des baptêmes pour les voir apparaître ici.'}
                       </p>
                       <button
                         onClick={() => navigate('/tableau-de-bord/admin/bapteme/creation')}
@@ -457,10 +464,10 @@ export default function Bapteme() {
                 </tr>
               ) : (
                 currentBaptisms.map((baptism: Baptism) => (
-                  <tr 
-                    key={baptism.id} 
+                  <tr
+                    key={baptism.id}
                     className="hover:bg-gray-50 cursor-pointer transition-colors"
-                    // onClick={() => handleRowClick(baptism)}
+                  // onClick={() => handleRowClick(baptism)}
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
@@ -498,13 +505,22 @@ export default function Bapteme() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button
-                        onClick={(e) => handleDeleteClick(baptism, e)}
-                        className="text-red-600 hover:text-red-900 p-2 rounded-full hover:bg-red-50 transition-colors"
-                        title="Supprimer"
-                      >
-                        <TrashIcon className="h-5 w-5" />
-                      </button>
+                      <div className="flex items-center justify-end space-x-2">
+                        <button
+                          onClick={(e) => handleEditClick(baptism, e)}
+                          className="text-blue-600 hover:text-blue-900 p-2 rounded-full hover:bg-blue-50 transition-colors"
+                          title="Modifier"
+                        >
+                          <PencilIcon className="h-5 w-5" />
+                        </button>
+                        <button
+                          onClick={(e) => handleDeleteClick(baptism, e)}
+                          className="text-red-600 hover:text-red-900 p-2 rounded-full hover:bg-red-50 transition-colors"
+                          title="Supprimer"
+                        >
+                          <TrashIcon className="h-5 w-5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -537,7 +553,7 @@ export default function Bapteme() {
                     <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
                 </button>
-                
+
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                   <button
                     key={page}
@@ -547,7 +563,7 @@ export default function Bapteme() {
                     {page}
                   </button>
                 ))}
-                
+
                 <button
                   onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
                   disabled={currentPage === totalPages || totalPages === 0}
@@ -626,7 +642,7 @@ export default function Bapteme() {
                   </div>
                   <ArrowRightIcon className="h-5 w-5 text-gray-400" />
                 </button>
-                
+
                 <button
                   onClick={() => handleExport('pdf')}
                   className="w-full flex items-center justify-between p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
@@ -642,7 +658,7 @@ export default function Bapteme() {
                   </div>
                   <ArrowRightIcon className="h-5 w-5 text-gray-400" />
                 </button>
-                
+
                 <button
                   onClick={() => handleExport('docx')}
                   className="w-full flex items-center justify-between p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"

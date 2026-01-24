@@ -8,10 +8,13 @@ import {
   UserIcon,
   XMarkIcon,
   PencilIcon,
+  KeyIcon,
+  EyeIcon,
+  EyeSlashIcon,
 } from '@heroicons/react/24/outline';
 
 // Import API hooks (adjust based on your actual API structure)
-import {  useGetUsersQuery, useUpdateUserMutation, useDeleteUserMutation } from '../../store/services/authApi';
+import { useGetUsersQuery, useUpdateUserMutation, useDeleteUserMutation, useAdminChangePasswordMutation } from '../../store/services/authApi';
 
 // Import custom components
 import ChangeRoleModal from '../../components/ChangeRoleModal';
@@ -62,7 +65,7 @@ interface FilterModalProps {
 const FilterModal: React.FC<FilterModalProps> = ({ isOpen, onClose, filters, onApplyFilters, onClear }) => {
   const [localFilters, setLocalFilters] = useState<FilterState>(filters);
   const [activeSection, setActiveSection] = useState<string>('searchType');
-  
+
   useEffect(() => {
     if (isOpen) {
       setLocalFilters(filters);
@@ -91,11 +94,10 @@ const FilterModal: React.FC<FilterModalProps> = ({ isOpen, onClose, filters, onA
               <button
                 key={section.key}
                 onClick={() => setActiveSection(section.key)}
-                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                  activeSection === section.key
-                    ? 'bg-white text-teal-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${activeSection === section.key
+                  ? 'bg-white text-teal-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+                  }`}
               >
                 {section.label}
               </button>
@@ -266,6 +268,183 @@ const FilterModal: React.FC<FilterModalProps> = ({ isOpen, onClose, filters, onA
   );
 };
 
+// Change Password Modal Component
+interface ChangePasswordModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  member: Member | null;
+  onSubmit: (newPassword: string) => Promise<void>;
+}
+
+function ChangePasswordModal({ isOpen, onClose, member, onSubmit }: ChangePasswordModalProps) {
+  const [newPassword, setNewPassword] = React.useState('');
+  const [confirmPassword, setConfirmPassword] = React.useState('');
+  const [showPassword, setShowPassword] = React.useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [error, setError] = React.useState('');
+
+  React.useEffect(() => {
+    if (!isOpen) {
+      // Reset form when modal closes
+      setNewPassword('');
+      setConfirmPassword('');
+      setShowPassword(false);
+      setShowConfirmPassword(false);
+      setError('');
+    }
+  }, [isOpen]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    // Validation
+    if (!newPassword || !confirmPassword) {
+      setError('Veuillez remplir tous les champs');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setError('Le mot de passe doit contenir au moins 6 caractères');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setError('Les mots de passe ne correspondent pas');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await onSubmit(newPassword);
+      onClose();
+    } catch (err: any) {
+      setError(err?.data?.message || 'Erreur lors du changement de mot de passe');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!isOpen || !member) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-900">
+            Changer le mot de passe
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-500 transition-colors"
+          >
+            <XMarkIcon className="h-6 w-6" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6">
+          <div className="mb-4">
+            <p className="text-sm text-gray-600 mb-4">
+              Changer le mot de passe pour <span className="font-semibold">{member.firstname} {member.lastname}</span>
+            </p>
+
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nouveau mot de passe
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
+                    placeholder="Entrez le nouveau mot de passe"
+                    disabled={isSubmitting}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? (
+                      <EyeSlashIcon className="h-5 w-5" />
+                    ) : (
+                      <EyeIcon className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Confirmer le mot de passe
+                </label>
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
+                    placeholder="Confirmez le mot de passe"
+                    disabled={isSubmitting}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showConfirmPassword ? (
+                      <EyeSlashIcon className="h-5 w-5" />
+                    ) : (
+                      <EyeIcon className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+            >
+              {isSubmitting ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Changement...
+                </>
+              ) : (
+                'Changer le mot de passe'
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 
 export default function GestionUtilisateurs() {
   const navigate = useNavigate();
@@ -276,6 +455,7 @@ export default function GestionUtilisateurs() {
   const [isChangeRoleModalOpen, setIsChangeRoleModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const [isEditingMember, setIsEditingMember] = useState(false);
   const [selectedMemberForAction, setSelectedMemberForAction] = useState<Member | null>(null);
   const itemsPerPage = 7;
@@ -288,13 +468,16 @@ export default function GestionUtilisateurs() {
   const { data: membersData, isLoading: isMembersLoading, refetch } = useGetUsersQuery();
 
   // Register mutation for adding new members
-  
+
   // Update user mutation for editing members
   const [updateUser] = useUpdateUserMutation();
-  
+
   // Delete user mutation for deleting members
   const [deleteUser] = useDeleteUserMutation();
-  
+
+  // Admin change password mutation
+  const [adminChangePassword] = useAdminChangePasswordMutation();
+
   // Create transfer mutation for transferring members
   // Initialize filters
   const [filters, setFilters] = useState<FilterState>({
@@ -315,25 +498,25 @@ export default function GestionUtilisateurs() {
   // Calculate age from birthDate
   const calculateAge = (birthDate: string | undefined): number => {
     if (!birthDate) return 0;
-    
+
     const today = new Date();
     const birthDateObj = new Date(birthDate);
     let age = today.getFullYear() - birthDateObj.getFullYear();
     const monthDiff = today.getMonth() - birthDateObj.getMonth();
-    
+
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDateObj.getDate())) {
       age--;
     }
-    
+
     return age;
   };
 
   // Get age category from birthDate
   const getAgeCategoryFromBirthDate = (birthDate: string | undefined): AgeCategory => {
     if (!birthDate) return 'adulte';
-    
+
     const age = calculateAge(birthDate);
-    
+
     if (age >= 0 && age <= 12) return 'enfant';
     if (age >= 13 && age <= 17) return 'adolescent';
     if (age >= 18 && age <= 35) return 'jeune';
@@ -343,13 +526,13 @@ export default function GestionUtilisateurs() {
   // Filter members based on all criteria
   const filteredMembers = useMemo(() => {
     if (!membersData) return [];
-    
+
     return membersData.filter((member: Member) => {
       // Basic search by name, email, or phone based on searchType
       let basicSearchMatch = true;
       if (searchQuery) {
         if (filters.searchType === 'name') {
-          basicSearchMatch = 
+          basicSearchMatch =
             (member.firstname?.toLowerCase().includes(searchQuery.toLowerCase()) || false) ||
             (member.lastname?.toLowerCase().includes(searchQuery.toLowerCase()) || false);
         } else if (filters.searchType === 'email') {
@@ -359,37 +542,37 @@ export default function GestionUtilisateurs() {
         }
       }
       if (!basicSearchMatch) return false;
-      
+
       // Age category filter
       if (filters.ageCategory !== 'all') {
         const category = getAgeCategoryFromBirthDate(member.birthDate);
         if (category !== filters.ageCategory) return false;
       }
-      
+
       // Gender filter
       if (filters.gender !== 'all' && member.sex !== filters.gender) return false;
-      
+
       // Civil state filter
       if (filters.civilState !== 'all' && member.etatCivil !== filters.civilState) return false;
-      
+
       // City filter
       if (filters.city && filters.city.trim() !== '') {
         if (!member.city) return false;
         if (!member.city.toLowerCase().includes(filters.city.toLowerCase())) return false;
       }
-      
+
       // Profession filter
       if (filters.profession && filters.profession.trim() !== '') {
         if (!member.profession) return false;
         if (!member.profession.toLowerCase().includes(filters.profession.toLowerCase())) return false;
       }
-      
+
       // Country filter
       if (filters.country && filters.country.trim() !== '') {
         if (!member.country) return false;
         if (!member.country.toLowerCase().includes(filters.country.toLowerCase())) return false;
       }
-      
+
       return true;
     });
   }, [membersData, searchQuery, filters]);
@@ -433,11 +616,11 @@ export default function GestionUtilisateurs() {
         id: memberId,
         role: newRole
       }).unwrap();
-      
+
       // Close modal and reset selected member
       setIsChangeRoleModalOpen(false);
       setSelectedMemberForAction(null);
-      
+
       // Refetch data to update the UI
       refetch();
     } catch (error) {
@@ -455,11 +638,11 @@ export default function GestionUtilisateurs() {
       // Call the delete user API
       await deleteUser(memberId).unwrap();
       console.log(`Successfully deleted member with ID: ${memberId}`);
-      
+
       // Close modal and reset selected member
       setIsDeleteModalOpen(false);
       setSelectedMemberForAction(null);
-      
+
       // Refetch data to update the list
       refetch();
     } catch (error) {
@@ -475,7 +658,7 @@ export default function GestionUtilisateurs() {
 
   const handleEditSubmit = async (formData: any) => {
     if (!selectedMemberForAction) return;
-    
+
     setIsEditingMember(true);
     try {
       // Map frontend field names to backend field names
@@ -484,21 +667,21 @@ export default function GestionUtilisateurs() {
         sex: formData.gender, // Map gender to sex
         membreActif: formData.isActiveMember, // Map isActiveMember to membreActif
       };
-      
+
       // Remove the old field names
       delete mappedFormData.gender;
       delete mappedFormData.isActiveMember;
-      
+
       // If there's a profile image, use FormData to handle the multipart request
       if (formData.profileImage) {
         const formDataObj = new FormData();
-        
+
         // Add the member ID
         formDataObj.append('id', selectedMemberForAction.id);
-        
+
         // Add the image file
         formDataObj.append('profileImage', formData.profileImage);
-        
+
         // Add all other form fields with proper mapping
         Object.keys(mappedFormData).forEach(key => {
           if (key !== 'profileImage') {
@@ -509,7 +692,7 @@ export default function GestionUtilisateurs() {
             }
           }
         });
-        
+
         await updateUser(formDataObj).unwrap();
       } else {
         // No image, use regular JSON request
@@ -519,14 +702,14 @@ export default function GestionUtilisateurs() {
           profileImage: undefined
         };
         delete updateData.profileImage;
-        
+
         await updateUser(updateData).unwrap();
       }
-      
+
       // Close modal and reset selected member
       setIsEditModalOpen(false);
       setSelectedMemberForAction(null);
-      
+
       // Refetch data to show updated information
       refetch();
     } catch (error: any) {
@@ -539,12 +722,41 @@ export default function GestionUtilisateurs() {
     }
   };
 
+  const handleChangePassword = (member: Member) => {
+    setSelectedMemberForAction(member);
+    setIsChangePasswordModalOpen(true);
+  };
+
+  const handlePasswordChangeSubmit = async (newPassword: string) => {
+    if (!selectedMemberForAction) return;
+
+    try {
+      const result = await adminChangePassword({
+        userId: selectedMemberForAction.id,
+        newPassword: newPassword
+      }).unwrap();
+
+      // Show success message
+      alert(result.message || 'Mot de passe modifié avec succès');
+
+      // Close modal and reset
+      setIsChangePasswordModalOpen(false);
+      setSelectedMemberForAction(null);
+
+      // Optionally refetch data
+      refetch();
+    } catch (error: any) {
+      console.error('Error changing password:', error);
+      throw error; // Re-throw to let modal handle the error
+    }
+  };
+
 
   const handleRowClick = (member: Member) => {
     navigate(`/tableau-de-bord/admin/person/${member.id}`);
   };
 
-  const hasActiveFilters = Object.values(filters).some(value => 
+  const hasActiveFilters = Object.values(filters).some(value =>
     (typeof value === 'string' && value !== 'all' && value !== '' && value !== 'name')
   );
 
@@ -583,11 +795,10 @@ export default function GestionUtilisateurs() {
           <div className="flex items-center space-x-3">
             <button
               onClick={() => setFilterVisible(true)}
-              className={`relative flex items-center px-4 py-2 border rounded-lg transition-colors ${
-                hasActiveFilters
-                  ? 'border-teal-600 text-teal-600 bg-teal-50'
-                  : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-              }`}
+              className={`relative flex items-center px-4 py-2 border rounded-lg transition-colors ${hasActiveFilters
+                ? 'border-teal-600 text-teal-600 bg-teal-50'
+                : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
             >
               <FunnelIcon className="h-5 w-5 mr-2" />
               Filtres
@@ -635,13 +846,13 @@ export default function GestionUtilisateurs() {
                       <UserIcon className="h-12 w-12 text-gray-400 mb-4" />
                       <h3 className="text-lg font-medium text-gray-900 mb-2">Aucun membre trouvé</h3>
                       <p className="text-gray-500 mb-4">Ajoutez des membres ou modifiez vos filtres pour voir des résultats</p>
-                   </div>
+                    </div>
                   </td>
                 </tr>
               ) : (
                 currentPageMembers.map((member) => (
-                  <tr 
-                    key={member.id} 
+                  <tr
+                    key={member.id}
                     className="hover:bg-gray-50 cursor-pointer transition-colors"
                     onClick={() => handleRowClick(member)}
                   >
@@ -685,11 +896,10 @@ export default function GestionUtilisateurs() {
                       <div className="text-sm text-gray-500">{member.country}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        member.role === 'Admin' ? 'bg-purple-100 text-purple-800' :
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${member.role === 'Admin' ? 'bg-purple-100 text-purple-800' :
                         member.role === 'Directeur' ? 'bg-blue-100 text-blue-800' :
-                        'bg-green-100 text-green-800'
-                      }`}>
+                          'bg-green-100 text-green-800'
+                        }`}>
                         {member.role || 'Membre'}
                       </span>
                     </td>
@@ -706,7 +916,7 @@ export default function GestionUtilisateurs() {
                           <PencilIcon className="h-5 w-5" />
                           <span className="absolute bottom-full right-0 mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">Modifier</span>
                         </button>
-                        
+
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -717,7 +927,19 @@ export default function GestionUtilisateurs() {
                         >
                           <UserIcon className="h-5 w-5" />
                           <span className="absolute bottom-full right-0 mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">Changer rôle</span>
-                        </button>                       
+                        </button>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleChangePassword(member);
+                          }}
+                          className="p-1.5 text-yellow-500 hover:text-yellow-700 hover:bg-yellow-50 rounded-full transition-colors group relative"
+                          title="Changer mot de passe"
+                        >
+                          <KeyIcon className="h-5 w-5" />
+                          <span className="absolute bottom-full right-0 mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">Mot de passe</span>
+                        </button>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -825,11 +1047,10 @@ export default function GestionUtilisateurs() {
                         key={page}
                         onClick={() => handlePageChange(page)}
                         disabled={totalPages <= 1}
-                        className={`relative inline-flex items-center justify-center w-12 h-10 font-bold rounded-xl shadow-md transform hover:scale-110 transition-all duration-200 ${
-                          page === currentPage
-                            ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg ring-2 ring-indigo-300 ring-offset-2'
-                            : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-indigo-400 hover:text-indigo-600 hover:shadow-lg'
-                        } ${totalPages <= 1 ? 'cursor-not-allowed opacity-40' : ''}`}
+                        className={`relative inline-flex items-center justify-center w-12 h-10 font-bold rounded-xl shadow-md transform hover:scale-110 transition-all duration-200 ${page === currentPage
+                          ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg ring-2 ring-indigo-300 ring-offset-2'
+                          : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-indigo-400 hover:text-indigo-600 hover:shadow-lg'
+                          } ${totalPages <= 1 ? 'cursor-not-allowed opacity-40' : ''}`}
                       >
                         {page}
                       </button>
@@ -926,6 +1147,16 @@ export default function GestionUtilisateurs() {
         member={selectedMemberForAction}
         onSubmit={handleEditSubmit}
         isLoading={isEditingMember}
+      />
+
+      <ChangePasswordModal
+        isOpen={isChangePasswordModalOpen}
+        onClose={() => {
+          setIsChangePasswordModalOpen(false);
+          setSelectedMemberForAction(null);
+        }}
+        member={selectedMemberForAction}
+        onSubmit={handlePasswordChangeSubmit}
       />
     </div>
   );

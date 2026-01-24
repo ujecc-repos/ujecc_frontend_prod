@@ -54,7 +54,7 @@ export default function Mariage() {
   const [showExportModal, setShowExportModal] = useState(false);
   const [marriageToDelete, setMarriageToDelete] = useState<Marriage | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  
+
   // États pour le modal de modification
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [marriageToEdit, setMarriageToEdit] = useState<Marriage | null>(null);
@@ -80,16 +80,16 @@ export default function Mariage() {
   // Filter marriages based on search query and filter type
   const filteredMarriages = useMemo(() => {
     return marriages.filter((marriage: Marriage) => {
-      const matchesSearch = 
+      const matchesSearch =
         marriage.brideFullname.toLowerCase().includes(searchQuery.toLowerCase()) ||
         marriage.groomFullname.toLowerCase().includes(searchQuery.toLowerCase()) ||
         marriage.weddingLocation.toLowerCase().includes(searchQuery.toLowerCase()) ||
         marriage.officiantName.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      const matchesFilter = 
+
+      const matchesFilter =
         selectedFilter === 'all' ||
         marriage.status === selectedFilter;
-      
+
       return matchesSearch && matchesFilter;
     });
   }, [marriages, searchQuery, selectedFilter]);
@@ -122,7 +122,7 @@ export default function Mariage() {
 
   // Determine status based on wedding date
   const getStatus = (marriage: Marriage) => {
-    
+
     const weddingDate = new Date(marriage.weddingDate);
     const today = new Date();
     return weddingDate > today ? 'en attente' : 'complèt';
@@ -155,57 +155,51 @@ export default function Mariage() {
     }
   };
 
-  // Handle edit marriage
+  // Handle edit marriage - navigate to dedicated edit page
   const handleEditMarriage = (marriage: Marriage, e: React.MouseEvent) => {
     e.stopPropagation();
-    setMarriageToEdit(marriage);
-    setEditFormData({
-      weddingDate: marriage.weddingDate ? new Date(marriage.weddingDate) : null,
-      weddingCertificate: null
-    });
-    setIsEditModalOpen(true);
-    setErrorMessage('');
+    navigate(`/tableau-de-bord/admin/mariage/edit/${marriage.id}`);
   };
-  
+
   // Handle date change
   const handleDateChange = (date: Date | null) => {
     setEditFormData(prev => ({ ...prev, weddingDate: date }));
     setShowDatePicker(false);
   };
-  
+
   // Handle file selection
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
-    
+
     if (file) {
       // Vérifier si le fichier est un PDF
       if (file.type !== 'application/pdf') {
         setErrorMessage('Veuillez sélectionner un fichier PDF');
         return;
       }
-      
+
       // Vérifier la taille du fichier (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         setErrorMessage('La taille du fichier ne doit pas dépasser 5MB');
         return;
       }
-      
+
       setEditFormData(prev => ({ ...prev, weddingCertificate: file }));
       setErrorMessage('');
     }
   };
-  
+
   // Handle update marriage
   const handleUpdateMarriage = async () => {
     if (!marriageToEdit || !editFormData.weddingDate) {
       setErrorMessage('Veuillez sélectionner une date de mariage');
       return;
     }
-    
+
     try {
       const formData = new FormData();
       formData.append('weddingDate', moment(editFormData.weddingDate).format('DD-MM-YYYY'));
-      
+
       // Ajouter d'autres champs nécessaires pour la mise à jour
       formData.append('brideFullname', marriageToEdit.brideFullname);
       formData.append('groomFullname', marriageToEdit.groomFullname);
@@ -213,12 +207,12 @@ export default function Mariage() {
       formData.append('officiantName', marriageToEdit.officiantName);
       formData.append('civilStateOfficer', marriageToEdit.civilStateOfficer);
       formData.append('witnessSignature', marriageToEdit.witnessSignature);
-      
+
       // Ajouter le certificat de mariage s'il a été modifié
       if (editFormData.weddingCertificate) {
         formData.append('weddingCertificate', editFormData.weddingCertificate);
       }
-      
+
       await updateMarriage({ id: marriageToEdit.id, marriage: formData }).unwrap();
       setIsEditModalOpen(false);
       setMarriageToEdit(null);
@@ -233,36 +227,36 @@ export default function Mariage() {
   // Export functions
   const generatePDF = () => {
     const doc = new jsPDF();
-    
+
     // Add title and church info
     doc.setFontSize(18);
     doc.text('Liste des Mariages', 105, 15, { align: 'center' });
-    
+
     if (userData?.church?.name) {
       doc.setFontSize(12);
       doc.text(`Église: ${userData?.church.name}`, 105, 25, { align: 'center' });
     }
-    
+
     doc.setFontSize(10);
     doc.text(`Date: ${new Date().toLocaleDateString('fr-FR')}`, 105, 35, { align: 'center' });
     doc.text(`Total: ${filteredMarriages.length} mariage(s)`, 105, 40, { align: 'center' });
-    
+
     // Table headers
     const headers = ['Couple', 'Date', 'Lieu', 'Officiant', 'Statut'];
     let y = 50;
-    
+
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
-    
+
     // Draw header
     headers.forEach((header, i) => {
       const x = 10 + (i * 38);
       doc.text(header, x, y);
     });
-    
+
     doc.setFont('helvetica', 'normal');
     y += 10;
-    
+
     // Add data rows
     filteredMarriages.forEach((marriage) => {
       const couple = `${marriage.brideFullname} & ${marriage.groomFullname}`;
@@ -270,27 +264,27 @@ export default function Mariage() {
       const location = marriage.weddingLocation;
       const officiant = marriage.officiantName;
       const status = getStatus(marriage);
-      
+
       // Truncate long text
       const truncate = (text: string, maxLength: number) => {
         return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
       };
-      
+
       doc.text(truncate(couple, 30), 10, y);
       doc.text(truncate(date, 20), 48, y);
       doc.text(truncate(location, 20), 86, y);
       doc.text(truncate(officiant, 20), 124, y);
       doc.text(status, 162, y);
-      
+
       y += 10;
-      
+
       // Add new page if needed
       if (y > 280) {
         doc.addPage();
         y = 20;
       }
     });
-    
+
     doc.save('mariages.pdf');
     setShowExportModal(false);
   };
@@ -306,7 +300,7 @@ export default function Mariage() {
         'Statut': getStatus(marriage)
       }))
     );
-    
+
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Mariages');
     XLSX.writeFile(workbook, 'mariages.xlsx');
@@ -325,18 +319,18 @@ export default function Mariage() {
               heading: HeadingLevel.HEADING_1,
               alignment: AlignmentType.CENTER,
             }),
-            
-            userData?.church?.name ? 
+
+            userData?.church?.name ?
               new Paragraph({
                 text: `Église: ${userData?.church.name}`,
                 alignment: AlignmentType.CENTER,
               }) : new Paragraph({}),
-            
+
             new Paragraph({
               text: `Date: ${new Date().toLocaleDateString('fr-FR')}`,
               alignment: AlignmentType.CENTER,
             }),
-            
+
             new Paragraph({
               text: `Total: ${filteredMarriages.length} mariage(s)`,
               alignment: AlignmentType.CENTER,
@@ -344,7 +338,7 @@ export default function Mariage() {
                 after: 400,
               },
             }),
-            
+
             new Table({
               width: {
                 size: 100,
@@ -391,7 +385,7 @@ export default function Mariage() {
                     }),
                   ],
                 }),
-                
+
                 // Data rows
                 ...filteredMarriages.map(
                   (marriage) =>
@@ -455,8 +449,8 @@ export default function Mariage() {
     return (
       <div className="flex flex-col items-center justify-center h-64">
         <div className="text-red-500 mb-4">Une erreur est survenue lors du chargement des mariages.</div>
-        <button 
-          onClick={() => refetch()} 
+        <button
+          onClick={() => refetch()}
           className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
         >
           Réessayer
@@ -568,8 +562,8 @@ export default function Mariage() {
                 </tr>
               ) : (
                 currentMarriages.map((marriage: Marriage) => (
-                  <tr 
-                    key={marriage.id} 
+                  <tr
+                    key={marriage.id}
                     className="hover:bg-gray-50 cursor-pointer transition-colors"
                     onClick={() => handleRowClick(marriage)}
                   >
@@ -615,7 +609,7 @@ export default function Mariage() {
                           <PencilIcon className="h-5 w-5" />
                           <span className="absolute bottom-full right-0 mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">Modifier</span>
                         </button>
-                        
+
                         <button
                           onClick={(e) => handleDeleteMarriage(marriage, e)}
                           className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full transition-colors group relative"
@@ -720,11 +714,10 @@ export default function Mariage() {
                         key={page}
                         onClick={() => handlePageChange(page)}
                         disabled={totalPages <= 1}
-                        className={`relative inline-flex items-center justify-center w-12 h-10 font-bold rounded-xl shadow-md transform hover:scale-110 transition-all duration-200 ${
-                          page === currentPage
+                        className={`relative inline-flex items-center justify-center w-12 h-10 font-bold rounded-xl shadow-md transform hover:scale-110 transition-all duration-200 ${page === currentPage
                             ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg ring-2 ring-indigo-300 ring-offset-2'
                             : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-indigo-400 hover:text-indigo-600 hover:shadow-lg'
-                        } ${totalPages <= 1 ? 'cursor-not-allowed opacity-40' : ''}`}
+                          } ${totalPages <= 1 ? 'cursor-not-allowed opacity-40' : ''}`}
                       >
                         {page}
                       </button>
@@ -805,7 +798,7 @@ export default function Mariage() {
                 </div>
                 <ArrowRightIcon className="h-5 w-5 text-gray-400" />
               </button>
-              
+
               <button
                 onClick={() => handleExport('pdf')}
                 className="w-full flex items-center justify-between p-4 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
@@ -823,7 +816,7 @@ export default function Mariage() {
                 </div>
                 <ArrowRightIcon className="h-5 w-5 text-gray-400" />
               </button>
-              
+
               <button
                 onClick={() => handleExport('docx')}
                 className="w-full flex items-center justify-between p-4 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
@@ -895,7 +888,7 @@ export default function Mariage() {
                   <XMarkIcon className="h-6 w-6" />
                 </button>
               </div>
-              
+
               {/* Couple Names */}
               <div className="flex items-center justify-center mb-6">
                 <div className="flex items-center space-x-2 bg-teal-50 px-4 py-2 rounded-full">
@@ -904,14 +897,14 @@ export default function Mariage() {
                   <span className="font-medium text-teal-700">{marriageToEdit.groomFullname}</span>
                 </div>
               </div>
-              
+
               {/* Error Message */}
               {errorMessage && (
                 <div className="mb-4 p-2 bg-red-50 text-red-600 text-sm rounded">
                   {errorMessage}
                 </div>
               )}
-              
+
               {/* Wedding Date Field */}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Date du Mariage</label>
@@ -923,12 +916,12 @@ export default function Mariage() {
                   >
                     <div className="flex items-center">
                       <CalendarIcon className="mr-2 h-5 w-5 text-gray-400" />
-                      {editFormData.weddingDate 
+                      {editFormData.weddingDate
                         ? format(editFormData.weddingDate, 'dd MMMM yyyy', { locale: fr })
                         : 'Sélectionner une date'}
                     </div>
                   </button>
-                  
+
                   {showDatePicker && (
                     <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-300">
                       <div className="p-2">
@@ -954,7 +947,7 @@ export default function Mariage() {
                   )}
                 </div>
               </div>
-              
+
               {/* Wedding Certificate Field */}
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Certificat de Mariage</label>
@@ -962,7 +955,7 @@ export default function Mariage() {
                   <label className="w-full flex items-center justify-between px-4 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">
                     <div className="flex items-center">
                       <DocumentIcon className="mr-2 h-5 w-5 text-gray-400" />
-                      {editFormData.weddingCertificate 
+                      {editFormData.weddingCertificate
                         ? editFormData.weddingCertificate.name
                         : 'Sélectionner un fichier PDF'}
                     </div>
@@ -976,7 +969,7 @@ export default function Mariage() {
                 </div>
                 <p className="mt-1 text-xs text-gray-500">Format accepté: PDF (max 5MB)</p>
               </div>
-              
+
               {/* Action Buttons */}
               <div className="flex justify-end space-x-3">
                 <button
