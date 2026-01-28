@@ -41,6 +41,7 @@ export interface User {
   personToContact?: string;
   country?: string;
   minister: string;
+  ministryId?: string;
   birthCountry?: string;
   birthCity?: string;
   birthDate?: string;

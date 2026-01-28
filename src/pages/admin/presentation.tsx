@@ -11,7 +11,8 @@ import {
   ExclamationCircleIcon,
   InformationCircleIcon,
   TrashIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
+  PencilIcon
 } from '@heroicons/react/24/outline';
 import { Dialog } from '@headlessui/react';
 import { toast } from 'react-toastify';
@@ -44,17 +45,17 @@ export default function Presentation() {
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [presentationToDelete, setPresentationToDelete] = useState<Presentation | null>(null);
-  
+
   // Get user token to get church ID
   const { data: userToken } = useGetUserByTokenQuery();
   const churchId = userToken?.church?.id || '';
-  
+
   // Fetch presentations by church ID
-  const { 
-    data: presentations, 
-    isLoading, 
+  const {
+    data: presentations,
+    isLoading,
     isError,
-    refetch 
+    refetch
   } = useGetPresentationsByChurchQuery(churchId);
 
   // Delete mutation
@@ -79,11 +80,11 @@ export default function Presentation() {
     const birth = new Date(birthDate);
     let age = today.getFullYear() - birth.getFullYear();
     const monthDiff = today.getMonth() - birth.getMonth();
-    
+
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
       age--;
     }
-    
+
     return age;
   };
 
@@ -98,14 +99,14 @@ export default function Presentation() {
   const filteredPresentations = presentations ? presentations.filter(presentation => {
     // Determine status using the getStatus function
     const status = getStatus(presentation);
-    
+
     if (selectedFilter !== 'all' && status !== selectedFilter) return false;
     if (searchQuery) {
       const searchLower = searchQuery.toLowerCase();
       const parentNames = `${presentation.fatherName} ${presentation.motherName}`;
       return presentation.childName.toLowerCase().includes(searchLower) ||
-             parentNames.toLowerCase().includes(searchLower) ||
-             (presentation.officiantName && presentation.officiantName.toLowerCase().includes(searchLower));
+        parentNames.toLowerCase().includes(searchLower) ||
+        (presentation.officiantName && presentation.officiantName.toLowerCase().includes(searchLower));
     }
     return true;
   }) : [];
@@ -126,7 +127,7 @@ export default function Presentation() {
 
   const confirmDelete = async () => {
     if (!presentationToDelete) return;
-    
+
     try {
       await deletePresentation(presentationToDelete.id).unwrap();
       toast.success('Présentation supprimée avec succès');
@@ -143,11 +144,16 @@ export default function Presentation() {
     setPresentationToDelete(null);
   };
 
-  // Handle add new presentation
   const handleAddPresentation = () => {
     // Navigate to presentation creation page
     // This will be implemented later
     navigate("/tableau-de-bord/admin/presentation/creation");
+  };
+
+  // Handle edit presentation
+  const handleEditClick = (presentation: Presentation, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent row click
+    navigate(`/tableau-de-bord/admin/presentation/edit/${presentation.id}`);
   };
 
   return (
@@ -191,11 +197,10 @@ export default function Presentation() {
             {filterButtons.map((button) => (
               <button
                 key={button.value}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                  selectedFilter === button.value
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${selectedFilter === button.value
                     ? 'bg-teal-600 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+                  }`}
                 onClick={() => setSelectedFilter(button.value)}
               >
                 {button.label}
@@ -229,12 +234,12 @@ export default function Presentation() {
           <div className="flex flex-col items-center justify-center py-12">
             <InformationCircleIcon className="h-12 w-12 text-gray-400 mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              {searchQuery || selectedFilter !== 'all' 
+              {searchQuery || selectedFilter !== 'all'
                 ? "Aucune présentation ne correspond à votre recherche"
                 : "Aucune présentation n'a été enregistrée"}
             </h3>
             <p className="text-gray-500 mb-4">
-              {searchQuery || selectedFilter !== 'all' 
+              {searchQuery || selectedFilter !== 'all'
                 ? "Essayez de modifier vos critères de recherche"
                 : "Ajoutez votre première présentation au temple"}
             </p>
@@ -254,29 +259,29 @@ export default function Presentation() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Enfant
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Parents
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Dates
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Officiant
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Statut
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
+                    Enfant
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Parents
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Dates
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Officiant
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Statut
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredPresentations.map((presentation) => (
-                  <tr 
-                    key={presentation.id} 
+                  <tr
+                    key={presentation.id}
                     className="hover:bg-gray-50 cursor-pointer transition-colors"
                     onClick={() => handleRowClick(presentation)}
                   >
@@ -316,11 +321,10 @@ export default function Presentation() {
                       <div className="text-sm text-gray-500">{presentation.placeOfBirth}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        getStatus(presentation) === 'completed' 
-                          ? 'bg-green-100 text-green-800' 
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatus(presentation) === 'completed'
+                          ? 'bg-green-100 text-green-800'
                           : 'bg-yellow-100 text-yellow-800'
-                      }`}>
+                        }`}>
                         {getStatus(presentation) === 'completed' ? (
                           <>
                             <CheckCircleIcon className="h-4 w-4 mr-1" />
@@ -335,13 +339,22 @@ export default function Presentation() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button
-                        onClick={(e) => handleDeleteClick(presentation, e)}
-                        className="text-red-600 hover:text-red-900 transition-colors p-2 rounded-full hover:bg-red-50"
-                        title="Supprimer la présentation"
-                      >
-                        <TrashIcon className="h-5 w-5" />
-                      </button>
+                      <div className="flex items-center justify-end space-x-2">
+                        <button
+                          onClick={(e) => handleEditClick(presentation, e)}
+                          className="text-blue-600 hover:text-blue-900 transition-colors p-2 rounded-full hover:bg-blue-50"
+                          title="Modifier la présentation"
+                        >
+                          <PencilIcon className="h-5 w-5" />
+                        </button>
+                        <button
+                          onClick={(e) => handleDeleteClick(presentation, e)}
+                          className="text-red-600 hover:text-red-900 transition-colors p-2 rounded-full hover:bg-red-50"
+                          title="Supprimer la présentation"
+                        >
+                          <TrashIcon className="h-5 w-5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

@@ -28,7 +28,8 @@ interface Member {
   addressLine?: string;
   age?: string;
   spouseFullName?: string;
-  minister?: string;
+  minister?: string; // Legacy field for backward compatibility
+  ministryId?: string;
   birthCountry?: string;
   birthCity?: string;
   baptismDate?: string;
@@ -55,7 +56,7 @@ interface EditMemberFormData {
   baptismLocation: string;
   civilState: string;
   spouseFullName: string;
-  minister: string;
+  ministryId: string;
   country: string;
   birthCountry: string;
   city: string;
@@ -94,7 +95,7 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
     baptismLocation: '',
     civilState: '',
     spouseFullName: '',
-    minister: '',
+    ministryId: '',
     country: '',
     birthCountry: '',
     city: '',
@@ -120,15 +121,15 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
   // Get user data and church ID for fetching ministries
   const { data: userData } = useGetUserByTokenQuery();
   const churchId = userData?.church?.id;
-  
+
   // Fetch ministries for the church
   const { data: ministriesData } = useGetMinistriesByChurchQuery(churchId || '', { skip: !churchId });
-  
+
   // Transform ministries data for react-select
   const ministryOptions = useMemo(() => {
     if (!ministriesData) return [];
     return ministriesData.map((ministry: Ministry) => ({
-      value: ministry.name,
+      value: ministry.id,
       label: ministry.name
     }));
   }, [ministriesData]);
@@ -150,7 +151,7 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
         baptismLocation: member.baptismLocation || '',
         civilState: member.etatCivil || '',
         spouseFullName: member.spouseFullName || '',
-        minister: member.minister || '',
+        ministryId: member.ministryId || member.minister || '', // Use ministryId if available, fallback to minister for backward compatibility
         country: member.country || '',
         birthCountry: member.birthCountry || '',
         city: member.city || '',
@@ -165,7 +166,7 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
         nif: member.nif || '',
         groupeSanguin: member.groupeSanguin || ''
       });
-      
+
       // Set image preview if member has a picture
       if (member.picture) {
         setImagePreview(`${import.meta.env.VITE_API_URL_PHOTO}${member.picture}`);
@@ -189,18 +190,18 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    
+
     if (!formData.firstname.trim()) newErrors.firstname = 'Le nom est obligatoire';
     if (!formData.lastname.trim()) newErrors.lastname = 'Le prénom est obligatoire';
     // if (!formData.email.trim()) newErrors.email = "L'adresse électronique est obligatoire";
     if (!formData.role.trim()) newErrors.role = 'Le rôle est obligatoire';
-    
+
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (formData.email && !emailRegex.test(formData.email)) {
       newErrors.email = 'Format d\'email invalide';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -227,7 +228,7 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
       baptismLocation: '',
       civilState: '',
       spouseFullName: '',
-      minister: '',
+      ministryId: '',
       country: '',
       birthCountry: '',
       city: '',
@@ -295,11 +296,10 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex-1 py-3 px-4 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === tab.key
-                  ? 'border-teal-500 text-teal-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
+              className={`flex-1 py-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.key
+                ? 'border-teal-500 text-teal-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
             >
               {tab.label}
             </button>
@@ -358,9 +358,8 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
                       type="text"
                       value={formData.firstname}
                       onChange={(e) => setFormData(prev => ({ ...prev, firstname: e.target.value }))}
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 ${
-                        errors.firstname ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 ${errors.firstname ? 'border-red-500' : 'border-gray-300'
+                        }`}
                       placeholder="Nom"
                     />
                     {errors.firstname && <p className="mt-1 text-sm text-red-500">{errors.firstname}</p>}
@@ -375,9 +374,8 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
                       type="text"
                       value={formData.lastname}
                       onChange={(e) => setFormData(prev => ({ ...prev, lastname: e.target.value }))}
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 ${
-                        errors.lastname ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 ${errors.lastname ? 'border-red-500' : 'border-gray-300'
+                        }`}
                       placeholder="Prénom"
                     />
                     {errors.lastname && <p className="mt-1 text-sm text-red-500">{errors.lastname}</p>}
@@ -392,9 +390,8 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
                       type="email"
                       value={formData.email}
                       onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 ${
-                        errors.email ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 ${errors.email ? 'border-red-500' : 'border-gray-300'
+                        }`}
                       placeholder="email@exemple.com"
                     />
                     {errors.email && <p className="mt-1 text-sm text-red-500">{errors.email}</p>}
@@ -408,9 +405,8 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
                     <select
                       value={formData.role}
                       onChange={(e) => setFormData(prev => ({ ...prev, role: e.target.value }))}
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 ${
-                        errors.role ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 ${errors.role ? 'border-red-500' : 'border-gray-300'
+                        }`}
                     >
                       <option value="">Sélectionner un rôle</option>
                       <option value="Membre">Membre</option>
@@ -464,20 +460,20 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
                       {showBirthCalendar && (
                         <div className="absolute top-full left-0 mt-1 z-50">
                           <Calendar
-                             onChange={(date) => {
-                               if (date) {
-                                 const selectedDate = Array.isArray(date) ? date[0] : date;
-                                 if (selectedDate) {
-                                   // Format date as YYYY-MM-DD without timezone issues
-                                   const year = selectedDate.getFullYear();
-                                   const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-                                   const day = String(selectedDate.getDate()).padStart(2, '0');
-                                   const dateString = `${year}-${month}-${day}`;
-                                   setFormData(prev => ({ ...prev, birthDate: dateString }));
-                                   setShowBirthCalendar(false);
-                                 }
-                               }
-                             }}
+                            onChange={(date) => {
+                              if (date) {
+                                const selectedDate = Array.isArray(date) ? date[0] : date;
+                                if (selectedDate) {
+                                  // Format date as YYYY-MM-DD without timezone issues
+                                  const year = selectedDate.getFullYear();
+                                  const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+                                  const day = String(selectedDate.getDate()).padStart(2, '0');
+                                  const dateString = `${year}-${month}-${day}`;
+                                  setFormData(prev => ({ ...prev, birthDate: dateString }));
+                                  setShowBirthCalendar(false);
+                                }
+                              }
+                            }}
                             value={formData.birthDate ? new Date(formData.birthDate + 'T00:00:00') : null}
                             className="react-calendar"
                           />
@@ -788,8 +784,8 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Ministère au sein de l'église</label>
                     <Select
-                      value={ministryOptions.find((option: any) => option.value === formData.minister) || null}
-                      onChange={(selectedOption: any) => setFormData(prev => ({ ...prev, minister: selectedOption?.value || '' }))}
+                      value={ministryOptions.find((option: any) => option.value === formData.ministryId) || null}
+                      onChange={(selectedOption: any) => setFormData(prev => ({ ...prev, ministryId: selectedOption?.value || '' }))}
                       options={ministryOptions}
                       placeholder="Sélectionner un ministère"
                       isClearable
