@@ -50,6 +50,7 @@ import TimotheeTithes from "../pages/admin/timothee-tithes";
 import Invitation from "../pages/invite/invite";
 import ChurchMap from "../pages/super-admin/mapping";
 import Recovery from "../pages/super-admin/recovery";
+import MappingForDirector from "../pages/director/mappingForDirector";
 
 
 const router = createBrowserRouter([
@@ -196,6 +197,7 @@ const router = createBrowserRouter([
                     { path: "/tableau-de-bord/admin/serviceandpresence", element: <ServiceAndPresence /> },
                     { path: "/tableau-de-bord/admin/service-details/:serviceId", element: <ServiceDetails /> },
                     { path: "/tableau-de-bord/directeur/eglises", element: <Eglise /> },
+                    { path: "/tableau-de-bord/directeur/map", element: <MappingForDirector /> },
                     { path: "/tableau-de-bord/super-admin/map", element: <ChurchMap /> }
                 ]
             }

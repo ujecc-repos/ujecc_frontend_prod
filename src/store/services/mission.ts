@@ -1,5 +1,5 @@
 import { authApi } from "./authApi";
-import type {User} from "./authApi"
+import type { User } from "./authApi"
 
 interface Pasteur {
   id: string;
@@ -134,7 +134,7 @@ export const missionApi = authApi.injectEndpoints({
       query: () => '/missions',
       providesTags: ['Mission'],
     }),
-    
+
     getPeopleByPresident: builder.query<User[], string>({
       query: (presidentName) => `/missions/people/${presidentName}`,
       providesTags: ['User'],
@@ -148,6 +148,11 @@ export const missionApi = authApi.injectEndpoints({
     getPasteursByPresident: builder.query<Pasteur[], string>({
       query: (presidentName) => `/missions/pasteurs/${presidentName}`,
       providesTags: ['Mission'],
+    }),
+
+    getChurchesByPresident: builder.query<any[], string>({
+      query: (presidentName) => `/missions/churches/${presidentName}`,
+      providesTags: ['Church'],
     }),
 
     getMissionById: builder.query<Mission, string>({
@@ -204,4 +209,5 @@ export const {
   useGetPeopleByPresidentQuery,
   useGetGroupsByPresidentQuery,
   useGetPasteursByPresidentQuery,
+  useGetChurchesByPresidentQuery,
 } = missionApi;

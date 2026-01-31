@@ -25,7 +25,7 @@ import { saveAs } from 'file-saver';
 import Calendar from 'react-calendar';
 import Select from 'react-select';
 import 'react-calendar/dist/Calendar.css';
-import { useGetDepartementCommunesQuery } from '../../store/services/churchApi';
+import { useGetChurchByIdQuery, useGetDepartementCommunesQuery } from '../../store/services/churchApi';
 
 // Import API hooks (adjust based on your actual API structure)
 import { useGetUserByTokenQuery, useGetUsersByChurchQuery, useRegisterMutation, useUpdateUserMutation, useDeleteUserMutation, useBulkInsertUsersMutation, useAdminChangePasswordMutation } from '../../store/services/authApi';
@@ -428,6 +428,11 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
   // Get user data and church ID for fetching ministries
   const { data: userData } = useGetUserByTokenQuery();
   const churchId = userData?.church?.id;
+
+  const { data: churchData } = useGetChurchByIdQuery(churchId ? churchId.toString() : '', {
+    skip: !churchId,
+  });
+
 
   // Fetch ministries for the church
   const { data: ministriesData } = useGetMinistriesByChurchQuery(churchId || '', { skip: !churchId });
@@ -1096,7 +1101,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
 
                   {/* Ministry */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Ministère au sein de l'église</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{churchData?.option} au sein de l'église</label>
                     <Select
                       value={ministryOptions.find(option => option.value === formData.ministryId) || null}
                       onChange={(selectedOption) => setFormData(prev => ({ ...prev, ministryId: selectedOption?.value || '' }))}

@@ -9,6 +9,7 @@ import Select from 'react-select';
 import { useGetUserByTokenQuery } from '../store/services/authApi';
 import { useGetMinistriesByChurchQuery } from '../store/services/ministryApi';
 import type { Ministry } from '../store/services/ministryApi';
+import { useGetChurchByIdQuery, } from '../store/services/churchApi';
 
 interface Member {
   id: string;
@@ -111,6 +112,7 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
     groupeSanguin: ''
   });
 
+
   const [activeTab, setActiveTab] = useState('personal');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -121,6 +123,10 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
   // Get user data and church ID for fetching ministries
   const { data: userData } = useGetUserByTokenQuery();
   const churchId = userData?.church?.id;
+
+  const { data: churchData } = useGetChurchByIdQuery(churchId ? churchId.toString() : '', {
+    skip: !churchId,
+  })
 
   // Fetch ministries for the church
   const { data: ministriesData } = useGetMinistriesByChurchQuery(churchId || '', { skip: !churchId });
@@ -589,13 +595,37 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
 
                   {/* Home Phone */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Téléphone Fixe</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Numéro de la Personne à contacter</label>
                     <input
                       type="number"
                       value={formData.homePhone}
                       onChange={(e) => setFormData(prev => ({ ...prev, homePhone: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      placeholder="Téléphone fixe"
+                      placeholder="Numéro de la personne à contacter"
+                    />
+                  </div>
+
+                  {/* Person to Contact */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Nom de la personne à contacter</label>
+                    <input
+                      type="text"
+                      value={formData.personToContact}
+                      onChange={(e) => setFormData(prev => ({ ...prev, personToContact: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      placeholder="Nom de la personne à contacter en cas d'urgence"
+                    />
+                  </div>
+
+                  {/* Facebook */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Facebook</label>
+                    <input
+                      type="text"
+                      value={formData.facebook}
+                      onChange={(e) => setFormData(prev => ({ ...prev, facebook: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      placeholder="Profil Facebook"
                     />
                   </div>
 
@@ -659,29 +689,7 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
                     />
                   </div>
 
-                  {/* Person to Contact */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Personne à Contacter</label>
-                    <input
-                      type="text"
-                      value={formData.personToContact}
-                      onChange={(e) => setFormData(prev => ({ ...prev, personToContact: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      placeholder="Personne à contacter en cas d'urgence"
-                    />
-                  </div>
 
-                  {/* Facebook */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Facebook</label>
-                    <input
-                      type="text"
-                      value={formData.facebook}
-                      onChange={(e) => setFormData(prev => ({ ...prev, facebook: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      placeholder="Profil Facebook"
-                    />
-                  </div>
                 </div>
               </div>
             )}
@@ -782,7 +790,7 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
 
                   {/* Ministry */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Ministère au sein de l'église</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{churchData?.option} au sein de l'église</label>
                     <Select
                       value={ministryOptions.find((option: any) => option.value === formData.ministryId) || null}
                       onChange={(selectedOption: any) => setFormData(prev => ({ ...prev, ministryId: selectedOption?.value || '' }))}
