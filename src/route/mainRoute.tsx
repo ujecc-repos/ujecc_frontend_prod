@@ -7,6 +7,7 @@ import Groupe from "../pages/admin/groupe";
 import Onegroupe from "../pages/onegroupe";
 import Pasteur from "../pages/admin/pasteur";
 import Ministere from "../pages/admin/ministere";
+import MinistryUsers from "../pages/admin/ministry-users";
 import Evenements from "../pages/admin/evenements";
 import EventDetails from "../pages/admin/event-details";
 import Sanction from "../pages/admin/sanction";
@@ -49,6 +50,7 @@ import TimotheeTithes from "../pages/admin/timothee-tithes";
 import Invitation from "../pages/invite/invite";
 import ChurchMap from "../pages/super-admin/mapping";
 import Recovery from "../pages/super-admin/recovery";
+import MappingForDirector from "../pages/director/mappingForDirector";
 
 
 const router = createBrowserRouter([
@@ -95,6 +97,10 @@ const router = createBrowserRouter([
                     {
                         path: "/tableau-de-bord/admin/ministères",
                         element: <Ministere />
+                    },
+                    {
+                        path: "/tableau-de-bord/admin/ministères/:id/users",
+                        element: <MinistryUsers />
                     },
                     {
                         path: "/tableau-de-bord/admin/evenements",
@@ -191,6 +197,7 @@ const router = createBrowserRouter([
                     { path: "/tableau-de-bord/admin/serviceandpresence", element: <ServiceAndPresence /> },
                     { path: "/tableau-de-bord/admin/service-details/:serviceId", element: <ServiceDetails /> },
                     { path: "/tableau-de-bord/directeur/eglises", element: <Eglise /> },
+                    { path: "/tableau-de-bord/directeur/map", element: <MappingForDirector /> },
                     { path: "/tableau-de-bord/super-admin/map", element: <ChurchMap /> }
                 ]
             }

@@ -207,7 +207,8 @@ const DashboardLayout = ({ userRole }: { userRole: UserRole }) => {
     Directeur: [
       { name: 'Tableau de bord', href: '/tableau-de-bord', icon: TfiStatsUp },
       { name: 'Église', href: "/tableau-de-bord/directeur/eglises", icon: BuildingLibraryIcon },
-      { name: "pasteurs", href: "/tableau-de-bord/pasteurs", icon: UserIcon }
+      { name: "pasteurs", href: "/tableau-de-bord/pasteurs", icon: UserIcon },
+      { name: "Mapping", href: "/tableau-de-bord/directeur/map", icon: MapPinIcon },
     ],
   };
 

@@ -105,6 +105,17 @@ export const ministryApi = authApi.injectEndpoints({
       }),
       invalidatesTags: ['Ministry'],
     }),
+
+    getUsersByMinistry: builder.query<
+      { users: any[]; pagination: { total: number; page: number; limit: number; totalPages: number } },
+      { ministryId: string; page?: number; limit?: number }
+    >({
+      query: ({ ministryId, page = 1, limit = 10 }) => ({
+        url: `/ministries/${ministryId}/users`,
+        params: { page, limit },
+      }),
+      providesTags: ['Ministry'],
+    }),
   }),
 });
 
@@ -116,4 +127,5 @@ export const {
   useDeleteMinistryMutation,
   useGetMinistriesByChurchQuery,
   useAssignUserToMinistryMutation,
+  useGetUsersByMinistryQuery,
 } = ministryApi;
