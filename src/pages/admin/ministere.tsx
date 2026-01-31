@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 // import { Menu, Transition } from '@headlessui/react';
 import {
   PlusIcon,
@@ -38,6 +39,7 @@ interface Church {
 }
 
 export default function Ministere() {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterVisible, setFilterVisible] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState('all');
@@ -146,8 +148,7 @@ export default function Ministere() {
 
   // Handle ministry row click for details view
   const handleRowClick = (ministry: Ministry) => {
-    // navigate(`/admin/ministere/${ministry.id}`);
-    console.log(ministry)
+    navigate(`/tableau-de-bord/admin/ministères/${ministry.id}/users`);
   };
 
   // Handle export functionality

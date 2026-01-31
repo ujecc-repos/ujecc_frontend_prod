@@ -7,6 +7,7 @@ import Groupe from "../pages/admin/groupe";
 import Onegroupe from "../pages/onegroupe";
 import Pasteur from "../pages/admin/pasteur";
 import Ministere from "../pages/admin/ministere";
+import MinistryUsers from "../pages/admin/ministry-users";
 import Evenements from "../pages/admin/evenements";
 import EventDetails from "../pages/admin/event-details";
 import Sanction from "../pages/admin/sanction";
@@ -95,6 +96,10 @@ const router = createBrowserRouter([
                     {
                         path: "/tableau-de-bord/admin/ministères",
                         element: <Ministere />
+                    },
+                    {
+                        path: "/tableau-de-bord/admin/ministères/:id/users",
+                        element: <MinistryUsers />
                     },
                     {
                         path: "/tableau-de-bord/admin/evenements",
