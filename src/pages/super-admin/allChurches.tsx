@@ -24,11 +24,11 @@ import Select from 'react-select';
 import { Country, State, City } from 'country-state-city';
 
 // Import API hooks
-import { 
-  useGetChurchesQuery, 
-  useUpdateChurchMutation, 
+import {
+  useGetChurchesQuery,
+  useUpdateChurchMutation,
   useDeleteChurchMutation,
-  useGetDepartementCommunesQuery 
+  useGetDepartementCommunesQuery
 } from '../../store/services/churchApi';
 import { useGetUserByTokenQuery } from '../../store/services/authApi';
 
@@ -51,6 +51,8 @@ interface Church {
   whatsapp?: string;
   longitude?: string;
   latitude?: string;
+  option?: string;
+  foundationYear?: string;
   users?: any[];
   groups?: any[];
   events?: any[];
@@ -110,7 +112,7 @@ interface DeleteChurchModalProps {
 const FilterModal: React.FC<FilterModalProps> = ({ isOpen, onClose, filters, onApplyFilters, onClear }) => {
   const [localFilters, setLocalFilters] = useState<FilterState>(filters);
   const [activeSection, setActiveSection] = useState<string>('searchType');
-  
+
   useEffect(() => {
     if (isOpen) {
       setLocalFilters(filters);
@@ -138,11 +140,10 @@ const FilterModal: React.FC<FilterModalProps> = ({ isOpen, onClose, filters, onA
               <button
                 key={section.key}
                 onClick={() => setActiveSection(section.key)}
-                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                  activeSection === section.key
-                    ? 'bg-white text-teal-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${activeSection === section.key
+                  ? 'bg-white text-teal-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+                  }`}
               >
                 {section.label}
               </button>
@@ -241,7 +242,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) 
         <div className="p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Exporter les Églises</h3>
           <p className="text-sm text-gray-600 mb-6">Choisissez le format d'exportation pour télécharger la liste des églises.</p>
-          
+
           <div className="grid grid-cols-3 gap-4">
             <button
               onClick={() => {
@@ -254,7 +255,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) 
               <span className="text-sm font-medium text-gray-900">Excel</span>
               <span className="text-xs text-gray-500">.xlsx</span>
             </button>
-            
+
             <button
               onClick={() => {
                 onExport('pdf');
@@ -266,7 +267,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) 
               <span className="text-sm font-medium text-gray-900">PDF</span>
               <span className="text-xs text-gray-500">.pdf</span>
             </button>
-            
+
             <button
               onClick={() => {
                 onExport('docx');
@@ -279,7 +280,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) 
               <span className="text-xs text-gray-500">.docx</span>
             </button>
           </div>
-          
+
           <div className="mt-6 flex justify-end">
             <button
               onClick={onClose}
@@ -296,16 +297,16 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) 
 
 const EditChurchModal: React.FC<EditChurchModalProps> = ({ isOpen, onClose, church, onSubmit, isLoading }) => {
   // Fetch department communes data
-  const {data: Ouest} = useGetDepartementCommunesQuery("Ouest")
-  const {data: Nord} = useGetDepartementCommunesQuery(`Nord`)
-  const {data: NordEst} = useGetDepartementCommunesQuery("Nord-Est")
-  const {data: NordOuest} = useGetDepartementCommunesQuery("Nord-Ouest")
-  const {data: Sude} = useGetDepartementCommunesQuery("Sude")
-  const {data: SudEst} = useGetDepartementCommunesQuery("Sud-Est")
-  const {data: Artibonite} = useGetDepartementCommunesQuery("Artibonite")
-  const {data: Centre} = useGetDepartementCommunesQuery("Centre")
-  const {data: GrandAnse} = useGetDepartementCommunesQuery("Grand'Anse")
-  const {data: Nippes} = useGetDepartementCommunesQuery("Nippes")
+  const { data: Ouest } = useGetDepartementCommunesQuery("Ouest")
+  const { data: Nord } = useGetDepartementCommunesQuery(`Nord`)
+  const { data: NordEst } = useGetDepartementCommunesQuery("Nord-Est")
+  const { data: NordOuest } = useGetDepartementCommunesQuery("Nord-Ouest")
+  const { data: Sude } = useGetDepartementCommunesQuery("Sude")
+  const { data: SudEst } = useGetDepartementCommunesQuery("Sud-Est")
+  const { data: Artibonite } = useGetDepartementCommunesQuery("Artibonite")
+  const { data: Centre } = useGetDepartementCommunesQuery("Centre")
+  const { data: GrandAnse } = useGetDepartementCommunesQuery("Grand'Anse")
+  const { data: Nippes } = useGetDepartementCommunesQuery("Nippes")
 
   // Data structure for Haiti departments
   const data: Record<string, { communes: any }> = {
@@ -350,7 +351,9 @@ const EditChurchModal: React.FC<EditChurchModalProps> = ({ isOpen, onClose, chur
     rue: '',
     telephone: '',
     longitude: '',
-    latitude: ''
+    latitude: '',
+    option: '',
+    foundationYear: ''
   });
 
   // Location selector state
@@ -380,7 +383,7 @@ const EditChurchModal: React.FC<EditChurchModalProps> = ({ isOpen, onClose, chur
       // Find the selected country's isoCode for API call
       const countryIsoCode = selectedCountry.isoCode || Country.getAllCountries().find(country => country.name === selectedCountry.value)?.isoCode;
       if (!countryIsoCode) return [];
-      
+
       return State.getStatesOfCountry(countryIsoCode).map((state) => ({
         value: state.name,
         label: state.name,
@@ -400,10 +403,10 @@ const EditChurchModal: React.FC<EditChurchModalProps> = ({ isOpen, onClose, chur
       // Find the selected country's isoCode and state's isoCode for API call
       const countryIsoCode = selectedCountry.isoCode || Country.getAllCountries().find(country => country.name === selectedCountry.value)?.isoCode;
       if (!countryIsoCode) return [];
-      
+
       const selectedState = State.getStatesOfCountry(countryIsoCode).find(state => state.name === departement.value);
       const stateIsoCode = selectedState?.isoCode || departement.isoCode || departement.value;
-      
+
       return City.getCitiesOfState(countryIsoCode, stateIsoCode).map((city) => ({
         value: city.name,
         label: city.name,
@@ -433,7 +436,9 @@ const EditChurchModal: React.FC<EditChurchModalProps> = ({ isOpen, onClose, chur
         rue: church.fullAddress?.rue || '',
         telephone: church.fullAddress?.telephone || '',
         longitude: church.longitude || '',
-        latitude: church.latitude || ''
+        latitude: church.latitude || '',
+        option: church.option || '',
+        foundationYear: church.foundationYear || ''
       });
 
       // Set location selectors
@@ -465,7 +470,7 @@ const EditChurchModal: React.FC<EditChurchModalProps> = ({ isOpen, onClose, chur
     setDepartement(null);
     setCommune(null);
     setSectionCommunale(null);
-    
+
     // Update form data
     setFormData((prev: any) => ({
       ...prev,
@@ -480,7 +485,7 @@ const EditChurchModal: React.FC<EditChurchModalProps> = ({ isOpen, onClose, chur
     setDepartement(selectedOption);
     setCommune(null);
     setSectionCommunale(null);
-    
+
     // Update form data
     setFormData((prev: any) => ({
       ...prev,
@@ -493,7 +498,7 @@ const EditChurchModal: React.FC<EditChurchModalProps> = ({ isOpen, onClose, chur
   const handleCommuneChange = (selectedOption: SelectOption | null) => {
     setCommune(selectedOption);
     setSectionCommunale(null);
-    
+
     // Update form data
     setFormData((prev: any) => ({
       ...prev,
@@ -504,7 +509,7 @@ const EditChurchModal: React.FC<EditChurchModalProps> = ({ isOpen, onClose, chur
 
   const handleSectionCommunaleChange = (selectedOption: SelectOption | null) => {
     setSectionCommunale(selectedOption);
-    
+
     // Update form data
     setFormData((prev: any) => ({
       ...prev,
@@ -644,6 +649,58 @@ const EditChurchModal: React.FC<EditChurchModalProps> = ({ isOpen, onClose, chur
                 />
               </div>
 
+              {/* Option Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Type d'Église
+                </label>
+                <Select
+                  value={[
+                    { value: 'Zone', label: 'Zone' },
+                    { value: 'Station', label: 'Station' },
+                    { value: 'Cellulle', label: 'Cellulle' },
+                    { value: 'Ministère', label: 'Ministère' },
+                    { value: 'Autres', label: 'Autres' },
+                  ].find(option => option.value === formData.option) || null}
+                  onChange={(selectedOption: any) => setFormData((prev: any) => ({ ...prev, option: selectedOption?.value || '' }))}
+                  options={[
+                    { value: 'Zone', label: 'Zone' },
+                    { value: 'Station', label: 'Station' },
+                    { value: 'Cellulle', label: 'Cellulle' },
+                    { value: 'Ministère', label: 'Ministère' },
+                    { value: 'Autres', label: 'Autres' },
+                  ]}
+                  placeholder="Sélectionnez un type"
+                  className="react-select-container"
+                  classNamePrefix="react-select"
+                  isClearable
+                />
+              </div>
+
+              {/* Foundation Year Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Année de Fondation
+                </label>
+                <Select
+                  value={
+                    formData.foundationYear
+                      ? { value: formData.foundationYear, label: formData.foundationYear }
+                      : null
+                  }
+                  onChange={(selectedOption: any) => setFormData((prev: any) => ({ ...prev, foundationYear: selectedOption?.value || '' }))}
+                  options={Array.from({ length: 227 }, (_, i) => {
+                    const year = (2026 - i).toString();
+                    return { value: year, label: year };
+                  })}
+                  placeholder="Sélectionnez l'année de fondation"
+                  className="react-select-container"
+                  classNamePrefix="react-select"
+                  isClearable
+                  isSearchable
+                />
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="longitude" className="block text-sm font-medium text-gray-700 mb-1">
@@ -711,7 +768,7 @@ const DeleteChurchModal: React.FC<DeleteChurchModalProps> = ({ isOpen, onClose, 
           <p className="text-sm text-gray-600 mb-4">
             Êtes-vous sûr de vouloir supprimer l'église <span className="font-medium">{church.name}</span> ? Cette action est irréversible et supprimera toutes les données associées à cette église.
           </p>
-          
+
           <div className="mt-6 flex justify-end space-x-3">
             <button
               onClick={onClose}
@@ -754,17 +811,17 @@ const ChurchCard: React.FC<{ church: Church; onEdit: (church: Church) => void; o
                 <div className="flex items-center text-sm text-gray-600 mt-1">
                   <MapPinIcon className="h-4 w-4 mr-1" />
                   <span>
-                    {church.fullAddress.country?.toLowerCase() == "haiti" ? 
-                    `${church.fullAddress.country}, ${church.fullAddress.departement}, ${church.fullAddress.commune}` : 
-                    `${church.fullAddress.country}, ${church.fullAddress.departement}, ${church.fullAddress.commune}, ${church.fullAddress.rue}, ${church.fullAddress.telephone}`}
+                    {church.fullAddress.country?.toLowerCase() == "haiti" ?
+                      `${church.fullAddress.country}, ${church.fullAddress.departement}, ${church.fullAddress.commune}` :
+                      `${church.fullAddress.country}, ${church.fullAddress.departement}, ${church.fullAddress.commune}, ${church.fullAddress.rue}, ${church.fullAddress.telephone}`}
                   </span>
                 </div>
               )}
             </div>
           </div>
-          
+
           <Menu as="div" className="relative">
-            <Menu.Button 
+            <Menu.Button
               className="flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
               onClick={(e) => e.stopPropagation()}
             >
@@ -812,7 +869,7 @@ const ChurchCard: React.FC<{ church: Church; onEdit: (church: Church) => void; o
             </Transition>
           </Menu>
         </div>
-        
+
         <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
           {church.phone && (
             <div className="flex items-center text-sm text-gray-600">
@@ -827,7 +884,7 @@ const ChurchCard: React.FC<{ church: Church; onEdit: (church: Church) => void; o
             </div>
           )}
         </div>
-        
+
         <div className="mt-4 flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <div className="bg-teal-50 text-teal-700 px-2 py-1 rounded-md text-xs font-medium">
@@ -837,7 +894,7 @@ const ChurchCard: React.FC<{ church: Church; onEdit: (church: Church) => void; o
               {church.groups?.length || 0} groupe{(church.groups?.length !== 1) ? 's' : ''}
             </div>
           </div>
-          
+
         </div>
       </div>
     </div>
@@ -847,7 +904,7 @@ const ChurchCard: React.FC<{ church: Church; onEdit: (church: Church) => void; o
 export default function AllChurches() {
   // const navigate = useNavigate();
   const { data: currentUser } = useGetUserByTokenQuery();
-  const { data: churches = [], isLoading: isLoadingChurches} = useGetChurchesQuery();
+  const { data: churches = [], isLoading: isLoadingChurches } = useGetChurchesQuery();
   const [updateChurch, { isLoading: isUpdating }] = useUpdateChurchMutation();
   const [deleteChurch, { isLoading: isDeleting }] = useDeleteChurchMutation();
 
@@ -858,14 +915,14 @@ export default function AllChurches() {
     departement: '',
     commune: ''
   });
-  
+
   // State for modals
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedChurch, setSelectedChurch] = useState<Church | null>(null);
-  
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 9;
@@ -873,24 +930,24 @@ export default function AllChurches() {
   // Filter churches based on search query and filters
   const filteredChurches = useMemo(() => {
     if (!churches) return [];
-    
+
     return churches.filter(church => {
       // Apply search query based on selected search type
       const matchesSearch = searchQuery
         ? filters.searchType === 'name' && church.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          filters.searchType === 'address' && church.address?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          filters.searchType === 'email' && church.email?.toLowerCase().includes(searchQuery.toLowerCase())
+        filters.searchType === 'address' && church.address?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        filters.searchType === 'email' && church.email?.toLowerCase().includes(searchQuery.toLowerCase())
         : true;
-      
+
       // Apply location filters
       const matchesDepartement = filters.departement
         ? church.address?.toLowerCase().includes(filters.departement.toLowerCase())
         : true;
-      
+
       const matchesCommune = filters.commune
         ? church.address?.toLowerCase().includes(filters.commune.toLowerCase())
         : true;
-      
+
       return matchesSearch && matchesDepartement && matchesCommune;
     });
   }, [churches, searchQuery, filters]);
@@ -924,7 +981,7 @@ export default function AllChurches() {
 
   const handleConfirmDelete = async () => {
     if (!selectedChurch) return;
-    
+
     try {
       await deleteChurch(selectedChurch.id).unwrap();
       setIsDeleteModalOpen(false);
@@ -962,23 +1019,23 @@ export default function AllChurches() {
   // Export functions
   const exportToPDF = () => {
     const doc = new jsPDF();
-    
+
     // Add title
     doc.setFontSize(18);
     doc.text('LISTE DES ÉGLISES', 105, 20, { align: 'center' });
-    
+
     // Add date
     doc.setFontSize(12);
     doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 30);
-    
+
     // Add user info
     if (currentUser) {
       doc.text(`Généré par: ${currentUser.firstname} ${currentUser.lastname}`, 20, 40);
     }
-    
+
     // Add total count
     doc.text(`Nombre total d'églises: ${filteredChurches.length}`, 20, 50);
-    
+
     // Add table headers
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
@@ -986,16 +1043,16 @@ export default function AllChurches() {
     doc.text('Adresse', 80, 70);
     doc.text('Contact', 140, 70);
     doc.text('Nombre de membres', 170, 70);
-    
+
     // Add table content
     doc.setFont('helvetica', 'normal');
     let y = 80;
-    
+
     filteredChurches.forEach((church) => {
       if (y > 270) {
         doc.addPage();
         y = 20;
-        
+
         // Add headers on new page
         doc.setFont('helvetica', 'bold');
         doc.text('Nom', 20, y);
@@ -1005,15 +1062,15 @@ export default function AllChurches() {
         doc.setFont('helvetica', 'normal');
         y += 10;
       }
-      
+
       doc.text(church.name, 20, y);
       doc.text(church.address || '-', 80, y);
       doc.text(church.phone || church.email || '-', 140, y);
       doc.text(`${church.users?.length || 0}`, 170, y);
-      
+
       y += 10;
     });
-    
+
     doc.save('eglises.pdf');
   };
 
@@ -1029,7 +1086,7 @@ export default function AllChurches() {
       'Nombre de membres': church.users?.length || 0,
       'Nombre de groupes': church.groups?.length || 0
     }));
-    
+
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Églises');
@@ -1245,7 +1302,7 @@ export default function AllChurches() {
                 <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
               </svg>
             </button>
-            
+
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
               <button
                 key={page}
@@ -1253,12 +1310,12 @@ export default function AllChurches() {
                 className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${currentPage === page
                   ? 'z-10 bg-teal-500 border-teal-500 text-teal-600'
                   : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                }`}
+                  }`}
               >
                 {page}
               </button>
             ))}
-            
+
             <button
               onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
               disabled={currentPage === totalPages}
@@ -1281,13 +1338,13 @@ export default function AllChurches() {
         onApplyFilters={handleApplyFilters}
         onClear={handleClearFilters}
       />
-      
+
       <ExportModal
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
         onExport={handleExport}
       />
-      
+
       <EditChurchModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
@@ -1295,7 +1352,7 @@ export default function AllChurches() {
         onSubmit={handleUpdateChurch}
         isLoading={isUpdating}
       />
-      
+
       <DeleteChurchModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
