@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeftIcon,
@@ -9,25 +9,24 @@ import {
   HomeIcon,
   GlobeAltIcon,
   IdentificationIcon,
-  StarIcon,
   QrCodeIcon,
   ArrowDownTrayIcon
 } from '@heroicons/react/24/outline';
 import { QRCodeSVG } from 'qrcode.react';
-import { useGetUserByIdQuery, useMakeTimotheeMutation, useRemoveTimotheeMutation } from '../store/services/authApi';
+import { useGetUserByIdQuery } from '../store/services/authApi';
 import { useGetUserByTokenQuery } from '../store/services/authApi';
 
 const PersonDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [isUpdatingTimothee, setIsUpdatingTimothee] = useState(false);
+  // const [isUpdatingTimothee, setIsUpdatingTimothee] = useState(false);
 
   // Fetch member data by ID
-  const { data: member, isLoading, error, refetch } = useGetUserByIdQuery(id as string, { skip: !id });
+  const { data: member, isLoading, error } = useGetUserByIdQuery(id as string, { skip: !id });
 
   // Timothee mutations
-  const [makeTimothee] = useMakeTimotheeMutation();
-  const [removeTimothee] = useRemoveTimotheeMutation();
+  // const [makeTimothee] = useMakeTimotheeMutation();
+  // const [removeTimothee] = useRemoveTimotheeMutation();
   const { data: userToken } = useGetUserByTokenQuery()
   console.log("user token : ", userToken)
 
@@ -89,30 +88,30 @@ const PersonDetail: React.FC = () => {
     });
   };
 
-  const handleTimotheeToggle = async () => {
-    if (!id || isUpdatingTimothee) return;
+  // const handleTimotheeToggle = async () => {
+  //   if (!id || isUpdatingTimothee) return;
 
-    setIsUpdatingTimothee(true);
+  //   setIsUpdatingTimothee(true);
 
-    try {
-      if (member?.istimothee) {
-        // Remove Timothee status
-        await removeTimothee(id).unwrap();
-      } else {
-        // Make Timothee
-        await makeTimothee(id).unwrap();
-      }
+  //   try {
+  //     if (member?.istimothee) {
+  //       // Remove Timothee status
+  //       await removeTimothee(id).unwrap();
+  //     } else {
+  //       // Make Timothee
+  //       await makeTimothee(id).unwrap();
+  //     }
 
-      // Refetch member data to update UI
-      await refetch();
-    } catch (error) {
-      console.error('Error updating Timothee status:', error);
-      // You could add a toast notification here
-      alert('Erreur lors de la mise à jour du statut Timothée');
-    } finally {
-      setIsUpdatingTimothee(false);
-    }
-  };
+  //     // Refetch member data to update UI
+  //     await refetch();
+  //   } catch (error) {
+  //     console.error('Error updating Timothee status:', error);
+  //     // You could add a toast notification here
+  //     alert('Erreur lors de la mise à jour du statut Timothée');
+  //   } finally {
+  //     setIsUpdatingTimothee(false);
+  //   }
+  // };
 
   if (isLoading) {
     return (
@@ -173,7 +172,7 @@ const PersonDetail: React.FC = () => {
               </span>
 
               {/* Timothee Button */}
-              {userToken?.church?.ttiId && (
+              {/* {userToken?.church?.ttiId && (
                 <button
                   onClick={handleTimotheeToggle}
                   disabled={isUpdatingTimothee}
@@ -192,7 +191,7 @@ const PersonDetail: React.FC = () => {
                     }
                   </span>
                 </button>
-              )}
+              )} */}
             </div>
           </div>
         </div>

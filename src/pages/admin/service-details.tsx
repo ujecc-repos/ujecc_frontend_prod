@@ -18,6 +18,7 @@ import { fr } from 'date-fns/locale';
 
 // Import API hooks
 import { useGetPresencesByServiceQuery } from '../../store/services/presenceApi';
+import { useGetUserByTokenQuery } from '../../store/services/authApi';
 
 // Types
 interface Presence {
@@ -104,6 +105,9 @@ export default function ServiceDetails() {
   // Debounced search to avoid too many API calls
   const [debouncedSearch, setDebouncedSearch] = useState('');
 
+  // Get current user for ministry-based filtering
+  const { data: currentUser } = useGetUserByTokenQuery();
+
   // Fetch presences with server-side pagination and filters
   const { data, isLoading, error } = useGetPresencesByServiceQuery({
     serviceId: serviceId || '',
@@ -111,7 +115,8 @@ export default function ServiceDetails() {
     limit: itemsPerPage,
     search: debouncedSearch,
     status: statusFilter === 'all' ? '' : statusFilter,
-    date: filterDate
+    date: filterDate,
+    userId: currentUser?.id || ''
   });
 
   const presences = data?.data || [];

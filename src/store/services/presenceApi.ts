@@ -34,6 +34,7 @@ interface PresencesQueryParams {
   search?: string;
   status?: string;
   date?: string;
+  userId?: string;
 }
 
 interface PaginatedPresenceResponse {
@@ -63,13 +64,14 @@ export const presenceApi = authApi.injectEndpoints({
     }),
 
     getPresencesByService: builder.query<PaginatedPresenceResponse, PresencesQueryParams>({
-      query: ({ serviceId, page = 1, limit = 10, search = '', status = '', date = '' }) => {
+      query: ({ serviceId, page = 1, limit = 10, search = '', status = '', date = '', userId = '' }) => {
         const params = new URLSearchParams();
         params.append('page', page.toString());
         params.append('limit', limit.toString());
         if (search) params.append('search', search);
         if (status) params.append('status', status);
         if (date) params.append('date', date);
+        if (userId) params.append('userId', userId);
 
         return `/presences/services/${serviceId}/presences?${params.toString()}`;
       },

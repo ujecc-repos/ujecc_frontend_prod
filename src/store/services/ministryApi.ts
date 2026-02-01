@@ -71,30 +71,50 @@ export const ministryApi = authApi.injectEndpoints({
       providesTags: ['Ministry'],
       transformResponse: (response: { data: Ministry[] } | Ministry[] | any) => {
         console.log('Raw API response in transform:', response);
-        
+
         if (!response) {
           console.log('Response is null or undefined');
           return [];
         }
-        
+
         if (Array.isArray(response)) {
           console.log('Response is an array');
           return response;
         }
-        
+
         if (response && typeof response === 'object' && 'data' in response && Array.isArray(response.data)) {
           console.log('Response is an object with data property (array)');
           return response.data;
         }
-        
+
         if (response && typeof response === 'object' && 'data' in response) {
           console.log('Response is an object with data property (not array)');
           return Array.isArray(response.data) ? response.data : [];
         }
-        
+
         console.log('Response format is unknown');
         return [];
       },
+    }),
+
+    assignUserToMinistry: builder.mutation<{ message: string; user: any }, { ministryId: string; userId: string }>({
+      query: ({ ministryId, userId }) => ({
+        url: `/ministries/${ministryId}/assign-user`,
+        method: 'POST',
+        body: { userId },
+      }),
+      invalidatesTags: ['Ministry'],
+    }),
+
+    getUsersByMinistry: builder.query<
+      { users: any[]; pagination: { total: number; page: number; limit: number; totalPages: number } },
+      { ministryId: string; page?: number; limit?: number }
+    >({
+      query: ({ ministryId, page = 1, limit = 10 }) => ({
+        url: `/ministries/${ministryId}/users`,
+        params: { page, limit },
+      }),
+      providesTags: ['Ministry'],
     }),
   }),
 });
@@ -106,4 +126,6 @@ export const {
   useUpdateMinistryMutation,
   useDeleteMinistryMutation,
   useGetMinistriesByChurchQuery,
+  useAssignUserToMinistryMutation,
+  useGetUsersByMinistryQuery,
 } = ministryApi;

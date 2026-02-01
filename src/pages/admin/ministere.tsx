@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 // import { Menu, Transition } from '@headlessui/react';
 import {
   PlusIcon,
@@ -6,17 +7,20 @@ import {
   FunnelIcon,
   PencilIcon,
   TrashIcon,
+  UserPlusIcon,
 } from '@heroicons/react/24/outline';
 import {
   useDeleteMinistryMutation,
   useGetMinistriesByChurchQuery,
   useCreateMinistryMutation,
   useUpdateMinistryMutation,
+  useAssignUserToMinistryMutation,
 } from '../../store/services/ministryApi';
 import type { Ministry } from '../../store/services/ministryApi';
 import { useGetUserByTokenQuery } from '../../store/services/authApi';
 import CreateMinistryModal from '../../components/ministere/CreateMinistryModal';
 import EditMinistryModal from '../../components/ministere/EditMinistryModal';
+import AssignUserModal from '../../components/ministere/AssignUserModal';
 import { useGetChurchByIdQuery } from '../../store/services/churchApi';
 
 interface Church {
@@ -35,6 +39,7 @@ interface Church {
 }
 
 export default function Ministere() {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterVisible, setFilterVisible] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState('all');
@@ -47,6 +52,8 @@ export default function Ministere() {
   const [isCreatingMinistry, setIsCreatingMinistry] = useState(false);
   const [isEditingMinistry, setIsEditingMinistry] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [isAssignUserModalOpen, setIsAssignUserModalOpen] = useState(false);
+  const [isAssigningUser, setIsAssigningUser] = useState(false);
 
   // Filters
   const filters = ['all', 'Récent', 'Ancien'];
@@ -56,8 +63,8 @@ export default function Ministere() {
   const churchId = userData?.church?.id;
 
   const { data: churchData } = useGetChurchByIdQuery(churchId ? churchId.toString() : '', {
-        skip: !userData?.church?.id,
-      }) as { data: Church | undefined, isLoading: boolean };
+    skip: !userData?.church?.id,
+  }) as { data: Church | undefined, isLoading: boolean };
 
   // Fetch ministries data
   const {
@@ -72,6 +79,7 @@ export default function Ministere() {
   const [deleteMinistry] = useDeleteMinistryMutation();
   const [createMinistry] = useCreateMinistryMutation();
   const [updateMinistry] = useUpdateMinistryMutation();
+  const [assignUserToMinistry] = useAssignUserToMinistryMutation();
 
   // Filter ministries based on search query and selected filter
   const filteredMinistries = React.useMemo(() => {
@@ -140,8 +148,7 @@ export default function Ministere() {
 
   // Handle ministry row click for details view
   const handleRowClick = (ministry: Ministry) => {
-    // navigate(`/admin/ministere/${ministry.id}`);
-    console.log(ministry)
+    navigate(`/tableau-de-bord/admin/ministères/${ministry.id}/users`);
   };
 
   // Handle export functionality
@@ -185,6 +192,34 @@ export default function Ministere() {
       console.error('Failed to update ministry:', error);
     } finally {
       setIsEditingMinistry(false);
+    }
+  };
+
+  // Handle assign user to ministry
+  const handleAssignUser = (ministry: Ministry) => {
+    setSelectedMinistryForAction(ministry);
+    setIsAssignUserModalOpen(true);
+  };
+
+  const handleAssignUserSubmit = async (userId: string) => {
+    if (!selectedMinistryForAction?.id) return;
+
+    setIsAssigningUser(true);
+    try {
+      await assignUserToMinistry({
+        ministryId: selectedMinistryForAction.id,
+        userId
+      }).unwrap();
+      setIsAssignUserModalOpen(false);
+      setSelectedMinistryForAction(null);
+      refetch();
+      alert('Utilisateur assigné au ministère avec succès!');
+    } catch (error: any) {
+      console.error('Failed to assign user to ministry:', error);
+      const errorMessage = error?.data?.details || error?.data?.error || 'Une erreur est survenue lors de l\'assignation';
+      alert(`Erreur: ${errorMessage}`);
+    } finally {
+      setIsAssigningUser(false);
     }
   };
 
@@ -318,14 +353,23 @@ export default function Ministere() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500" onClick={() => handleRowClick(ministry)}>
                           {ministry.createdAt
                             ? new Date(ministry.createdAt).toLocaleDateString('fr-FR', {
-                                day: 'numeric',
-                                month: 'long',
-                                year: 'numeric',
-                              })
+                              day: 'numeric',
+                              month: 'long',
+                              year: 'numeric',
+                            })
                             : 'Date inconnue'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <div className="flex items-center justify-end space-x-2">
+                            <button
+                              onClick={() => handleAssignUser(ministry)}
+                              className="p-1.5 text-teal-500 hover:text-teal-700 hover:bg-teal-50 rounded-full transition-colors group relative"
+                              title="Assigner un utilisateur"
+                            >
+                              <UserPlusIcon className="h-5 w-5" />
+                              <span className="absolute bottom-full right-0 mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">Assigner utilisateur</span>
+                            </button>
+
                             <button
                               onClick={() => handleEditMinistry(ministry)}
                               className="p-1.5 text-purple-500 hover:text-purple-700 hover:bg-purple-50 rounded-full transition-colors group relative"
@@ -334,7 +378,7 @@ export default function Ministere() {
                               <PencilIcon className="h-5 w-5" />
                               <span className="absolute bottom-full right-0 mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">Modifier</span>
                             </button>
-                            
+
                             {/* <button
                               onClick={() => handleRowClick(ministry)}
                               className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-full transition-colors group relative"
@@ -343,7 +387,7 @@ export default function Ministere() {
                               <EyeIcon className="h-5 w-5" />
                               <span className="absolute bottom-full right-0 mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">Voir les détails</span>
                             </button> */}
-                            
+
                             <button
                               onClick={() => handleDeleteMinistry(ministry)}
                               className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full transition-colors group relative"
@@ -386,21 +430,20 @@ export default function Ministere() {
                   >
                     Précédent
                   </button>
-                  
+
                   {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                     <button
                       key={page}
                       onClick={() => handlePageChange(page)}
-                      className={`px-3 py-2 text-sm font-medium rounded-md ${
-                        currentPage === page
-                          ? 'bg-teal-600 text-white'
-                          : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'
-                      }`}
+                      className={`px-3 py-2 text-sm font-medium rounded-md ${currentPage === page
+                        ? 'bg-teal-600 text-white'
+                        : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'
+                        }`}
                     >
                       {page}
                     </button>
                   ))}
-                  
+
                   <button
                     onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
                     disabled={currentPage === totalPages}
@@ -502,6 +545,18 @@ export default function Ministere() {
         }}
         onSubmit={handleUpdateMinistry}
         isLoading={isEditingMinistry}
+        ministry={selectedMinistryForAction}
+      />
+
+      {/* Assign User Modal */}
+      <AssignUserModal
+        isOpen={isAssignUserModalOpen}
+        onClose={() => {
+          setIsAssignUserModalOpen(false);
+          setSelectedMinistryForAction(null);
+        }}
+        onSubmit={handleAssignUserSubmit}
+        isLoading={isAssigningUser}
         ministry={selectedMinistryForAction}
       />
     </div>
