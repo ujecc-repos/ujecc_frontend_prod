@@ -45,6 +45,7 @@ import BulkImportModal from '../../components/BulkImportModal';
 
 interface Member {
   id: string;
+  code?: string;
   firstname: string;
   lastname: string;
   email?: string;
@@ -1975,13 +1976,13 @@ export default function Membres() {
 
     // Define all column headers with shortened names to fit
     const headers = [
-      'Prénom', 'Nom', 'Genre', 'Date Naiss.', 'NI/NU', 'Ville',
+      'Code', 'Prénom', 'Nom', 'Genre', 'Date Naiss.', 'NI/NU', 'Ville',
       'Pays', 'État Civil', 'Date Baptême', 'Grp. Sang.', 'Ministère',
       'Baptisé(e)', 'Ville Naiss.', 'Téléphone', 'Email', 'Rôle', 'Profession'
     ];
 
     // Column widths - adjusted to fit landscape mode (297mm - 20mm margins = 277mm total)
-    const colWidths = [16, 16, 13, 18, 13, 15, 15, 16, 18, 15, 16, 14, 16, 18, 24, 14, 20];
+    const colWidths = [12, 16, 16, 13, 18, 13, 15, 15, 16, 18, 15, 16, 14, 16, 18, 24, 14, 20];
     const startX = 10;
     let yPos = 42;
     const lineHeight = 6;
@@ -2036,6 +2037,7 @@ export default function Membres() {
 
       // Prepare row data
       const rowData = [
+        member.code || '',
         member.firstname || '',
         member.lastname || '',
         member.sex || '',
@@ -2084,6 +2086,7 @@ export default function Membres() {
 
     const worksheet = XLSX.utils.json_to_sheet(
       members.map(member => ({
+        'Code': member.code || '',
         'Prénom': member.firstname || '',
         'Nom': member.lastname || '',
         'Genre': member.sex || '',
@@ -2177,6 +2180,7 @@ export default function Membres() {
             rows: [
               new TableRow({
                 children: [
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Code', bold: true, size: 16 })] })] }),
                   new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Prénom', bold: true, size: 16 })] })] }),
                   new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Nom', bold: true, size: 16 })] })] }),
                   new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Genre', bold: true, size: 16 })] })] }),
@@ -2198,6 +2202,7 @@ export default function Membres() {
               }),
               ...members.map(member => new TableRow({
                 children: [
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.code || '', size: 16 })] })] }),
                   new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.firstname || '', size: 16 })] })] }),
                   new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.lastname || '', size: 16 })] })] }),
                   new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.sex || '', size: 16 })] })] }),
