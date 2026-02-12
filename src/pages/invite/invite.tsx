@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   MagnifyingGlassIcon,
   PlusIcon,
@@ -12,7 +13,7 @@ import Select from 'react-select';
 import 'react-calendar/dist/Calendar.css';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import {useGetDepartementCommunesQuery} from '../../store/services/churchApi';
+import { useGetDepartementCommunesQuery } from '../../store/services/churchApi';
 
 // Import API hooks (adjust based on your actual API structure)
 import { useGetUserByTokenQuery, useRegisterMutation } from '../../store/services/authApi';
@@ -106,24 +107,24 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
   // Get user data and church ID for fetching ministries
   const { data: userData } = useGetUserByTokenQuery();
   const churchId = userData?.church?.id;
-  
+
   // Fetch ministries for the church
   const { data: ministriesData } = useGetMinistriesByChurchQuery(churchId || '', { skip: !churchId });
-  
+
   // Fetch department communes data
-  const {data: Ouest} = useGetDepartementCommunesQuery("Ouest")
-  const {data: Nord} = useGetDepartementCommunesQuery(`Nord`)
-  const {data: NordEst} = useGetDepartementCommunesQuery("Nord-Est")
-  const {data: NordOuest} = useGetDepartementCommunesQuery("Nord-Ouest")
-  const {data: Sude} = useGetDepartementCommunesQuery("Sude")
-  const {data: SudEst} = useGetDepartementCommunesQuery("Sud-Est")
-  const {data: Artibonite} = useGetDepartementCommunesQuery("Artibonite")
-  const {data: Centre} = useGetDepartementCommunesQuery("Centre")
-  const {data: GrandAnse} = useGetDepartementCommunesQuery("Grand'Anse")
-  const {data: Nippes} = useGetDepartementCommunesQuery("Nippes")
+  const { data: Ouest } = useGetDepartementCommunesQuery("Ouest")
+  const { data: Nord } = useGetDepartementCommunesQuery(`Nord`)
+  const { data: NordEst } = useGetDepartementCommunesQuery("Nord-Est")
+  const { data: NordOuest } = useGetDepartementCommunesQuery("Nord-Ouest")
+  const { data: Sude } = useGetDepartementCommunesQuery("Sude")
+  const { data: SudEst } = useGetDepartementCommunesQuery("Sud-Est")
+  const { data: Artibonite } = useGetDepartementCommunesQuery("Artibonite")
+  const { data: Centre } = useGetDepartementCommunesQuery("Centre")
+  const { data: GrandAnse } = useGetDepartementCommunesQuery("Grand'Anse")
+  const { data: Nippes } = useGetDepartementCommunesQuery("Nippes")
 
   const villeAndVilleDenaissance = Object.keys(Ouest || {}).concat(Object.keys(Nord || {}), Object.keys(NordEst || {}), Object.keys(NordOuest || {}), Object.keys(Sude || {}), Object.keys(SudEst || {}), Object.keys(Artibonite || {}), Object.keys(Centre || {}), Object.keys(GrandAnse || {}), Object.keys(Nippes || {}))
-  
+
   // Transform ministries data for react-select
   const ministryOptions = useMemo(() => {
     if (!ministriesData) return [];
@@ -147,19 +148,19 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    
+
     if (!formData.firstname.trim()) newErrors.firstname = 'Le nom est obligatoire';
     if (!formData.lastname.trim()) newErrors.lastname = 'Le prénom est obligatoire';
     // if (!formData.email.trim()) newErrors.email = "L'adresse électronique est obligatoire";
     // if (!formData.password.trim()) newErrors.password = 'Le mot de passe est obligatoire';
     // if (!formData.role.trim()) newErrors.role = 'Le rôle est obligatoire';
-    
+
     // Email validation
     // const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     // if (formData.email && !emailRegex.test(formData.email)) {
     //   newErrors.email = 'Format d\'email invalide';
     // }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -170,66 +171,66 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
       onSubmit(formData);
       setTimeout(() => {
         setFormData({
-      firstname: '',
-      lastname: '',
-      email: '',
-      password: '',
-      mobilePhone: '',
-      homePhone: '',
-      role: '',
-      gender: '',
-      birthDate: '',
-      joinDate: '',
-      baptismDate: '',
-      baptismLocation: '',
-      civilState: '',
-      spouseFullName: '',
-      minister: '',
-      country: '',
-      birthCountry: '',
-      city: '',
-      birthCity: '',
-      addressLine: '',
-      profession: '',
-      age: '',
-      personToContact: '',
-      facebook: '',
-      profileImage: null,
-      isActiveMember: true,
-      nif: '',
-      groupeSanguin: ''
-    });
+          firstname: '',
+          lastname: '',
+          email: '',
+          password: '',
+          mobilePhone: '',
+          homePhone: '',
+          role: '',
+          gender: '',
+          birthDate: '',
+          joinDate: '',
+          baptismDate: '',
+          baptismLocation: '',
+          civilState: '',
+          spouseFullName: '',
+          minister: '',
+          country: '',
+          birthCountry: '',
+          city: '',
+          birthCity: '',
+          addressLine: '',
+          profession: '',
+          age: '',
+          personToContact: '',
+          facebook: '',
+          profileImage: null,
+          isActiveMember: true,
+          nif: '',
+          groupeSanguin: ''
+        });
       }, 2000);
       setFormData({
-      firstname: '',
-      lastname: '',
-      email: '',
-      password: '',
-      mobilePhone: '',
-      homePhone: '',
-      role: '',
-      gender: '',
-      birthDate: '',
-      joinDate: '',
-      baptismDate: '',
-      baptismLocation: '',
-      civilState: '',
-      spouseFullName: '',
-      minister: '',
-      country: '',
-      birthCountry: '',
-      city: '',
-      birthCity: '',
-      addressLine: '',
-      profession: '',
-      age: '',
-      personToContact: '',
-      facebook: '',
-      profileImage: null,
-      isActiveMember: true,
-      nif: '',
-      groupeSanguin: ''
-    });
+        firstname: '',
+        lastname: '',
+        email: '',
+        password: '',
+        mobilePhone: '',
+        homePhone: '',
+        role: '',
+        gender: '',
+        birthDate: '',
+        joinDate: '',
+        baptismDate: '',
+        baptismLocation: '',
+        civilState: '',
+        spouseFullName: '',
+        minister: '',
+        country: '',
+        birthCountry: '',
+        city: '',
+        birthCity: '',
+        addressLine: '',
+        profession: '',
+        age: '',
+        personToContact: '',
+        facebook: '',
+        profileImage: null,
+        isActiveMember: true,
+        nif: '',
+        groupeSanguin: ''
+      });
     }
   };
 
@@ -319,11 +320,10 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex-1 py-3 px-4 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === tab.key
-                  ? 'border-teal-500 text-teal-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
+              className={`flex-1 py-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.key
+                ? 'border-teal-500 text-teal-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
             >
               {tab.label}
             </button>
@@ -382,9 +382,8 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                       type="text"
                       value={formData.firstname}
                       onChange={(e) => setFormData(prev => ({ ...prev, firstname: e.target.value }))}
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 ${
-                        errors.firstname ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 ${errors.firstname ? 'border-red-500' : 'border-gray-300'
+                        }`}
                       placeholder="Nom"
                     />
                     {errors.firstname && <p className="mt-1 text-sm text-red-500">{errors.firstname}</p>}
@@ -399,9 +398,8 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                       type="text"
                       value={formData.lastname}
                       onChange={(e) => setFormData(prev => ({ ...prev, lastname: e.target.value }))}
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 ${
-                        errors.lastname ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 ${errors.lastname ? 'border-red-500' : 'border-gray-300'
+                        }`}
                       placeholder="Prénom"
                     />
                     {errors.lastname && <p className="mt-1 text-sm text-red-500">{errors.lastname}</p>}
@@ -496,20 +494,20 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                       {showBirthCalendar && (
                         <div className="absolute top-full left-0 mt-1 z-50">
                           <Calendar
-                             onChange={(date) => {
-                               if (date) {
-                                 const selectedDate = Array.isArray(date) ? date[0] : date;
-                                 if (selectedDate) {
-                                   // Format date as YYYY-MM-DD without timezone issues
-                                   const year = selectedDate.getFullYear();
-                                   const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-                                   const day = String(selectedDate.getDate()).padStart(2, '0');
-                                   const dateString = `${year}-${month}-${day}`;
-                                   setFormData(prev => ({ ...prev, birthDate: dateString }));
-                                   setShowBirthCalendar(false);
-                                 }
-                               }
-                             }}
+                            onChange={(date) => {
+                              if (date) {
+                                const selectedDate = Array.isArray(date) ? date[0] : date;
+                                if (selectedDate) {
+                                  // Format date as YYYY-MM-DD without timezone issues
+                                  const year = selectedDate.getFullYear();
+                                  const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+                                  const day = String(selectedDate.getDate()).padStart(2, '0');
+                                  const dateString = `${year}-${month}-${day}`;
+                                  setFormData(prev => ({ ...prev, birthDate: dateString }));
+                                  setShowBirthCalendar(false);
+                                }
+                              }
+                            }}
                             value={formData.birthDate ? new Date(formData.birthDate + 'T00:00:00') : null}
                             minDate={undefined}
                             maxDate={undefined}
@@ -800,9 +798,8 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                     <select
                       value={formData.role}
                       onChange={(e) => setFormData(prev => ({ ...prev, role: e.target.value }))}
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 ${
-                        errors.role ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 ${errors.role ? 'border-red-500' : 'border-gray-300'
+                        }`}
                     >
                       <option value="">Sélectionner un rôle</option>
                       <option value="Membre">Membre</option>
@@ -976,7 +973,9 @@ export default function Invitation() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
   const [isAddingMember, setIsAddingMember] = useState(false);
-  
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [newMemberCode, setNewMemberCode] = useState<string>('');
+
 
   // Get user data and church ID
   const { data: userData } = useGetUserByTokenQuery();
@@ -996,22 +995,22 @@ export default function Invitation() {
         toast.error('Le nom est obligatoire');
         return;
       }
-      
+
       if (!formData.lastname) {
         toast.error('Le prénom est obligatoire');
         return;
       }
-      
-      
-    
-      
+
+
+
+
       // If there's a profile image, use FormData to handle the multipart request
       if (formData.profileImage) {
         const formDataObj = new FormData();
-        
+
         // Add the image file
         formDataObj.append('profileImage', formData.profileImage);
-        
+
         // Add all other form fields
         Object.keys(formData).forEach(key => {
           if (key !== 'profileImage') {
@@ -1022,14 +1021,18 @@ export default function Invitation() {
             }
           }
         });
-        
+
         // Add church ID
         if (churchId) {
           formDataObj.append('churchId', churchId);
         }
-        
-        await register(formDataObj).unwrap();
-        
+
+        const result = await register(formDataObj).unwrap() as any;
+        // Capture the member code from response
+        if (result?.user) {
+          setNewMemberCode(result.user);
+        }
+
       } else {
         // No image, use regular JSON request
         const userData = {
@@ -1037,14 +1040,18 @@ export default function Invitation() {
           churchId: churchId || '',
           profileImage: undefined // Remove profileImage from the object
         };
-        
-        await register(userData).unwrap();
+
+        const result = await register(userData).unwrap() as any;
+        // Capture the member code from response
+        if (result?.user) {
+          setNewMemberCode(result.user);
+        }
       }
-      
-      // Close modal and show success message
+
+      // Close modal and show success dialog
       setIsAddMemberModalOpen(false);
-      toast.success('Membre ajouté avec succès!');
-      
+      setShowSuccessDialog(true);
+
       // Refetch users to update the list
       // refetch();
     } catch (error: any) {
@@ -1060,6 +1067,112 @@ export default function Invitation() {
   return (
     <div className="">
       <ToastContainer position="top-right" autoClose={5000} />
+
+      {/* Success Dialog */}
+      <AnimatePresence>
+        {showSuccessDialog && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50"
+            onClick={() => setShowSuccessDialog(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.5, opacity: 0, y: -50 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.5, opacity: 0, y: 50 }}
+              transition={{ type: "spring", duration: 0.5 }}
+              className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 relative"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Success Icon */}
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                className="mx-auto w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6"
+              >
+                <svg className="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </motion.div>
+
+              {/* Title */}
+              <motion.h2
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="text-2xl font-bold text-center text-gray-900 mb-2"
+              >
+                Membre Enregistré !
+              </motion.h2>
+
+              {/* Description */}
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="text-center text-gray-600 mb-6"
+              >
+                Le membre a été ajouté avec succès à votre église.
+              </motion.p>
+
+              {/* Member Code Card */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.5 }}
+                className="bg-gradient-to-r from-teal-50 to-cyan-50 border-2 border-teal-200 rounded-xl p-6 mb-6"
+              >
+                <p className="text-sm text-gray-600 text-center mb-2">Code du Membre</p>
+                <motion.p
+                  initial={{ scale: 0.8 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.6, type: "spring" }}
+                  className="text-4xl font-bold text-center text-teal-600 tracking-wider"
+                >
+                  ELC-{newMemberCode}
+                </motion.p>
+                <p className="text-xs text-gray-500 text-center mt-3">
+                  Ce code unique identifie le membre dans le système
+                </p>
+              </motion.div>
+
+              {/* Close Button */}
+              <motion.button
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.7 }}
+                onClick={() => setShowSuccessDialog(false)}
+                className="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 shadow-md"
+              >
+                Fermer
+              </motion.button>
+
+              {/* Decorative Confetti */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: [0, 1, 1, 0] }}
+                transition={{ duration: 2, times: [0, 0.1, 0.9, 1] }}
+                className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden rounded-2xl"
+              >
+                {[...Array(20)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ y: -20, x: Math.random() * 100 + '%', opacity: 1 }}
+                    animate={{ y: '100vh', opacity: 0 }}
+                    transition={{ duration: 2 + Math.random(), delay: Math.random() * 0.5 }}
+                    className="absolute w-2 h-2 bg-gradient-to-br from-teal-400 to-cyan-400 rounded-full"
+                    style={{ left: `${Math.random() * 100}%` }}
+                  />
+                ))}
+              </motion.div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Gestion des Membres</h1>
@@ -1135,16 +1248,16 @@ export default function Invitation() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-             
-                <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center">
-                    <div className="flex flex-col items-center">
-                      <UserIcon className="h-12 w-12 text-gray-400 mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">Vous pouvez seulement ajouter</h3>
-                      <p className="text-gray-500 mb-4">Ajoutez des membres pour aider d'aller plus rapides</p>          
-                    </div>
-                  </td>
-                </tr>
+
+              <tr>
+                <td colSpan={6} className="px-6 py-12 text-center">
+                  <div className="flex flex-col items-center">
+                    <UserIcon className="h-12 w-12 text-gray-400 mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Vous pouvez seulement ajouter</h3>
+                    <p className="text-gray-500 mb-4">Ajoutez des membres pour aider d'aller plus rapides</p>
+                  </div>
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>

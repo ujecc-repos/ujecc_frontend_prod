@@ -11,6 +11,9 @@ interface Member {
   role?: string;
   nif?: string;
   picture?: string;
+  ministry?: {
+    name: string;
+  };
 }
 
 interface BadgeModalProps {
@@ -74,6 +77,9 @@ const BadgeModal: React.FC<BadgeModalProps> = ({
             churchName={churchData?.name}
             churchAddress={`${userData?.church?.address}`}
             churchPhone={`${userData?.church?.phone}`}
+            churchEmail={`${userData?.church?.email || ''}`}
+            churchPicture={`${userData?.church?.picture || ''}`}
+            churchOption={`${userData?.church?.option || ''}`}
             pastorName={`${userData?.church?.mainPasteur}`}
             onBadgeGenerated={handleBadgeGenerated}
           />
