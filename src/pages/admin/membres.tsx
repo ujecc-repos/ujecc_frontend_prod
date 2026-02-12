@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
   MagnifyingGlassIcon,
@@ -57,6 +58,15 @@ interface Member {
   city?: string;
   country?: string;
   addressLine?: string;
+  nif?: string;
+  birthCity?: string;
+  groupeSanguin?: string;
+  minister?: string;
+  isBaptized?: boolean;
+  baptismDate?: string;
+  ministry?: {
+    name: string;
+  };
 }
 
 type AgeCategory = 'enfant' | 'adolescent' | 'jeune' | 'adulte' | 'all';
@@ -1530,6 +1540,8 @@ export default function Membres() {
   const [isBulkImporting, setIsBulkImporting] = useState(false);
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const [selectedMemberForAction, setSelectedMemberForAction] = useState<Member | null>(null);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [newMemberCode, setNewMemberCode] = useState<string>('');
   const itemsPerPage = 7;
 
   // Get user data and church ID
@@ -1936,7 +1948,8 @@ export default function Membres() {
 
   // Export functions
   const generatePDF = async (members: Member[]) => {
-    const doc = new jsPDF();
+    // Use landscape orientation for more columns
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
     const currentDate = new Date();
     const formattedDate = currentDate.toLocaleDateString('fr-FR', {
       year: 'numeric',
@@ -1947,77 +1960,147 @@ export default function Membres() {
     // Set font size and add title
     doc.setFontSize(18);
     doc.setTextColor(44, 62, 80);
-    doc.text('LISTE DES MEMBRES DE L\'ÉGLISE', 105, 20, { align: 'center' });
+    doc.text('LISTE DES MEMBRES DE L\'ÉGLISE', 148, 15, { align: 'center' });
 
     // Add church name
-    doc.setFontSize(14);
+    doc.setFontSize(12);
     doc.setTextColor(127, 140, 141);
-    doc.text(userData?.church?.name || 'Église', 105, 30, { align: 'center' });
+    doc.text(userData?.church?.name || 'Église', 148, 22, { align: 'center' });
 
     // Add info section
-    doc.setFontSize(12);
+    doc.setFontSize(10);
     doc.setTextColor(51, 51, 51);
-    doc.text(`Date du rapport: ${formattedDate}`, 20, 45);
-    doc.text(`Nombre total de membres: ${members.length}`, 20, 52);
+    doc.text(`Date du rapport: ${formattedDate}`, 10, 30);
+    doc.text(`Nombre total de membres: ${members.length}`, 10, 35);
 
-    // Add table headers
-    let yPos = 65;
-    const colWidths = [40, 40, 50, 60];
-    const startX = 20;
+    // Define all column headers with shortened names to fit
+    const headers = [
+      'Prénom', 'Nom', 'Genre', 'Date Naiss.', 'NI/NU', 'Ville',
+      'Pays', 'État Civil', 'Date Baptême', 'Grp. Sang.', 'Ministère',
+      'Baptisé(e)', 'Ville Naiss.', 'Téléphone', 'Email', 'Rôle', 'Profession'
+    ];
+
+    // Column widths - adjusted to fit landscape mode (297mm - 20mm margins = 277mm total)
+    const colWidths = [16, 16, 13, 18, 13, 15, 15, 16, 18, 15, 16, 14, 16, 18, 24, 14, 20];
+    const startX = 10;
+    let yPos = 42;
+    const lineHeight = 6;
+    const pageHeight = 210; // A4 landscape height
+
+    // Helper function to format dates
+    const formatDate = (dateString?: string) => {
+      if (!dateString) return '';
+      try {
+        return new Date(dateString).toLocaleDateString('fr-FR', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        });
+      } catch {
+        return '';
+      }
+    };
 
     // Table header
     doc.setFillColor(248, 249, 250);
     doc.setDrawColor(221, 221, 221);
-    doc.rect(startX, yPos - 5, colWidths.reduce((a, b) => a + b, 0), 10, 'FD');
+    doc.rect(startX, yPos - 4, colWidths.reduce((a, b) => a + b, 0), 8, 'FD');
 
     doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7);
     doc.setTextColor(44, 62, 80);
-    doc.text('Prénom', startX + 5, yPos);
-    doc.text('Nom', startX + colWidths[0] + 5, yPos);
-    doc.text('Email', startX + colWidths[0] + colWidths[1] + 5, yPos);
-    doc.text('Téléphone', startX + colWidths[0] + colWidths[1] + colWidths[2] + 5, yPos);
+
+    let xPos = startX + 1;
+    headers.forEach((header, index) => {
+      doc.text(header, xPos, yPos, { maxWidth: colWidths[index] - 2 });
+      xPos += colWidths[index];
+    });
 
     // Table rows
-    yPos += 10;
+    yPos += 6;
     doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6);
     doc.setTextColor(51, 51, 51);
 
     members.forEach((member, index) => {
-      if (yPos > 270) {
+      if (yPos > pageHeight - 10) {
         doc.addPage();
-        yPos = 20;
+        yPos = 15;
       }
 
       // Alternate row background
       if (index % 2 === 1) {
         doc.setFillColor(248, 249, 250);
-        doc.rect(startX, yPos - 5, colWidths.reduce((a, b) => a + b, 0), 10, 'F');
+        doc.rect(startX, yPos - 4, colWidths.reduce((a, b) => a + b, 0), lineHeight, 'F');
       }
 
-      doc.text(member.firstname || '', startX + 5, yPos);
-      doc.text(member.lastname || '', startX + colWidths[0] + 5, yPos);
-      doc.text(member.email || '', startX + colWidths[0] + colWidths[1] + 5, yPos);
-      doc.text(member.mobilePhone || '', startX + colWidths[0] + colWidths[1] + colWidths[2] + 5, yPos);
+      // Prepare row data
+      const rowData = [
+        member.firstname || '',
+        member.lastname || '',
+        member.sex || '',
+        formatDate(member.birthDate),
+        member.nif || '',
+        member.city || '',
+        member.country || '',
+        member.etatCivil || '',
+        formatDate(member.baptismDate),
+        member.groupeSanguin || '',
+        member.minister || '',
+        member.isBaptized ? 'Oui' : 'Non',
+        member.birthCity || '',
+        member.mobilePhone || '',
+        member.email || '',
+        member.role || '',
+        member.profession || ''
+      ];
 
-      yPos += 10;
+      xPos = startX + 1;
+      rowData.forEach((data, colIndex) => {
+        doc.text(String(data), xPos, yPos, { maxWidth: colWidths[colIndex] - 2 });
+        xPos += colWidths[colIndex];
+      });
+
+      yPos += lineHeight;
     });
 
     doc.save('membres-eglise.pdf');
   };
 
   const generateExcel = (members: Member[]) => {
+    // Helper function to format dates
+    const formatDate = (dateString?: string) => {
+      if (!dateString) return '';
+      try {
+        return new Date(dateString).toLocaleDateString('fr-FR', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        });
+      } catch {
+        return '';
+      }
+    };
+
     const worksheet = XLSX.utils.json_to_sheet(
       members.map(member => ({
         'Prénom': member.firstname || '',
         'Nom': member.lastname || '',
-        'Email': member.email || '',
-        'Téléphone': member.mobilePhone || '',
         'Genre': member.sex || '',
+        'Date de Naissance': formatDate(member.birthDate),
+        'NI/NU': member.nif || '',
         'Ville': member.city || '',
         'Pays': member.country || '',
-        'Profession': member.profession || '',
         'État Civil': member.etatCivil || '',
-        'Rôle': member.role || ''
+        'Date de Baptême': formatDate(member.baptismDate),
+        'Groupe Sanguin': member.groupeSanguin || '',
+        'Ministère': member.minister || '',
+        'Baptisé(e)': member.isBaptized ? 'Oui' : 'Non',
+        'Ville de Naissance': member.birthCity || '',
+        'Téléphone': member.mobilePhone || '',
+        'Email': member.email || '',
+        'Rôle': member.role || '',
+        'Profession': member.profession || ''
       }))
     );
 
@@ -2027,6 +2110,20 @@ export default function Membres() {
   };
 
   const generateWord = async (members: Member[]) => {
+    // Helper function to format dates
+    const formatDate = (dateString?: string) => {
+      if (!dateString) return '';
+      try {
+        return new Date(dateString).toLocaleDateString('fr-FR', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        });
+      } catch {
+        return '';
+      }
+    };
+
     const doc = new Document({
       sections: [{
         properties: {},
@@ -2080,18 +2177,44 @@ export default function Membres() {
             rows: [
               new TableRow({
                 children: [
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Prénom', bold: true })] })] }),
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Nom', bold: true })] })] }),
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Email', bold: true })] })] }),
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Téléphone', bold: true })] })] })
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Prénom', bold: true, size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Nom', bold: true, size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Genre', bold: true, size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Date Naiss.', bold: true, size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'NI/NU', bold: true, size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Ville', bold: true, size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Pays', bold: true, size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'État Civil', bold: true, size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Date Baptême', bold: true, size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Grp. Sang.', bold: true, size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Ministère', bold: true, size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Baptisé(e)', bold: true, size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Ville Naiss.', bold: true, size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Téléphone', bold: true, size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Email', bold: true, size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Rôle', bold: true, size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Profession', bold: true, size: 16 })] })] })
                 ]
               }),
               ...members.map(member => new TableRow({
                 children: [
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.firstname || '' })] })] }),
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.lastname || '' })] })] }),
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.email || '' })] })] }),
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.mobilePhone || '' })] })] })
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.firstname || '', size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.lastname || '', size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.sex || '', size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: formatDate(member.birthDate), size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.nif || '', size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.city || '', size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.country || '', size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.etatCivil || '', size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: formatDate(member.baptismDate), size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.groupeSanguin || '', size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.minister || '', size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.isBaptized ? 'Oui' : 'Non', size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.birthCity || '', size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.mobilePhone || '', size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.email || '', size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.role || '', size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.profession || '', size: 16 })] })] })
                 ]
               }))
             ]
@@ -2166,7 +2289,11 @@ export default function Membres() {
           formDataObj.append('churchId', churchId);
         }
 
-        await register(formDataObj).unwrap();
+        const result = await register(formDataObj).unwrap() as any;
+        // Capture the member code from response
+        if (result?.user) {
+          setNewMemberCode(result.user);
+        }
       } else {
         // No image, use regular JSON request
         const mappedData: any = {
@@ -2182,12 +2309,16 @@ export default function Membres() {
           profileImage: undefined
         };
 
-        await register(userData).unwrap();
+        const result = await register(userData).unwrap() as any;
+        // Capture the member code from response
+        if (result?.user) {
+          setNewMemberCode(result.user);
+        }
       }
 
-      // Close modal and show success message
+      // Close modal and show success dialog
       setIsAddMemberModalOpen(false);
-      // alert('Membre ajouté avec succès!');
+      setShowSuccessDialog(true);
 
       // Refetch users to update the list
       // refetch();
@@ -2215,6 +2346,111 @@ export default function Membres() {
 
   return (
     <div className="">
+      {/* Success Dialog */}
+      <AnimatePresence>
+        {showSuccessDialog && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50"
+            onClick={() => setShowSuccessDialog(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.5, opacity: 0, y: -50 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.5, opacity: 0, y: 50 }}
+              transition={{ type: "spring", duration: 0.5 }}
+              className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 relative"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Success Icon */}
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                className="mx-auto w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6"
+              >
+                <svg className="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </motion.div>
+
+              {/* Title */}
+              <motion.h2
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="text-2xl font-bold text-center text-gray-900 mb-2"
+              >
+                Membre Enregistré !
+              </motion.h2>
+
+              {/* Description */}
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="text-center text-gray-600 mb-6"
+              >
+                Le membre a été ajouté avec succès à votre église.
+              </motion.p>
+
+              {/* Member Code Card */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.5 }}
+                className="bg-gradient-to-r from-teal-50 to-cyan-50 border-2 border-teal-200 rounded-xl p-6 mb-6"
+              >
+                <p className="text-sm text-gray-600 text-center mb-2">Code du Membre</p>
+                <motion.p
+                  initial={{ scale: 0.8 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.6, type: "spring" }}
+                  className="text-4xl font-bold text-center text-teal-600 tracking-wider"
+                >
+                  ELC-{newMemberCode}
+                </motion.p>
+                <p className="text-xs text-gray-500 text-center mt-3">
+                  Ce code unique identifie le membre dans le système
+                </p>
+              </motion.div>
+
+              {/* Close Button */}
+              <motion.button
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.7 }}
+                onClick={() => setShowSuccessDialog(false)}
+                className="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 shadow-md"
+              >
+                Fermer
+              </motion.button>
+
+              {/* Decorative Confetti */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: [0, 1, 1, 0] }}
+                transition={{ duration: 2, times: [0, 0.1, 0.9, 1] }}
+                className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden rounded-2xl"
+              >
+                {[...Array(20)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ y: -20, x: Math.random() * 100 + '%', opacity: 1 }}
+                    animate={{ y: '100vh', opacity: 0 }}
+                    transition={{ duration: 2 + Math.random(), delay: Math.random() * 0.5 }}
+                    className="absolute w-2 h-2 bg-gradient-to-br from-teal-400 to-cyan-400 rounded-full"
+                    style={{ left: `${Math.random() * 100}%` }}
+                  />
+                ))}
+              </motion.div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Gestion des Membres</h1>

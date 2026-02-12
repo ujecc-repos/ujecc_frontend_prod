@@ -9,6 +9,9 @@ interface church {
   address?: string;
   mainPasteur?: string;
   phone?: string;
+  email?: string;
+  picture?: string;
+  option?: string;
   ttiId?: string;
 }
 
@@ -56,6 +59,7 @@ export interface User {
   plainPassword?: string;
   nif?: string;
   groupeSanguin?: string;
+  zone?: string;
   istimothee?: boolean;
   tithes?: any[];
   timothee?: User;

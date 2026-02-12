@@ -15,32 +15,32 @@ interface Member {
   id: string;
   firstname: string;
   lastname: string;
-  email?: string;
-  mobilePhone?: string;
-  homePhone?: string;
-  picture?: string;
-  role?: string;
-  sex?: string;
-  birthDate?: string;
-  etatCivil?: string;
-  profession?: string;
-  city?: string;
-  country?: string;
-  addressLine?: string;
-  age?: string;
-  spouseFullName?: string;
-  minister?: string; // Legacy field for backward compatibility
-  ministryId?: string;
-  birthCountry?: string;
-  birthCity?: string;
-  baptismDate?: string;
-  baptismLocation?: string;
-  joinDate?: string;
-  personToContact?: string;
-  facebook?: string;
-  membreActif?: boolean;
-  nif?: string;
-  groupeSanguin?: string;
+  email?: string | null;
+  mobilePhone?: string | null;
+  homePhone?: string | null;
+  picture?: string | null;
+  role?: string | null;
+  sex?: string | null;
+  birthDate?: string | null;
+  etatCivil?: string | null;
+  profession?: string | null;
+  city?: string | null;
+  country?: string | null;
+  addressLine?: string | null;
+  age?: string | null;
+  spouseFullName?: string | null;
+  minister?: string | null; // Legacy field for backward compatibility
+  ministryId?: string | null;
+  birthCountry?: string | null;
+  birthCity?: string | null;
+  baptismDate?: string | null;
+  baptismLocation?: string | null;
+  joinDate?: string | null;
+  personToContact?: string | null;
+  facebook?: string | null;
+  membreActif?: boolean | null;
+  nif?: string | null;
+  groupeSanguin?: string | null;
 }
 
 interface EditMemberFormData {
