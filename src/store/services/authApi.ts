@@ -97,7 +97,7 @@ export const authApi = createApi({
   keepUnusedDataFor: 3600,
   refetchOnFocus: true,
   baseQuery: fetchBaseQuery({
-    baseUrl: `${import.meta.env.VITE_API_URL}`,
+    baseUrl: import.meta.env.VITE_API_URL || '/api',
     // baseUrl: 'https://ujeccbackendprod-production.up.railway.app/api',
     prepareHeaders: async (headers, { getState }) => {
       console.log(getState)
