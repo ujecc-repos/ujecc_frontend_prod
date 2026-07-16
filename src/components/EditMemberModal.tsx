@@ -2,14 +2,17 @@ import React, { useState, useMemo, useEffect } from 'react';
 import {
   XMarkIcon,
   PhotoIcon,
-  CalendarIcon
+  CalendarIcon,
+  ArrowRightIcon,
 } from '@heroicons/react/24/outline';
 import Calendar from 'react-calendar';
 import Select from 'react-select';
 import { useGetUserByTokenQuery } from '../store/services/authApi';
 import { useGetMinistriesByChurchQuery } from '../store/services/ministryApi';
 import type { Ministry } from '../store/services/ministryApi';
-import { useGetChurchByIdQuery, } from '../store/services/churchApi';
+import { useGetChurchByIdQuery, useGetDepartementCommunesQuery } from '../store/services/churchApi';
+import { useGetGroupsByChurchQuery } from '../store/services/groupApi';
+import { useGetSundayClassesByChurchQuery } from '../store/services/sundayClassApi';
 
 interface Member {
   id: string;
@@ -41,6 +44,9 @@ interface Member {
   membreActif?: boolean | null;
   nif?: string | null;
   groupeSanguin?: string | null;
+  isBaptized?: boolean | null;
+  sundayClass?: string | null;
+  groups?: Array<{ id: string }>;
 }
 
 interface EditMemberFormData {
@@ -71,6 +77,9 @@ interface EditMemberFormData {
   isActiveMember: boolean;
   nif?: string;
   groupeSanguin?: string;
+  isBaptized: boolean;
+  groupId: string;
+  sundayClassId: string;
 }
 
 interface EditMemberModalProps {
@@ -80,6 +89,14 @@ interface EditMemberModalProps {
   onSubmit: (formData: EditMemberFormData) => void;
   isLoading: boolean;
 }
+
+const EDIT_MEMBER_STEPS = [
+  { key: 'personal', label: 'Informations Personnelles' },
+  { key: 'contact', label: 'Contact & Localisation' },
+  { key: 'church', label: 'Informations Église' },
+] as const;
+
+type EditMemberStep = (typeof EDIT_MEMBER_STEPS)[number]['key'];
 
 const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, member, onSubmit, isLoading }) => {
   const [formData, setFormData] = useState<EditMemberFormData>({
@@ -109,11 +126,13 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
     profileImage: null,
     isActiveMember: true,
     nif: '',
-    groupeSanguin: ''
+    groupeSanguin: '',
+    isBaptized: false,
+    groupId: '',
+    sundayClassId: '',
   });
 
-
-  const [activeTab, setActiveTab] = useState('personal');
+  const [activeTab, setActiveTab] = useState<EditMemberStep>('personal');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showJoinCalendar, setShowJoinCalendar] = useState(false);
@@ -130,6 +149,38 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
 
   // Fetch ministries for the church
   const { data: ministriesData } = useGetMinistriesByChurchQuery(churchId || '', { skip: !churchId });
+  const { data: groupsData } = useGetGroupsByChurchQuery(churchId || '', { skip: !churchId });
+  const { data: sundayClassesData } = useGetSundayClassesByChurchQuery({ churchId: churchId || '' }, { skip: !churchId });
+
+  const groupOptions = useMemo(() => (groupsData || []).map(group => ({
+    value: group.id,
+    label: group.name,
+  })), [groupsData]);
+
+  const sundayClassOptions = useMemo(() => (sundayClassesData || []).map(cls => ({
+    value: cls.id,
+    label: cls.nom || 'Classe sans nom',
+  })), [sundayClassesData]);
+
+  const { data: Ouest } = useGetDepartementCommunesQuery('Ouest');
+  const { data: Nord } = useGetDepartementCommunesQuery('Nord');
+  const { data: NordEst } = useGetDepartementCommunesQuery('Nord-Est');
+  const { data: NordOuest } = useGetDepartementCommunesQuery('Nord-Ouest');
+  const { data: Sude } = useGetDepartementCommunesQuery('Sude');
+  const { data: SudEst } = useGetDepartementCommunesQuery('Sud-Est');
+  const { data: Artibonite } = useGetDepartementCommunesQuery('Artibonite');
+  const { data: Centre } = useGetDepartementCommunesQuery('Centre');
+  const { data: GrandAnse } = useGetDepartementCommunesQuery("Grand'Anse");
+  const { data: Nippes } = useGetDepartementCommunesQuery('Nippes');
+
+  const cityOptions = useMemo(() => {
+    const cities = Object.keys(Ouest || {}).concat(
+      Object.keys(Nord || {}), Object.keys(NordEst || {}), Object.keys(NordOuest || {}),
+      Object.keys(Sude || {}), Object.keys(SudEst || {}), Object.keys(Artibonite || {}),
+      Object.keys(Centre || {}), Object.keys(GrandAnse || {}), Object.keys(Nippes || {})
+    );
+    return cities.map(city => ({ value: city, label: city }));
+  }, [Ouest, Nord, NordEst, NordOuest, Sude, SudEst, Artibonite, Centre, GrandAnse, Nippes]);
 
   // Transform ministries data for react-select
   const ministryOptions = useMemo(() => {
@@ -170,8 +221,14 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
         profileImage: null,
         isActiveMember: member.membreActif ?? true,
         nif: member.nif || '',
-        groupeSanguin: member.groupeSanguin || ''
+        groupeSanguin: member.groupeSanguin || '',
+        isBaptized: member.isBaptized ?? Boolean(member.baptismDate),
+        groupId: member.groups?.[0]?.id || '',
+        sundayClassId: member.sundayClass || '',
       });
+
+      setActiveTab('personal');
+      setErrors({});
 
       // Set image preview if member has a picture
       if (member.picture) {
@@ -194,13 +251,12 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
     }
   };
 
-  const validateForm = () => {
+  const validateForm = (includeChurchFields = true) => {
     const newErrors: Record<string, string> = {};
 
     if (!formData.firstname.trim()) newErrors.firstname = 'Le nom est obligatoire';
     if (!formData.lastname.trim()) newErrors.lastname = 'Le prénom est obligatoire';
-    // if (!formData.email.trim()) newErrors.email = "L'adresse électronique est obligatoire";
-    if (!formData.role.trim()) newErrors.role = 'Le rôle est obligatoire';
+    if (includeChurchFields && !formData.role.trim()) newErrors.role = 'Le rôle est obligatoire';
 
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -212,11 +268,36 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const currentStepIndex = EDIT_MEMBER_STEPS.findIndex(step => step.key === activeTab);
+  const isLastStep = currentStepIndex === EDIT_MEMBER_STEPS.length - 1;
+
+  const handleNext = () => {
+    if (activeTab === 'personal' && !validateForm(false)) return;
+    const nextStep = EDIT_MEMBER_STEPS[currentStepIndex + 1];
+    if (nextStep) setActiveTab(nextStep.key);
+  };
+
+  const handlePrevious = () => {
+    const previousStep = EDIT_MEMBER_STEPS[currentStepIndex - 1];
+    if (previousStep) setActiveTab(previousStep.key);
+  };
+
+  const submitMember = () => {
+    if (activeTab !== 'church') return;
     if (validateForm()) {
       onSubmit(formData);
+    } else {
+      setActiveTab('personal');
     }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (activeTab !== 'church') {
+      handleNext();
+      return;
+    }
+    submitMember();
   };
 
   const resetForm = () => {
@@ -247,7 +328,10 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
       profileImage: null,
       isActiveMember: true,
       nif: '',
-      groupeSanguin: ''
+      groupeSanguin: '',
+      isBaptized: false,
+      groupId: '',
+      sundayClassId: '',
     });
     setImagePreview(null);
     setErrors({});
@@ -292,24 +376,40 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
           </button>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex border-b border-gray-200 flex-shrink-0">
-          {[
-            { key: 'personal', label: 'Informations Personnelles' },
-            { key: 'contact', label: 'Contact & Localisation' },
-            { key: 'church', label: 'Informations Église' }
-          ].map((tab) => (
+        {/* Step Navigation */}
+        <div className="flex border-b border-gray-200 flex-shrink-0" aria-label="Étapes de modification du membre">
+          {EDIT_MEMBER_STEPS.map((step, index) => {
+            const isCurrent = activeTab === step.key;
+            const isComplete = index < currentStepIndex;
+            const isFuture = index > currentStepIndex;
+
+            return (
             <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`flex-1 py-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.key
+              key={step.key}
+              type="button"
+              onClick={() => {
+                if (isComplete) setActiveTab(step.key);
+              }}
+              disabled={isFuture}
+              aria-current={isCurrent ? 'step' : undefined}
+              className={`flex flex-1 items-center justify-center gap-2 py-3 px-2 text-xs sm:text-sm font-medium border-b-2 transition-colors ${isCurrent
                 ? 'border-teal-500 text-teal-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                : isComplete
+                  ? 'border-transparent text-teal-600 hover:bg-teal-50'
+                  : 'border-transparent text-gray-400 cursor-not-allowed'
                 }`}
             >
-              {tab.label}
+              <span className={`flex h-6 w-6 flex-none items-center justify-center rounded-full text-xs font-semibold ${isCurrent || isComplete
+                ? 'bg-teal-600 text-white'
+                : 'bg-gray-200 text-gray-500'
+                }`}>
+                {isComplete ? '✓' : index + 1}
+              </span>
+              <span className="hidden sm:inline">{step.label}</span>
+              <span className="sm:hidden">Étape {index + 1}</span>
             </button>
-          ))}
+            );
+          })}
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
@@ -390,7 +490,7 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
                   {/* Email */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Adresse Électronique <span className="text-red-500">*</span>
+                      Adresse Électronique <span className="text-xs font-normal text-gray-400">(facultatif)</span>
                     </label>
                     <input
                       type="email"
@@ -401,23 +501,6 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
                       placeholder="email@exemple.com"
                     />
                     {errors.email && <p className="mt-1 text-sm text-red-500">{errors.email}</p>}
-                  </div>
-
-                  {/* Role */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Rôle <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      value={formData.role}
-                      onChange={(e) => setFormData(prev => ({ ...prev, role: e.target.value }))}
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 ${errors.role ? 'border-red-500' : 'border-gray-300'
-                        }`}
-                    >
-                      <option value="">Sélectionner un rôle</option>
-                      <option value="Membre">Membre</option>
-                    </select>
-                    {errors.role && <p className="mt-1 text-sm text-red-500">{errors.role}</p>}
                   </div>
 
                   {/* Gender */}
@@ -644,48 +727,54 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
                   {/* City */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Ville</label>
-                    <input
-                      type="text"
-                      value={formData.city}
-                      onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      placeholder="Ville"
+                    <Select
+                      value={cityOptions.find(option => option.value === formData.city) || (formData.city ? { value: formData.city, label: formData.city } : null)}
+                      onChange={(option) => setFormData(prev => ({ ...prev, city: option?.value || '' }))}
+                      options={cityOptions}
+                      placeholder="Sélectionner une ville"
+                      isClearable
+                      isSearchable
+                      classNamePrefix="react-select"
                     />
                   </div>
 
                   {/* Country */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Pays</label>
-                    <input
-                      type="text"
-                      value={formData.country}
-                      onChange={(e) => setFormData(prev => ({ ...prev, country: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      placeholder="Pays"
+                    <Select
+                      value={formData.country ? { value: formData.country, label: formData.country } : null}
+                      onChange={(option) => setFormData(prev => ({ ...prev, country: option?.value || '' }))}
+                      options={[{ value: 'Haiti', label: 'Haiti' }]}
+                      placeholder="Sélectionner un pays"
+                      isClearable
+                      classNamePrefix="react-select"
                     />
                   </div>
 
                   {/* Birth City */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Ville de Naissance</label>
-                    <input
-                      type="text"
-                      value={formData.birthCity}
-                      onChange={(e) => setFormData(prev => ({ ...prev, birthCity: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      placeholder="Ville de naissance"
+                    <Select
+                      value={cityOptions.find(option => option.value === formData.birthCity) || (formData.birthCity ? { value: formData.birthCity, label: formData.birthCity } : null)}
+                      onChange={(option) => setFormData(prev => ({ ...prev, birthCity: option?.value || '' }))}
+                      options={cityOptions}
+                      placeholder="Sélectionner une ville de naissance"
+                      isClearable
+                      isSearchable
+                      classNamePrefix="react-select"
                     />
                   </div>
 
                   {/* Birth Country */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Pays de Naissance</label>
-                    <input
-                      type="text"
-                      value={formData.birthCountry}
-                      onChange={(e) => setFormData(prev => ({ ...prev, birthCountry: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      placeholder="Pays de naissance"
+                    <Select
+                      value={formData.birthCountry ? { value: formData.birthCountry, label: formData.birthCountry } : null}
+                      onChange={(option) => setFormData(prev => ({ ...prev, birthCountry: option?.value || '' }))}
+                      options={[{ value: 'Haiti', label: 'Haiti' }]}
+                      placeholder="Sélectionner un pays de naissance"
+                      isClearable
+                      classNamePrefix="react-select"
                     />
                   </div>
 
@@ -698,6 +787,65 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
             {activeTab === 'church' && (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Role */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Rôle <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={formData.role}
+                      onChange={(event) => setFormData(prev => ({ ...prev, role: event.target.value }))}
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 ${errors.role ? 'border-red-500' : 'border-gray-300'}`}
+                    >
+                      <option value="">Sélectionner un rôle</option>
+                      <option value="Membre">Membre</option>
+                      <option value="Admin">Administrateur</option>
+                    </select>
+                    {errors.role && <p className="mt-1 text-sm text-red-500">{errors.role}</p>}
+                  </div>
+
+                  {/* Ministry */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{churchData?.option} au sein de l'église</label>
+                    <Select
+                      value={ministryOptions.find(option => option.value === formData.ministryId) || null}
+                      onChange={(option) => setFormData(prev => ({ ...prev, ministryId: option?.value || '' }))}
+                      options={ministryOptions}
+                      placeholder="Sélectionner un ministère"
+                      isClearable
+                      isSearchable
+                      classNamePrefix="react-select"
+                    />
+                  </div>
+
+                  {/* Group */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Groupe</label>
+                    <Select
+                      value={groupOptions.find(option => option.value === formData.groupId) || null}
+                      onChange={(option) => setFormData(prev => ({ ...prev, groupId: option?.value || '' }))}
+                      options={groupOptions}
+                      placeholder="Sélectionner un groupe"
+                      isClearable
+                      isSearchable
+                      classNamePrefix="react-select"
+                    />
+                  </div>
+
+                  {/* Sunday class */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Classe du dimanche</label>
+                    <Select
+                      value={sundayClassOptions.find(option => option.value === formData.sundayClassId) || null}
+                      onChange={(option) => setFormData(prev => ({ ...prev, sundayClassId: option?.value || '' }))}
+                      options={sundayClassOptions}
+                      placeholder="Sélectionner une classe"
+                      isClearable
+                      isSearchable
+                      classNamePrefix="react-select"
+                    />
+                  </div>
+
                   {/* Join Date */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Date d'Adhésion</label>
@@ -737,6 +885,24 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
                     </div>
                   </div>
 
+                  <div className="md:col-span-2 flex items-center">
+                    <input
+                      id="edit-is-baptized"
+                      type="checkbox"
+                      checked={formData.isBaptized}
+                      onChange={(event) => setFormData(prev => ({
+                        ...prev,
+                        isBaptized: event.target.checked,
+                        baptismDate: event.target.checked ? prev.baptismDate : '',
+                        baptismLocation: event.target.checked ? prev.baptismLocation : '',
+                      }))}
+                      className="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                    />
+                    <label htmlFor="edit-is-baptized" className="ml-2 text-sm text-gray-900">Est baptisé(e) ?</label>
+                  </div>
+
+                  {formData.isBaptized && (
+                    <>
                   {/* Baptism Date */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Date de Baptême</label>
@@ -787,53 +953,69 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
                       placeholder="Lieu de baptême"
                     />
                   </div>
-
-                  {/* Ministry */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">{churchData?.option} au sein de l'église</label>
-                    <Select
-                      value={ministryOptions.find((option: any) => option.value === formData.ministryId) || null}
-                      onChange={(selectedOption: any) => setFormData(prev => ({ ...prev, ministryId: selectedOption?.value || '' }))}
-                      options={ministryOptions}
-                      placeholder="Sélectionner un ministère"
-                      isClearable
-                      isSearchable
-                      className="react-select-container"
-                      classNamePrefix="react-select"
-                    />
-                  </div>
+                    </>
+                  )}
                 </div>
               </div>
             )}
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200 flex-shrink-0">
-            <button
-              type="button"
-              onClick={handleClose}
-              disabled={isLoading}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Annuler
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="px-4 py-2 text-sm font-medium text-white bg-teal-600 border border-transparent rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-            >
-              {isLoading ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Modification...
-                </>
-              ) : (
-                'Modifier le Membre'
+          <div className="flex items-center justify-between p-6 border-t border-gray-200 flex-shrink-0 bg-white">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={handleClose}
+                disabled={isLoading}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Annuler
+              </button>
+              {currentStepIndex > 0 && (
+                <button
+                  type="button"
+                  onClick={handlePrevious}
+                  disabled={isLoading}
+                  className="px-4 py-2 text-sm font-medium text-teal-700 bg-white border border-teal-200 rounded-md hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50"
+                >
+                  Précédent
+                </button>
               )}
-            </button>
+            </div>
+
+            {!isLastStep ? (
+              <button
+                key="edit-member-next"
+                type="button"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  handleNext();
+                }}
+                className="inline-flex items-center gap-2 px-6 py-2 text-sm font-medium text-white bg-teal-600 rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+              >
+                Suivant
+                <ArrowRightIcon className="h-4 w-4" />
+              </button>
+            ) : (
+              <button
+                key="edit-member-submit"
+                type="button"
+                onClick={submitMember}
+                disabled={isLoading}
+                className="px-4 py-2 text-sm font-medium text-white bg-teal-600 border border-transparent rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              >
+                {isLoading ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Modification...
+                  </>
+                ) : 'Modifier le Membre'}
+              </button>
+            )}
           </div>
         </form>
       </div>

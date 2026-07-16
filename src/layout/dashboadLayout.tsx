@@ -30,43 +30,21 @@ import {
   UserPlusIcon,
   LinkIcon,
   MapPinIcon,
-  CloudArrowUpIcon
+  CloudArrowUpIcon,
+  ChatBubbleLeftRightIcon,
+  CalendarDaysIcon
 } from '@heroicons/react/24/outline';
 import { TfiStatsUp } from "react-icons/tfi";
 import { motion } from 'framer-motion';
 import { useGetLogoutMutation } from '../store/services/authApi';
 import { useGetUserByTokenQuery } from '../store/services/authApi';
-import { useGetChurchByIdQuery } from '../store/services/churchApi';
 
 
 
 
-type UserRole = 'Admin' | 'SuperAdmin' | 'Directeur' | "Invite" | "Leader";
-
-interface Church {
-  id?: string | number;
-  name?: string;
-  address?: string;
-  phone?: string;
-  email?: string;
-  picture?: string;
-  anthem?: string;
-  facebook?: string;
-  instagram?: string;
-  option?: string;
-  whatsapp?: string;
-  [key: string]: any;
-}
+type UserRole = 'Admin' | 'SuperAdmin' | 'Directeur' | "Invite" | "Leader" | "Membre";
 
 const DashboardLayout = ({ userRole }: { userRole: UserRole }) => {
-
-  const { data: userData } = useGetUserByTokenQuery();
-  const churchId = userData?.church?.id;
-
-  const { data: churchData } = useGetChurchByIdQuery(churchId ? churchId.toString() : '', {
-    skip: !churchId,
-  }) as { data: Church | undefined, isLoading: boolean };
-
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   // const [notificationCount] = useState(3);
@@ -79,6 +57,15 @@ const DashboardLayout = ({ userRole }: { userRole: UserRole }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const churchOrganizationLabel = (() => {
+    const configuredLabel = userToken?.church?.option?.trim();
+
+    // Keep compatibility with the legacy misspelling already stored by the church form.
+    if (configuredLabel === 'Cellulle') return 'Cellule';
+
+    return configuredLabel || 'Ministère';
+  })();
+
   const toggleSection = (sectionName: string) => {
     setExpandedSections(prev => ({
       ...prev,
@@ -89,7 +76,14 @@ const DashboardLayout = ({ userRole }: { userRole: UserRole }) => {
   const navigation = {
     Admin: [
       { name: 'Tableau de bord', href: '/tableau-de-bord', icon: TfiStatsUp },
+      { name: 'Messagerie', href: '/tableau-de-bord/messagerie', icon: ChatBubbleLeftRightIcon },
+      { name: 'Rendez-vous', href: '/tableau-de-bord/rendez-vous', icon: CalendarDaysIcon },
       { name: 'Membres', href: '/tableau-de-bord/admin/membres', icon: UserIcon },
+      {
+        name: churchOrganizationLabel,
+        href: '/tableau-de-bord/admin/ministères',
+        icon: BuildingLibraryIcon,
+      },
       {
         name: 'Groupes',
         href: '/tableau-de-bord/admin/groupes',
@@ -101,15 +95,10 @@ const DashboardLayout = ({ userRole }: { userRole: UserRole }) => {
         icon: UserGroupIcon,
       },
       {
-        name: churchData?.option || 'aucune',
-        href: '/tableau-de-bord/admin/ministères',
-        icon: BuildingLibraryIcon,
+        name: 'Événements',
+        href: '/tableau-de-bord/admin/evenements',
+        icon: CalendarDaysIcon,
       },
-      // {
-      //   name: 'Évenements',
-      //   href: '/tableau-de-bord/admin/evenements',
-      //   icon: CalendarDaysIcon,
-      // },
       { name: 'Sanctions', href: '/tableau-de-bord/admin/sanctions', icon: ExclamationTriangleIcon },
       {
         name: 'Mariages',
@@ -176,14 +165,17 @@ const DashboardLayout = ({ userRole }: { userRole: UserRole }) => {
     ],
     Invite: [
       { name: 'Tableau de bord', href: '/tableau-de-bord', icon: TfiStatsUp },
+      { name: 'Messagerie', href: '/tableau-de-bord/messagerie', icon: ChatBubbleLeftRightIcon },
       { name: 'Membres', href: '/tableau-de-bord/admin/membres/invite', icon: UserIcon },
     ],
     Leader: [
       { name: 'Tableau de bord', href: '/tableau-de-bord', icon: TfiStatsUp },
+      { name: 'Messagerie', href: '/tableau-de-bord/messagerie', icon: ChatBubbleLeftRightIcon },
       { name: 'Services & Présences', href: '/tableau-de-bord/admin/serviceandpresence', icon: UserGroupIcon },
     ],
     SuperAdmin: [
       { name: 'Tableau de bord', href: '/tableau-de-bord', icon: TfiStatsUp },
+      { name: 'Messagerie', href: '/tableau-de-bord/messagerie', icon: ChatBubbleLeftRightIcon },
       { name: 'Missions', href: '/tableau-de-bord/super-admin/missions', icon: UserIcon },
       {
         name: 'Gestions',
@@ -206,9 +198,14 @@ const DashboardLayout = ({ userRole }: { userRole: UserRole }) => {
 
     Directeur: [
       { name: 'Tableau de bord', href: '/tableau-de-bord', icon: TfiStatsUp },
+      { name: 'Messagerie', href: '/tableau-de-bord/messagerie', icon: ChatBubbleLeftRightIcon },
       { name: 'Église', href: "/tableau-de-bord/directeur/eglises", icon: BuildingLibraryIcon },
       { name: "pasteurs", href: "/tableau-de-bord/pasteurs", icon: UserIcon },
       { name: "Mapping", href: "/tableau-de-bord/directeur/map", icon: MapPinIcon },
+    ],
+    Membre: [
+      { name: 'Messagerie', href: '/tableau-de-bord/messagerie', icon: ChatBubbleLeftRightIcon },
+      { name: 'Événements', href: '/tableau-de-bord/evenements', icon: CalendarDaysIcon },
     ],
   };
 
@@ -641,43 +638,43 @@ const DashboardLayout = ({ userRole }: { userRole: UserRole }) => {
                   leaveTo="transform opacity-0 scale-95"
                 >
                   <Menu.Items className="absolute right-0 z-10 mt-2.5 w-56 origin-top-right rounded-md bg-white py-2 shadow-lg ring-1 ring-gray-900/5 focus:outline-none">
-                    <Menu.Item>
-                      {({ active }) => (
-                        <Link
-                          to={`/tableau-de-bord/mon-compte`}
-                          className={`flex items-center px-3 py-2 text-sm leading-6 ${active ? 'bg-gray-50' : ''}`}
-                        >
-                          <UserIcon className="h-5 w-5 mr-3 text-gray-400" />
-                          Mon Compte
-                        </Link>
-                      )}
-                    </Menu.Item>
-                    <Menu.Item>
-                      {({ active }) => (
-                        <button
-                          onClick={() => {
-                            navigate("/tableau-de-bord/parametre")
-                          }}
-                          className={`flex w-full items-center px-3 py-2 text-sm leading-6 ${active ? 'bg-gray-50' : ''}`}
-                        >
-                          <CogIcon className="h-5 w-5 mr-3 text-gray-400" />
-                          Paramètre
-                        </button>
-                      )}
-                    </Menu.Item>
-                    <Menu.Item>
-                      {({ active }) => (
-                        <button
-                          onClick={() => {
-                            navigate("/tableau-de-bord/mon-compte/change-password")
-                          }}
-                          className={`flex w-full items-center px-3 py-2 text-sm leading-6 ${active ? 'bg-gray-50' : ''}`}
-                        >
-                          <BellIcon className="h-5 w-5 mr-3 text-gray-400" />
-                          Changer mot de passe
-                        </button>
-                      )}
-                    </Menu.Item>
+                    {userRole !== 'Membre' && (
+                      <>
+                        <Menu.Item>
+                          {({ active }) => (
+                            <Link
+                              to={`/tableau-de-bord/mon-compte`}
+                              className={`flex items-center px-3 py-2 text-sm leading-6 ${active ? 'bg-gray-50' : ''}`}
+                            >
+                              <UserIcon className="h-5 w-5 mr-3 text-gray-400" />
+                              Mon Compte
+                            </Link>
+                          )}
+                        </Menu.Item>
+                        <Menu.Item>
+                          {({ active }) => (
+                            <button
+                              onClick={() => navigate("/tableau-de-bord/parametre")}
+                              className={`flex w-full items-center px-3 py-2 text-sm leading-6 ${active ? 'bg-gray-50' : ''}`}
+                            >
+                              <CogIcon className="h-5 w-5 mr-3 text-gray-400" />
+                              Paramètre
+                            </button>
+                          )}
+                        </Menu.Item>
+                        <Menu.Item>
+                          {({ active }) => (
+                            <button
+                              onClick={() => navigate("/tableau-de-bord/mon-compte/change-password")}
+                              className={`flex w-full items-center px-3 py-2 text-sm leading-6 ${active ? 'bg-gray-50' : ''}`}
+                            >
+                              <BellIcon className="h-5 w-5 mr-3 text-gray-400" />
+                              Changer mot de passe
+                            </button>
+                          )}
+                        </Menu.Item>
+                      </>
+                    )}
                     <div className="border-t border-gray-100 my-1"></div>
                     <Menu.Item>
                       {({ active }) => (

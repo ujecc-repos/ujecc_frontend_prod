@@ -54,6 +54,7 @@ interface AddMemberFormData {
   isActiveMember: boolean;
   nif?: string;
   groupeSanguin?: string;
+  isBaptized: boolean;
 }
 
 interface AddMemberModalProps {
@@ -93,7 +94,8 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
     profileImage: null,
     isActiveMember: true,
     nif: '',
-    groupeSanguin: ''
+    groupeSanguin: '',
+    isBaptized: false,
   });
 
   // const [showPassword, setShowPassword] = useState(false);
@@ -198,7 +200,8 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
           profileImage: null,
           isActiveMember: true,
           nif: '',
-          groupeSanguin: ''
+          groupeSanguin: '',
+          isBaptized: false,
         });
       }, 2000);
       setFormData({
@@ -229,7 +232,8 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
         profileImage: null,
         isActiveMember: true,
         nif: '',
-        groupeSanguin: ''
+        groupeSanguin: '',
+        isBaptized: false,
       });
     }
   };
@@ -263,7 +267,8 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
       profileImage: null,
       isActiveMember: true,
       nif: '',
-      groupeSanguin: ''
+      groupeSanguin: '',
+      isBaptized: false,
     });
     setImagePreview(null);
     setErrors({});
@@ -878,6 +883,27 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                     </div>
                   </div>
 
+                  {/* Baptism Status */}
+                  <div className="md:col-span-2 flex items-center">
+                    <input
+                      id="invite-is-baptized"
+                      type="checkbox"
+                      checked={formData.isBaptized}
+                      onChange={(event) => setFormData(prev => ({
+                        ...prev,
+                        isBaptized: event.target.checked,
+                        baptismDate: event.target.checked ? prev.baptismDate : '',
+                        baptismLocation: event.target.checked ? prev.baptismLocation : '',
+                      }))}
+                      className="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                    />
+                    <label htmlFor="invite-is-baptized" className="ml-2 block text-sm text-gray-900">
+                      Est baptisé(e) ?
+                    </label>
+                  </div>
+
+                  {formData.isBaptized && (
+                    <>
                   {/* Baptism Date */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Date de Baptême</label>
@@ -930,6 +956,8 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                       placeholder="Lieu de baptême"
                     />
                   </div>
+                    </>
+                  )}
                 </div>
               </div>
             )}

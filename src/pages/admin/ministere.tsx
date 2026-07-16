@@ -65,6 +65,7 @@ export default function Ministere() {
   const { data: churchData } = useGetChurchByIdQuery(churchId ? churchId.toString() : '', {
     skip: !userData?.church?.id,
   }) as { data: Church | undefined, isLoading: boolean };
+  const ministryLabel = churchData?.option?.trim() || 'Ministère';
 
   // Fetch ministries data
   const {
@@ -234,9 +235,9 @@ export default function Ministere() {
       {!isLoading && (
         <>
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-800">{churchData?.option}</h1>
+            <h1 className="text-2xl font-bold text-gray-800">{ministryLabel}</h1>
             <div className="flex items-center space-x-2">
-              <span className="text-gray-600">{filteredMinistries.length} {churchData?.option}(s)</span>
+              <span className="text-gray-600">{filteredMinistries.length} {ministryLabel}(s)</span>
               {/* <button
                 onClick={() => setShowExportModal(true)}
                 className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-colors flex items-center space-x-1"
@@ -253,7 +254,7 @@ export default function Ministere() {
               className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-colors flex items-center space-x-1"
             >
               <PlusIcon className="h-5 w-5" />
-              <span>Nouveau {churchData?.option}</span>
+              <span>Nouveau {ministryLabel}</span>
             </button>
 
             <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
@@ -303,7 +304,7 @@ export default function Ministere() {
                 <thead className="bg-gray-50">
                   <tr>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      {churchData?.option}
+                      {ministryLabel}
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Description
@@ -321,13 +322,13 @@ export default function Ministere() {
                     <tr>
                       <td colSpan={4} className="px-6 py-4 text-center text-sm text-gray-500">
                         <div className="flex flex-col items-center justify-center py-12">
-                          <p className="text-gray-500 mb-4">Aucun {churchData?.option} trouvé</p>
+                          <p className="text-gray-500 mb-4">Aucun {ministryLabel} trouvé</p>
                           <button
                             onClick={() => setIsCreateMinistryModalOpen(true)}
                             className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-colors flex items-center space-x-1"
                           >
                             <PlusIcon className="h-5 w-5" />
-                            <span>Créer le premier {churchData?.option}</span>
+                            <span>Créer le premier {ministryLabel}</span>
                           </button>
                         </div>
                       </td>
@@ -417,7 +418,7 @@ export default function Ministere() {
                       <span className="text-purple-600 font-bold">
                         {Math.min(endIndex, filteredMinistries.length)}
                       </span> sur{' '}
-                      <span className="text-purple-600 font-bold">{filteredMinistries.length}</span> {churchData?.option}(s)
+                      <span className="text-purple-600 font-bold">{filteredMinistries.length}</span> {ministryLabel}(s)
                     </span>
                   </div>
                 </div>
@@ -466,10 +467,10 @@ export default function Ministere() {
               <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
                 <TrashIcon className="h-6 w-6 text-red-600" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mt-4">Supprimer le {churchData?.option}</h3>
+              <h3 className="text-lg font-medium text-gray-900 mt-4">Supprimer le {ministryLabel}</h3>
               <div className="mt-2 px-7 py-3">
                 <p className="text-sm text-gray-500">
-                  Êtes-vous sûr de vouloir supprimer le {churchData?.option} "{selectedMinistryForAction?.name}" ? Cette action ne peut pas être annulée.
+                  Êtes-vous sûr de vouloir supprimer le {ministryLabel} "{selectedMinistryForAction?.name}" ? Cette action ne peut pas être annulée.
                 </p>
               </div>
               <div className="flex justify-center space-x-4 mt-4">
@@ -496,7 +497,7 @@ export default function Ministere() {
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div className="mt-3 text-center">
-              <h3 className="text-lg font-medium text-gray-900">Exporter les {churchData?.option}</h3>
+              <h3 className="text-lg font-medium text-gray-900">Exporter les {ministryLabel}</h3>
               <div className="mt-4 space-y-3">
                 <button
                   onClick={() => handleExport('xlsx')}

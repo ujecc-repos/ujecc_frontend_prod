@@ -6,14 +6,15 @@ import { RouterProvider } from 'react-router-dom'
 import { Provider } from 'react-redux';
 import { store } from "./store/store";
 import { AuthProvider } from './Auth/auth'
+import OfflineStatus from './components/OfflineStatus'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Provider store={store}>
       <AuthProvider>
         <RouterProvider router={router} />
+        <OfflineStatus />
       </AuthProvider>
     </Provider>
   </StrictMode>,
 )
-

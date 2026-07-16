@@ -25,6 +25,7 @@ export default function MinistryUsers() {
     const { data: churchData } = useGetChurchByIdQuery(churchId ? churchId.toString() : '', {
         skip: !userData?.church?.id,
     });
+    const ministryLabel = churchData?.option?.trim() || 'Ministère';
 
     // Fetch ministry details
     const { data: ministry, isLoading: isLoadingMinistry } = useGetMinistryByIdQuery(id || '', {
@@ -90,13 +91,13 @@ export default function MinistryUsers() {
                             className="mb-4 flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
                         >
                             <ArrowLeftIcon className="h-5 w-5" />
-                            <span>Retour aux {churchData?.option}s</span>
+                            <span>Retour aux {ministryLabel}s</span>
                         </button>
 
                         <div className="flex justify-between items-center">
                             <div>
                                 <h1 className="text-2xl font-bold text-gray-800">
-                                    Membres du {churchData?.option}: {ministry?.name}
+                                    Membres du {ministryLabel}: {ministry?.name}
                                 </h1>
                                 {ministry?.description && (
                                     <p className="text-gray-600 mt-2">{ministry.description}</p>
@@ -156,7 +157,7 @@ export default function MinistryUsers() {
                                                     <p className="text-gray-500">
                                                         {searchQuery
                                                             ? 'Aucun membre trouvé pour cette recherche'
-                                                            : `Aucun membre dans ce ${churchData?.option}`}
+                                                            : `Aucun membre dans ce ${ministryLabel}`}
                                                     </p>
                                                 </div>
                                             </td>

@@ -11,10 +11,8 @@ interface Appointment {
   name: string;
   visibility: string;
   description: string;
-  endPeriode?: string;
-  startPeriode?: string;
-  startDate?: string;
-  endDate?: string;
+  date: string;
+  time: string;
   duration: string;
   notes: string;
   assignedUsers: User[];
@@ -28,6 +26,36 @@ interface User {
   email: string;
   profileImage?: string;
 }
+
+const getAppointmentDateTime = (appointment: Pick<Appointment, 'date' | 'time'>) => {
+  const datePart = appointment.date?.slice(0, 10);
+  const dateMatch = datePart?.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!dateMatch) return null;
+
+  const [, year, month, day] = dateMatch;
+  const timeMatch = appointment.time?.match(/^(\d{1,2}):(\d{2})/);
+  const hours = timeMatch ? Number(timeMatch[1]) : 0;
+  const minutes = timeMatch ? Number(timeMatch[2]) : 0;
+  const value = new Date(Number(year), Number(month) - 1, Number(day), hours, minutes);
+
+  return Number.isNaN(value.getTime()) ? null : value;
+};
+
+const formatAppointmentDate = (appointment: Pick<Appointment, 'date' | 'time'>) => {
+  const value = getAppointmentDateTime(appointment);
+  if (!value) return 'Date non définie';
+
+  return new Intl.DateTimeFormat('fr-FR', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  }).format(value);
+};
+
+const appointmentIsCompleted = (appointment: Pick<Appointment, 'date' | 'time'>) => {
+  const value = getAppointmentDateTime(appointment);
+  return value ? value.getTime() < Date.now() : false;
+};
 
 // const CreateAppointmentModal: React.FC<CreateAppointmentModalProps> = ({ isOpen, onClose, onSubmit, users, churchId }) => {
 //   const [step, setStep] = useState(1);
@@ -287,7 +315,7 @@ interface ViewAppointmentModalProps {
 const ViewAppointmentModal: React.FC<ViewAppointmentModalProps> = ({ isOpen, onClose, appointment }) => {
   if (!appointment) return null;
 
-  const isCompleted = new Date(`${appointment.startDate}T${appointment.startPeriode}`) < new Date();
+  const isCompleted = appointmentIsCompleted(appointment);
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
@@ -346,7 +374,7 @@ const ViewAppointmentModal: React.FC<ViewAppointmentModalProps> = ({ isOpen, onC
                       <div>
                         <p className="text-sm font-medium text-gray-900">Date</p>
                         <p className="text-sm text-gray-500">
-                          {appointment.startDate && new Date(appointment.startDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                          {formatAppointmentDate(appointment)}
                         </p>
                       </div>
                     </div>
@@ -356,7 +384,8 @@ const ViewAppointmentModal: React.FC<ViewAppointmentModalProps> = ({ isOpen, onC
                       <div>
                         <p className="text-sm font-medium text-gray-900">Heure et durée</p>
                         <p className="text-sm text-gray-500">
-                          {appointment.startPeriode} ({appointment.duration} minutes)
+                          {appointment.time || 'Heure non définie'}
+                          {appointment.duration ? ` (${appointment.duration} minutes)` : ''}
                         </p>
                       </div>
                     </div>
@@ -545,8 +574,8 @@ const RendezVous: React.FC = () => {
       appointment.description?.toLowerCase().includes(searchQuery.toLowerCase());
     
     if (showUpcoming) {
-      const appointmentDate = new Date(`${appointment.startDate}`);
-      return matchesSearch && appointmentDate >= new Date();
+      const appointmentDate = getAppointmentDateTime(appointment);
+      return matchesSearch && Boolean(appointmentDate && appointmentDate.getTime() >= Date.now());
     }
     
     return matchesSearch;
@@ -554,9 +583,9 @@ const RendezVous: React.FC = () => {
 
   // Sort appointments by date (newest first)
   const sortedAppointments = [...filteredAppointments].sort((a, b) => {
-    const dateA = new Date(`${a.startDate}`);
-    const dateB = new Date(`${b.startDate}`);
-    return dateB.getTime() - dateA.getTime();
+    const dateA = getAppointmentDateTime(a)?.getTime() ?? 0;
+    const dateB = getAppointmentDateTime(b)?.getTime() ?? 0;
+    return dateB - dateA;
   });
 
   const handleDeleteAppointment = async () => {
@@ -594,7 +623,7 @@ const RendezVous: React.FC = () => {
         <div className="mt-4 sm:mt-0 flex space-x-3">
           <button
             type="button"
-            onClick={() => navigate('/tableau-de-bord/admin/rendez-vous/creation')}
+            onClick={() => navigate('/tableau-de-bord/rendez-vous/creation')}
             className="inline-flex items-center justify-center rounded-md border border-transparent bg-teal-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 sm:w-auto transition-colors"
           >
             <PlusIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
@@ -657,10 +686,8 @@ const RendezVous: React.FC = () => {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {sortedAppointments.map((appointment) => {
-                      // const appointmentDate = new Date(`${appointment.startDate}`);
-                      // const isCompleted = appointmentDate < new Date();
-                      // const formattedDate = format(appointmentDate, 'dd MMMM yyyy', { locale: fr });
-                      // const formattedTime = appointment.startPeriode;
+                      const isCompleted = appointmentIsCompleted(appointment);
+                      const formattedDate = formatAppointmentDate(appointment);
 
                       return (
                         <tr 
@@ -680,32 +707,39 @@ const RendezVous: React.FC = () => {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            {/* <div className="text-sm text-gray-900">{formattedDate}</div> */}
-                            {/* <div className="text-sm text-gray-500">{formattedTime} ({appointment.duration} min)</div> */}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {/* <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${isCompleted ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                              {isCompleted ? 'Complété' : 'En attente'}
-                            </span> */}
-                            <span></span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="flex -space-x-2 overflow-hidden">
-                                {appointment.assignedUsers?.slice(0, 3).map((user, index) => (
-                                  <div key={index} className="inline-block h-8 w-8 rounded-full ring-2 ring-white bg-gray-200 flex items-center justify-center">
-                                    <UserIcon className="h-5 w-5 text-gray-500" />
-                                    <span>{user.firstname} {user.lastname}</span>
-                                  </div>
-                                ))}
-                                {appointment.assignedUsers && appointment.assignedUsers.length > 3 && (
-                                  <div className="inline-block h-8 w-8 rounded-full ring-2 ring-white bg-gray-100 flex items-center justify-center">
-                                    <span className="text-xs text-gray-500">+{appointment.assignedUsers.length - 3}</span>
-                                  </div>
-                                )}
-                              </div>
-                              <span className="ml-2 text-sm text-gray-500">{appointment.assignedUsers?.length || 0} participant(s)</span>
+                            <div className="text-sm font-medium text-gray-900">{formattedDate}</div>
+                            <div className="mt-1 flex items-center text-sm text-gray-500">
+                              <ClockIcon className="mr-1.5 h-4 w-4 text-gray-400" />
+                              <span>{appointment.time || 'Heure non définie'}</span>
+                              {appointment.duration && <span className="ml-1">· {appointment.duration} min</span>}
                             </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${isCompleted ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                              <span className={`mr-1.5 h-2 w-2 rounded-full ${isCompleted ? 'bg-green-600' : 'bg-yellow-500'}`} />
+                              {isCompleted ? 'Complété' : 'En attente'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {appointment.assignedUsers?.length ? (
+                              <div className="max-w-xs">
+                                <div
+                                  className="truncate text-sm font-medium text-gray-900"
+                                  title={appointment.assignedUsers.map((user) => `${user.firstname} ${user.lastname}`).join(', ')}
+                                >
+                                  {appointment.assignedUsers
+                                    .slice(0, 2)
+                                    .map((user) => `${user.firstname} ${user.lastname}`)
+                                    .join(', ')}
+                                  {appointment.assignedUsers.length > 2 && ` +${appointment.assignedUsers.length - 2}`}
+                                </div>
+                                <div className="mt-1 text-xs text-gray-500">
+                                  {appointment.assignedUsers.length} participant{appointment.assignedUsers.length > 1 ? 's' : ''}
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-sm text-gray-500">Aucun participant</span>
+                            )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${appointment.visibility === 'public' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}`}>
@@ -720,42 +754,44 @@ const RendezVous: React.FC = () => {
                               >
                                 <EllipsisVerticalIcon className="h-5 w-5" />
                               </Menu.Button>
-                              <Transition
-                                as={Fragment}
-                                enter="transition ease-out duration-100"
-                                enterFrom="transform opacity-0 scale-95"
-                                enterTo="transform opacity-100 scale-100"
-                                leave="transition ease-in duration-75"
-                                leaveFrom="transform opacity-100 scale-100"
-                                leaveTo="transform opacity-0 scale-95"
+                              <Menu.Items
+                                anchor="bottom end"
+                                portal
+                                modal={false}
+                                transition
+                                className="z-[100] w-48 origin-top-right rounded-md bg-white shadow-xl ring-1 ring-black/5 focus:outline-none [--anchor-gap:0.5rem] transition duration-100 ease-out data-closed:scale-95 data-closed:opacity-0"
                               >
-                                <Menu.Items className="absolute right-0 z-10 mt-2 w-48 origin-top-right bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                                  <div className="py-1">
-                                    <Menu.Item>
-                                      {({ active }) => (
-                                        <button
-                                          onClick={() => openViewModal(appointment)}
-                                          className={`${active ? 'bg-gray-100' : ''} group flex items-center px-4 py-2 text-sm text-gray-700 w-full text-left`}
-                                        >
-                                          <EyeIcon className="mr-3 h-4 w-4 text-gray-400" />
-                                          Voir détails
-                                        </button>
-                                      )}
-                                    </Menu.Item>
-                                    <Menu.Item>
-                                      {({ active }) => (
-                                        <button
-                                          onClick={() => openDeleteModal(appointment)}
-                                          className={`${active ? 'bg-gray-100' : ''} group flex items-center px-4 py-2 text-sm text-red-700 w-full text-left`}
-                                        >
-                                          <TrashIcon className="mr-3 h-4 w-4 text-red-400" />
-                                          Supprimer
-                                        </button>
-                                      )}
-                                    </Menu.Item>
-                                  </div>
-                                </Menu.Items>
-                              </Transition>
+                                <div className="py-1">
+                                  <Menu.Item>
+                                    {({ active }) => (
+                                      <button
+                                        onClick={(event) => {
+                                          event.stopPropagation();
+                                          openViewModal(appointment);
+                                        }}
+                                        className={`${active ? 'bg-gray-100' : ''} group flex items-center px-4 py-2 text-sm text-gray-700 w-full text-left`}
+                                      >
+                                        <EyeIcon className="mr-3 h-4 w-4 text-gray-400" />
+                                        Voir détails
+                                      </button>
+                                    )}
+                                  </Menu.Item>
+                                  <Menu.Item>
+                                    {({ active }) => (
+                                      <button
+                                        onClick={(event) => {
+                                          event.stopPropagation();
+                                          openDeleteModal(appointment);
+                                        }}
+                                        className={`${active ? 'bg-gray-100' : ''} group flex items-center px-4 py-2 text-sm text-red-700 w-full text-left`}
+                                      >
+                                        <TrashIcon className="mr-3 h-4 w-4 text-red-400" />
+                                        Supprimer
+                                      </button>
+                                    )}
+                                  </Menu.Item>
+                                </div>
+                              </Menu.Items>
                             </Menu>
                           </td>
                         </tr>
@@ -773,7 +809,7 @@ const RendezVous: React.FC = () => {
                   <div className="mt-8">
                     <button
                       type="button"
-                      onClick={() => navigate('/tableau-de-bord/admin/creation-rendez-vous')}
+                      onClick={() => navigate('/tableau-de-bord/rendez-vous/creation')}
                       className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-colors"
                     >
                       <PlusIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />

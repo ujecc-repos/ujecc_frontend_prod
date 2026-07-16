@@ -25,6 +25,8 @@ interface CreatePresenceRequest {
   utilisateurId: string;
   serviceId: string;
   statut: string;
+  attendanceDate?: string;
+  offlineOperationId?: string;
 }
 
 interface PresencesQueryParams {

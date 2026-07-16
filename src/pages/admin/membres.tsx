@@ -42,6 +42,7 @@ import DeleteMemberModal from '../../components/DeleteMemberModal';
 import EditMemberModal from '../../components/EditMemberModal';
 import TransferMemberModal from '../../components/TransferMemberModal';
 import BulkImportModal from '../../components/BulkImportModal';
+import { createMemberOperationId, getQueuedMemberPreviews, isOfflineNetworkError, queueMemberCreation, type MemberRequest } from '../../offline/memberQueue';
 
 interface Member {
   id: string;
@@ -65,6 +66,9 @@ interface Member {
   minister?: string;
   isBaptized?: boolean;
   baptismDate?: string;
+  _offlinePending?: boolean;
+  _offlineStatus?: 'pending' | 'failed';
+  _offlineError?: string;
   ministry?: {
     name: string;
   };
@@ -139,6 +143,14 @@ interface AddMemberModalProps {
   onSubmit: (formData: AddMemberFormData) => void;
   isLoading: boolean;
 }
+
+const MEMBER_FORM_STEPS = [
+  { key: 'personal', label: 'Informations Personnelles' },
+  { key: 'contact', label: 'Contact & Localisation' },
+  { key: 'church', label: 'Informations Église' },
+] as const;
+
+type MemberFormStep = (typeof MEMBER_FORM_STEPS)[number]['key'];
 
 const FilterModal: React.FC<FilterModalProps> = ({ isOpen, onClose, filters, onApplyFilters, onClear }) => {
   const [localFilters, setLocalFilters] = useState<FilterState>(filters);
@@ -428,8 +440,8 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
     sundayClassId: ''
   });
 
-  // const [showPassword, setShowPassword] = useState(false);
-  const [activeTab, setActiveTab] = useState('personal');
+  const [showPassword, setShowPassword] = useState(false);
+  const [activeTab, setActiveTab] = useState<MemberFormStep>('personal');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showJoinCalendar, setShowJoinCalendar] = useState(false);
@@ -510,25 +522,59 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
 
     if (!formData.firstname.trim()) newErrors.firstname = 'Le nom est obligatoire';
     if (!formData.lastname.trim()) newErrors.lastname = 'Le prénom est obligatoire';
-    // if (!formData.email.trim()) newErrors.email = "L'adresse électronique est obligatoire";
-    // if (!formData.password.trim()) newErrors.password = 'Le mot de passe est obligatoire';
+    if (!formData.email.trim()) newErrors.email = "L'adresse électronique est obligatoire pour permettre la connexion";
+    if (!formData.password.trim()) {
+      newErrors.password = 'Le mot de passe est obligatoire pour permettre la connexion';
+    } else if (formData.password.length < 8) {
+      newErrors.password = 'Le mot de passe doit contenir au moins 8 caractères';
+    }
     // if (!formData.role.trim()) newErrors.role = 'Le rôle est obligatoire';
 
-    // Email validation
-    // const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    // if (formData.email && !emailRegex.test(formData.email)) {
-    //   newErrors.email = 'Format d\'email invalide';
-    // }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (formData.email && !emailRegex.test(formData.email)) {
+      newErrors.email = 'Format d\'email invalide';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const currentStepIndex = MEMBER_FORM_STEPS.findIndex((step) => step.key === activeTab);
+  const isLastStep = currentStepIndex === MEMBER_FORM_STEPS.length - 1;
+
+  const handleNext = () => {
+    if (activeTab === 'personal' && !validateForm()) return;
+
+    const nextStep = MEMBER_FORM_STEPS[currentStepIndex + 1];
+    if (nextStep) setActiveTab(nextStep.key);
+  };
+
+  const handlePrevious = () => {
+    const previousStep = MEMBER_FORM_STEPS[currentStepIndex - 1];
+    if (previousStep) setActiveTab(previousStep.key);
+  };
+
+  const submitMember = () => {
+    // Creation is deliberately restricted to the visible final step.
+    if (activeTab !== 'church') return;
+
     if (validateForm()) {
       onSubmit(formData);
+    } else {
+      setActiveTab('personal');
     }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Pressing Enter on steps 1 or 2 behaves exactly like the Next button.
+    if (activeTab !== 'church') {
+      handleNext();
+      return;
+    }
+
+    submitMember();
   };
 
   const resetForm = () => {
@@ -610,24 +656,40 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
           </button>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex border-b border-gray-200 flex-shrink-0">
-          {[
-            { key: 'personal', label: 'Informations Personnelles' },
-            { key: 'contact', label: 'Contact & Localisation' },
-            { key: 'church', label: 'Informations Église' }
-          ].map((tab) => (
+        {/* Step Navigation */}
+        <div className="flex border-b border-gray-200 flex-shrink-0" aria-label="Étapes de création du membre">
+          {MEMBER_FORM_STEPS.map((step, index) => {
+            const isCurrent = activeTab === step.key;
+            const isComplete = index < currentStepIndex;
+            const isFuture = index > currentStepIndex;
+
+            return (
             <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`flex-1 py-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.key
+              key={step.key}
+              type="button"
+              onClick={() => {
+                if (isComplete) setActiveTab(step.key);
+              }}
+              disabled={isFuture}
+              aria-current={isCurrent ? 'step' : undefined}
+              className={`flex flex-1 items-center justify-center gap-2 py-3 px-2 text-xs sm:text-sm font-medium border-b-2 transition-colors ${isCurrent
                 ? 'border-teal-500 text-teal-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                : isComplete
+                  ? 'border-transparent text-teal-600 hover:bg-teal-50'
+                  : 'border-transparent text-gray-400 cursor-not-allowed'
                 }`}
             >
-              {tab.label}
+              <span className={`flex h-6 w-6 flex-none items-center justify-center rounded-full text-xs font-semibold ${isCurrent || isComplete
+                ? 'bg-teal-600 text-white'
+                : 'bg-gray-200 text-gray-500'
+                }`}>
+                {isComplete ? '✓' : index + 1}
+              </span>
+              <span className="hidden sm:inline">{step.label}</span>
+              <span className="sm:hidden">Étape {index + 1}</span>
             </button>
-          ))}
+            );
+          })}
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
@@ -706,7 +768,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                   </div>
 
                   {/* Email */}
-                  {/* <div>
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Adresse Électronique <span className="text-red-500">*</span>
                     </label>
@@ -720,10 +782,10 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                       placeholder="email@exemple.com"
                     />
                     {errors.email && <p className="mt-1 text-sm text-red-500">{errors.email}</p>}
-                  </div> */}
+                  </div>
 
                   {/* Password */}
-                  {/* <div>
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Mot de Passe <span className="text-red-500">*</span>
                     </label>
@@ -746,7 +808,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                       </button>
                     </div>
                     {errors.password && <p className="mt-1 text-sm text-red-500">{errors.password}</p>}
-                  </div> */}
+                  </div>
 
                   {/* Gender */}
                   <div>
@@ -1312,31 +1374,58 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
 
           {/* Footer */}
           <div className="flex items-center justify-between p-6 border-t border-gray-200 flex-shrink-0 bg-white">
-            <button
-              type="button"
-              onClick={handleClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
-            >
-              Annuler
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="px-6 py-2 text-sm font-medium text-white bg-teal-600 border border-transparent rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-70 disabled:cursor-not-allowed relative overflow-hidden"
-              style={{
-                position: 'relative'
-              }}
-            >
-              {isLoading ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Ajout en cours...
-                </>
-              ) : 'Ajouter Membre'}
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={handleClose}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+              >
+                Annuler
+              </button>
+              {currentStepIndex > 0 && (
+                <button
+                  type="button"
+                  onClick={handlePrevious}
+                  className="px-4 py-2 text-sm font-medium text-teal-700 bg-white border border-teal-200 rounded-md hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+                >
+                  Précédent
+                </button>
+              )}
+            </div>
+
+            {!isLastStep ? (
+              <button
+                key="member-form-next"
+                type="button"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  handleNext();
+                }}
+                className="inline-flex items-center gap-2 px-6 py-2 text-sm font-medium text-white bg-teal-600 border border-transparent rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+              >
+                Suivant
+                <ArrowRightIcon className="h-4 w-4" />
+              </button>
+            ) : (
+              <button
+                key="member-form-submit"
+                type="button"
+                onClick={submitMember}
+                disabled={isLoading}
+                className="px-6 py-2 text-sm font-medium text-white bg-teal-600 border border-transparent rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-70 disabled:cursor-not-allowed relative overflow-hidden"
+              >
+                {isLoading ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Ajout en cours...
+                  </>
+                ) : 'Ajouter Membre'}
+              </button>
+            )}
           </div>
         </form>
       </div>
@@ -1542,6 +1631,9 @@ export default function Membres() {
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const [selectedMemberForAction, setSelectedMemberForAction] = useState<Member | null>(null);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [showOfflineQueuedDialog, setShowOfflineQueuedDialog] = useState(false);
+  const [queuedMemberName, setQueuedMemberName] = useState('');
+  const [queuedMembers, setQueuedMembers] = useState<Member[]>([]);
   const [newMemberCode, setNewMemberCode] = useState<string>('');
   const itemsPerPage = 7;
 
@@ -1615,6 +1707,28 @@ export default function Membres() {
     setIsLoading(isMembersLoading);
   }, [isMembersLoading]);
 
+  useEffect(() => {
+    let isCancelled = false;
+
+    const loadQueuedMembers = async () => {
+      if (!churchId) {
+        if (!isCancelled) setQueuedMembers([]);
+        return;
+      }
+      const previews = await getQueuedMemberPreviews(churchId);
+      if (!isCancelled) setQueuedMembers(previews);
+    };
+
+    const handleQueueChange = () => void loadQueuedMembers();
+    void loadQueuedMembers();
+    window.addEventListener('ecclesys:member-queue-change', handleQueueChange);
+
+    return () => {
+      isCancelled = true;
+      window.removeEventListener('ecclesys:member-queue-change', handleQueueChange);
+    };
+  }, [churchId]);
+
   // Calculate age from birthDate
   const calculateAge = (birthDate: string | undefined): number => {
     if (!birthDate) return 0;
@@ -1631,6 +1745,11 @@ export default function Membres() {
     return age;
   };
 
+  const formatMemberCode = (code?: string) => {
+    if (!code) return '—';
+    return code.startsWith('ELC-') ? code : `ELC-${code}`;
+  };
+
   // Get age category from birthDate
   const getAgeCategoryFromBirthDate = (birthDate: string | undefined): AgeCategory => {
     if (!birthDate) return 'adulte';
@@ -1645,9 +1764,10 @@ export default function Membres() {
 
   // Filter members based on all criteria
   const filteredMembers = useMemo(() => {
-    if (!membersData) return [];
+    const availableMembers: Member[] = [...queuedMembers, ...(membersData || [])];
+    if (availableMembers.length === 0) return [];
 
-    return membersData.filter((member: Member) => {
+    return availableMembers.filter((member: Member) => {
       // Basic search by name, email, or phone based on searchType
       let basicSearchMatch = true;
       if (searchQuery) {
@@ -1695,7 +1815,7 @@ export default function Membres() {
 
       return true;
     });
-  }, [membersData, searchQuery, filters]);
+  }, [membersData, queuedMembers, searchQuery, filters]);
 
   // Pagination calculations
   const totalPages = Math.ceil(filteredMembers.length / itemsPerPage);
@@ -1895,6 +2015,7 @@ export default function Membres() {
   };
 
   const handleRowClick = (member: Member) => {
+    if (member._offlinePending) return;
     navigate(`/tableau-de-bord/admin/person/${member.id}`);
   };
 
@@ -1978,11 +2099,12 @@ export default function Membres() {
     const headers = [
       'Code', 'Prénom', 'Nom', 'Genre', 'Date Naiss.', 'NI/NU', 'Ville',
       'Pays', 'État Civil', 'Date Baptême', 'Grp. Sang.', 'Ministère',
-      'Baptisé(e)', 'Ville Naiss.', 'Téléphone', 'Email', 'Rôle', 'Profession'
+      'Baptisé(e)', 'Téléphone', 'Email', 'Rôle'
     ];
 
     // Column widths - adjusted to fit landscape mode (297mm - 20mm margins = 277mm total)
-    const colWidths = [12, 16, 16, 13, 18, 13, 15, 15, 16, 18, 15, 16, 14, 16, 18, 24, 14, 20];
+    // Fill the complete printable width after removing the two export columns.
+    const colWidths = [14, 17, 17, 14, 19, 14, 16, 16, 17, 19, 16, 17, 15, 19, 31, 16];
     const startX = 10;
     let yPos = 42;
     const lineHeight = 6;
@@ -2037,7 +2159,7 @@ export default function Membres() {
 
       // Prepare row data
       const rowData = [
-        member.code || '',
+        formatMemberCode(member.code),
         member.firstname || '',
         member.lastname || '',
         member.sex || '',
@@ -2050,11 +2172,9 @@ export default function Membres() {
         member.groupeSanguin || '',
         member.minister || '',
         member.isBaptized ? 'Oui' : 'Non',
-        member.birthCity || '',
         member.mobilePhone || '',
         member.email || '',
-        member.role || '',
-        member.profession || ''
+        member.role || ''
       ];
 
       xPos = startX + 1;
@@ -2086,7 +2206,7 @@ export default function Membres() {
 
     const worksheet = XLSX.utils.json_to_sheet(
       members.map(member => ({
-        'Code': member.code || '',
+        'Code du membre': formatMemberCode(member.code),
         'Prénom': member.firstname || '',
         'Nom': member.lastname || '',
         'Genre': member.sex || '',
@@ -2099,11 +2219,9 @@ export default function Membres() {
         'Groupe Sanguin': member.groupeSanguin || '',
         'Ministère': member.minister || '',
         'Baptisé(e)': member.isBaptized ? 'Oui' : 'Non',
-        'Ville de Naissance': member.birthCity || '',
         'Téléphone': member.mobilePhone || '',
         'Email': member.email || '',
-        'Rôle': member.role || '',
-        'Profession': member.profession || ''
+        'Rôle': member.role || ''
       }))
     );
 
@@ -2193,16 +2311,14 @@ export default function Membres() {
                   new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Grp. Sang.', bold: true, size: 16 })] })] }),
                   new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Ministère', bold: true, size: 16 })] })] }),
                   new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Baptisé(e)', bold: true, size: 16 })] })] }),
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Ville Naiss.', bold: true, size: 16 })] })] }),
                   new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Téléphone', bold: true, size: 16 })] })] }),
                   new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Email', bold: true, size: 16 })] })] }),
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Rôle', bold: true, size: 16 })] })] }),
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Profession', bold: true, size: 16 })] })] })
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Rôle', bold: true, size: 16 })] })] })
                 ]
               }),
               ...members.map(member => new TableRow({
                 children: [
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.code || '', size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: formatMemberCode(member.code), size: 16 })] })] }),
                   new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.firstname || '', size: 16 })] })] }),
                   new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.lastname || '', size: 16 })] })] }),
                   new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.sex || '', size: 16 })] })] }),
@@ -2215,11 +2331,9 @@ export default function Membres() {
                   new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.groupeSanguin || '', size: 16 })] })] }),
                   new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.minister || '', size: 16 })] })] }),
                   new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.isBaptized ? 'Oui' : 'Non', size: 16 })] })] }),
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.birthCity || '', size: 16 })] })] }),
                   new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.mobilePhone || '', size: 16 })] })] }),
                   new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.email || '', size: 16 })] })] }),
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.role || '', size: 16 })] })] }),
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.profession || '', size: 16 })] })] })
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.role || '', size: 16 })] })] })
                 ]
               }))
             ]
@@ -2252,85 +2366,90 @@ export default function Membres() {
   };
 
   const handleAddMember = async (formData: AddMemberFormData) => {
+    if (!formData.firstname) {
+      alert('Le nom est obligatoire');
+      return;
+    }
+
+    if (!formData.lastname) {
+      alert('Le prénom est obligatoire');
+      return;
+    }
+
+    let requestPayload: MemberRequest;
+    const offlineOperationId = createMemberOperationId();
+
+    // Preserve image files as FormData; Dexie can store the Blob while offline.
+    if (formData.profileImage) {
+      const formDataObj = new FormData();
+      formDataObj.append('profileImage', formData.profileImage);
+      formDataObj.append('offlineOperationId', offlineOperationId);
+
+      Object.keys(formData).forEach(key => {
+        if (key === 'profileImage') return;
+        const value = formData[key as keyof AddMemberFormData];
+        if (value === null || value === undefined) return;
+        if (key === 'gender') {
+          formDataObj.append('sex', String(value));
+        } else if (key === 'isActiveMember') {
+          formDataObj.append('membreActif', String(value));
+        } else {
+          formDataObj.append(key, String(value));
+        }
+      });
+
+      if (churchId) formDataObj.append('churchId', churchId);
+      requestPayload = formDataObj;
+    } else {
+      const mappedData: Record<string, unknown> = {
+        ...formData,
+        sex: formData.gender,
+        membreActif: formData.isActiveMember,
+        churchId: churchId || '',
+        offlineOperationId,
+      };
+      delete mappedData.gender;
+      delete mappedData.isActiveMember;
+      delete mappedData.profileImage;
+      requestPayload = mappedData;
+    }
+
+    const markAsQueued = async () => {
+      await queueMemberCreation(requestPayload, churchId || '');
+      setQueuedMemberName(`${formData.firstname} ${formData.lastname}`.trim());
+      setIsAddMemberModalOpen(false);
+      setShowOfflineQueuedDialog(true);
+    };
+
     setIsAddingMember(true);
     try {
-      // Validate required fields
-      if (!formData.firstname) {
-        alert('Le nom est obligatoire');
+      if (!navigator.onLine) {
+        await markAsQueued();
         return;
       }
 
-      if (!formData.lastname) {
-        alert('Le prénom est obligatoire');
-        return;
-      }
-
-
-
-
-      // If there's a profile image, use FormData to handle the multipart request
+      let result: any;
       if (formData.profileImage) {
-        const formDataObj = new FormData();
-
-        // Add the image file
-        formDataObj.append('profileImage', formData.profileImage);
-
-        // Add all other form fields
-        Object.keys(formData).forEach(key => {
-          if (key === 'profileImage') return;
-          const value = formData[key as keyof AddMemberFormData];
-          if (value === null || value === undefined) return;
-          if (key === 'gender') {
-            formDataObj.append('sex', String(value));
-          } else if (key === 'isActiveMember') {
-            formDataObj.append('membreActif', String(value));
-          } else {
-            formDataObj.append(key, String(value));
-          }
-        });
-
-        // Add church ID
-        if (churchId) {
-          formDataObj.append('churchId', churchId);
-        }
-
-        const result = await register(formDataObj).unwrap() as any;
-        // Capture the member code from response
-        if (result?.user) {
-          setNewMemberCode(result.user);
-        }
+        result = await register(requestPayload as FormData).unwrap();
       } else {
-        // No image, use regular JSON request
-        const mappedData: any = {
-          ...formData,
-          sex: formData.gender,
-          membreActif: formData.isActiveMember,
-        };
-        delete mappedData.gender;
-        delete mappedData.isActiveMember;
-        const userData = {
-          ...mappedData,
-          churchId: churchId || '',
-          profileImage: undefined
-        };
-
-        const result = await register(userData).unwrap() as any;
-        // Capture the member code from response
-        if (result?.user) {
-          setNewMemberCode(result.user);
-        }
+        result = await register(requestPayload as Record<string, unknown> as any).unwrap();
       }
 
-      // Close modal and show success dialog
+      if (result?.user) setNewMemberCode(result.user);
+
       setIsAddMemberModalOpen(false);
       setShowSuccessDialog(true);
-
-      // Refetch users to update the list
-      // refetch();
     } catch (error: any) {
+      if (isOfflineNetworkError(error)) {
+        try {
+          await markAsQueued();
+          return;
+        } catch (queueError) {
+          console.error('Error queueing member:', queueError);
+        }
+      }
       console.error('Error adding member:', error);
       const errorMessage = getApiErrorMessage(error, 'Erreur lors de l\'ajout du membre');
-      console.log("error : ", error)
       alert(`Erreur d'enregistrement: ${errorMessage}`);
     } finally {
       setIsAddingMember(false);
@@ -2351,6 +2470,43 @@ export default function Membres() {
 
   return (
     <div className="">
+      <AnimatePresence>
+        {showOfflineQueuedDialog && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+            onClick={() => setShowOfflineQueuedDialog(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.92, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.92, opacity: 0, y: 20 }}
+              className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-2xl"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
+                <svg className="h-9 w-9 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6l4 2m5-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h2 className="mb-2 text-2xl font-bold text-slate-900">Membre enregistré hors ligne</h2>
+              <p className="mb-2 font-medium text-teal-700">{queuedMemberName}</p>
+              <p className="mb-6 text-slate-600">
+                Cet enregistrement est protégé sur cet appareil et sera envoyé automatiquement dès que la connexion reviendra.
+              </p>
+              <button
+                onClick={() => setShowOfflineQueuedDialog(false)}
+                className="w-full rounded-lg bg-teal-700 px-5 py-3 font-semibold text-white transition hover:bg-teal-800"
+              >
+                Compris
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Success Dialog */}
       <AnimatePresence>
         {showSuccessDialog && (
@@ -2413,9 +2569,9 @@ export default function Membres() {
                   initial={{ scale: 0.8 }}
                   animate={{ scale: 1 }}
                   transition={{ delay: 0.6, type: "spring" }}
-                  className="text-4xl font-bold text-center text-teal-600 tracking-wider"
+                  className="text-2xl font-bold text-center text-teal-600 tracking-wider"
                 >
-                  ELC-{newMemberCode}
+                  {formatMemberCode(newMemberCode)}
                 </motion.p>
                 <p className="text-xs text-gray-500 text-center mt-3">
                   Ce code unique identifie le membre dans le système
@@ -2581,6 +2737,9 @@ export default function Membres() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Code
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Membre
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -2603,7 +2762,7 @@ export default function Membres() {
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredMembers.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center">
+                  <td colSpan={7} className="px-6 py-12 text-center">
                     <div className="flex flex-col items-center">
                       <UserIcon className="h-12 w-12 text-gray-400 mb-4" />
                       <h3 className="text-lg font-medium text-gray-900 mb-2">Aucun membre trouvé</h3>
@@ -2622,9 +2781,17 @@ export default function Membres() {
                 currentPageMembers.map((member) => (
                   <tr
                     key={member.id}
-                    className="hover:bg-gray-50 cursor-pointer transition-colors"
+                    className={`${member._offlinePending ? 'bg-amber-50/70 cursor-default' : 'hover:bg-gray-50 cursor-pointer'} transition-colors`}
                     onClick={() => handleRowClick(member)}
                   >
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex rounded-lg px-3 py-1.5 text-sm font-semibold ring-1 ring-inset ${member._offlinePending
+                        ? 'bg-amber-100 text-amber-800 ring-amber-200'
+                        : 'bg-teal-50 font-mono text-teal-800 ring-teal-200'
+                        }`}>
+                        {member._offlinePending ? 'En attente' : formatMemberCode(member.code)}
+                      </span>
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10">
@@ -2648,6 +2815,11 @@ export default function Membres() {
                           <div className="text-sm text-gray-500">
                             {member.birthDate && `${calculateAge(member.birthDate)} ans`}
                           </div>
+                          {member._offlinePending && (
+                            <div className={`mt-1 text-xs font-medium ${member._offlineStatus === 'failed' ? 'text-red-600' : 'text-amber-700'}`}>
+                              {member._offlineStatus === 'failed' ? 'Synchronisation à vérifier' : 'En attente de synchronisation'}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -2673,7 +2845,12 @@ export default function Membres() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex items-center justify-end space-x-2">
+                      {member._offlinePending ? (
+                        <span className="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
+                          Actions disponibles après synchronisation
+                        </span>
+                      ) : (
+                        <div className="flex items-center justify-end space-x-2">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -2745,7 +2922,8 @@ export default function Membres() {
                           <TrashIcon className="h-5 w-5" />
                           <span className="absolute bottom-full right-0 mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">Supprimer</span>
                         </button>
-                      </div>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))

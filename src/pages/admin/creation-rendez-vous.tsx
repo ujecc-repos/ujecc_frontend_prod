@@ -251,7 +251,7 @@ const CreationRendezVous: React.FC = () => {
       
       {/* Back button */}
       <button
-        onClick={() => navigate('/tableau-de-bord/admin/rendez-vous')}
+        onClick={() => navigate('/tableau-de-bord/rendez-vous')}
         className="flex items-center text-gray-600 hover:text-gray-900 mb-6"
       >
         <ArrowLeftIcon className="h-5 w-5 mr-1" />
@@ -476,7 +476,7 @@ const CreationRendezVous: React.FC = () => {
               <div className="flex space-x-4">
                 <button
                   type="button"
-                  onClick={() => navigate('/tableau-de-bord/admin/rendez-vous')}
+                  onClick={() => navigate('/tableau-de-bord/rendez-vous')}
                   className="px-4 py-2 bg-teal-600 text-white rounded-md text-sm font-medium hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
                 >
                   Retour à la liste
