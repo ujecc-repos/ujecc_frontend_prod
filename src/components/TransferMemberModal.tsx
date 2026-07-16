@@ -66,18 +66,18 @@ const TransferMemberModal: React.FC<TransferMemberModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validation
     const newErrors: Record<string, string> = {};
     if (!formData.toChurchId) {
       newErrors.toChurchId = 'Veuillez sélectionner une église de destination';
     }
-    
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
-    
+
     setErrors({});
     onSubmit(formData);
   };
@@ -161,7 +161,7 @@ const TransferMemberModal: React.FC<TransferMemberModalProps> = ({
               <div>
                 <p className="text-sm font-medium text-gray-700">Église de destination</p>
                 <p className="text-purple-600 font-semibold">
-                  {formData.toChurchId ? 
+                  {formData.toChurchId ?
                     churchOptions.find(option => option.value === formData.toChurchId)?.label || 'Sélectionnée'
                     : 'À sélectionner'
                   }
@@ -249,7 +249,7 @@ const TransferMemberModal: React.FC<TransferMemberModalProps> = ({
               <div>
                 <h4 className="text-sm font-medium text-yellow-800">Attention</h4>
                 <p className="text-sm text-yellow-700 mt-1">
-                  Ce transfert déplacera définitivement le membre vers l'église sélectionnée. 
+                  Ce transfert déplacera définitivement le membre vers l'église sélectionnée.
                   Cette action nécessitera une validation de l'église de destination.
                 </p>
               </div>

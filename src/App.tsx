@@ -8,7 +8,7 @@ function App() {
 
   if (user) {
     return (
-      <Navigate to="/tableau-de-bord" replace />
+      <Navigate to={user.role === 'Membre' ? '/tableau-de-bord/messagerie' : '/tableau-de-bord'} replace />
     )
   }
 

@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
   MagnifyingGlassIcon,
@@ -41,9 +42,11 @@ import DeleteMemberModal from '../../components/DeleteMemberModal';
 import EditMemberModal from '../../components/EditMemberModal';
 import TransferMemberModal from '../../components/TransferMemberModal';
 import BulkImportModal from '../../components/BulkImportModal';
+import { createMemberOperationId, getQueuedMemberPreviews, isOfflineNetworkError, queueMemberCreation, type MemberRequest } from '../../offline/memberQueue';
 
 interface Member {
   id: string;
+  code?: string;
   firstname: string;
   lastname: string;
   email?: string;
@@ -57,6 +60,18 @@ interface Member {
   city?: string;
   country?: string;
   addressLine?: string;
+  nif?: string;
+  birthCity?: string;
+  groupeSanguin?: string;
+  minister?: string;
+  isBaptized?: boolean;
+  baptismDate?: string;
+  _offlinePending?: boolean;
+  _offlineStatus?: 'pending' | 'failed';
+  _offlineError?: string;
+  ministry?: {
+    name: string;
+  };
 }
 
 type AgeCategory = 'enfant' | 'adolescent' | 'jeune' | 'adulte' | 'all';
@@ -128,6 +143,14 @@ interface AddMemberModalProps {
   onSubmit: (formData: AddMemberFormData) => void;
   isLoading: boolean;
 }
+
+const MEMBER_FORM_STEPS = [
+  { key: 'personal', label: 'Informations Personnelles' },
+  { key: 'contact', label: 'Contact & Localisation' },
+  { key: 'church', label: 'Informations Église' },
+] as const;
+
+type MemberFormStep = (typeof MEMBER_FORM_STEPS)[number]['key'];
 
 const FilterModal: React.FC<FilterModalProps> = ({ isOpen, onClose, filters, onApplyFilters, onClear }) => {
   const [localFilters, setLocalFilters] = useState<FilterState>(filters);
@@ -417,8 +440,8 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
     sundayClassId: ''
   });
 
-  // const [showPassword, setShowPassword] = useState(false);
-  const [activeTab, setActiveTab] = useState('personal');
+  const [showPassword, setShowPassword] = useState(false);
+  const [activeTab, setActiveTab] = useState<MemberFormStep>('personal');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showJoinCalendar, setShowJoinCalendar] = useState(false);
@@ -499,25 +522,59 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
 
     if (!formData.firstname.trim()) newErrors.firstname = 'Le nom est obligatoire';
     if (!formData.lastname.trim()) newErrors.lastname = 'Le prénom est obligatoire';
-    // if (!formData.email.trim()) newErrors.email = "L'adresse électronique est obligatoire";
-    // if (!formData.password.trim()) newErrors.password = 'Le mot de passe est obligatoire';
+    if (!formData.email.trim()) newErrors.email = "L'adresse électronique est obligatoire pour permettre la connexion";
+    if (!formData.password.trim()) {
+      newErrors.password = 'Le mot de passe est obligatoire pour permettre la connexion';
+    } else if (formData.password.length < 8) {
+      newErrors.password = 'Le mot de passe doit contenir au moins 8 caractères';
+    }
     // if (!formData.role.trim()) newErrors.role = 'Le rôle est obligatoire';
 
-    // Email validation
-    // const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    // if (formData.email && !emailRegex.test(formData.email)) {
-    //   newErrors.email = 'Format d\'email invalide';
-    // }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (formData.email && !emailRegex.test(formData.email)) {
+      newErrors.email = 'Format d\'email invalide';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const currentStepIndex = MEMBER_FORM_STEPS.findIndex((step) => step.key === activeTab);
+  const isLastStep = currentStepIndex === MEMBER_FORM_STEPS.length - 1;
+
+  const handleNext = () => {
+    if (activeTab === 'personal' && !validateForm()) return;
+
+    const nextStep = MEMBER_FORM_STEPS[currentStepIndex + 1];
+    if (nextStep) setActiveTab(nextStep.key);
+  };
+
+  const handlePrevious = () => {
+    const previousStep = MEMBER_FORM_STEPS[currentStepIndex - 1];
+    if (previousStep) setActiveTab(previousStep.key);
+  };
+
+  const submitMember = () => {
+    // Creation is deliberately restricted to the visible final step.
+    if (activeTab !== 'church') return;
+
     if (validateForm()) {
       onSubmit(formData);
+    } else {
+      setActiveTab('personal');
     }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Pressing Enter on steps 1 or 2 behaves exactly like the Next button.
+    if (activeTab !== 'church') {
+      handleNext();
+      return;
+    }
+
+    submitMember();
   };
 
   const resetForm = () => {
@@ -599,24 +656,40 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
           </button>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex border-b border-gray-200 flex-shrink-0">
-          {[
-            { key: 'personal', label: 'Informations Personnelles' },
-            { key: 'contact', label: 'Contact & Localisation' },
-            { key: 'church', label: 'Informations Église' }
-          ].map((tab) => (
+        {/* Step Navigation */}
+        <div className="flex border-b border-gray-200 flex-shrink-0" aria-label="Étapes de création du membre">
+          {MEMBER_FORM_STEPS.map((step, index) => {
+            const isCurrent = activeTab === step.key;
+            const isComplete = index < currentStepIndex;
+            const isFuture = index > currentStepIndex;
+
+            return (
             <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`flex-1 py-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.key
+              key={step.key}
+              type="button"
+              onClick={() => {
+                if (isComplete) setActiveTab(step.key);
+              }}
+              disabled={isFuture}
+              aria-current={isCurrent ? 'step' : undefined}
+              className={`flex flex-1 items-center justify-center gap-2 py-3 px-2 text-xs sm:text-sm font-medium border-b-2 transition-colors ${isCurrent
                 ? 'border-teal-500 text-teal-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                : isComplete
+                  ? 'border-transparent text-teal-600 hover:bg-teal-50'
+                  : 'border-transparent text-gray-400 cursor-not-allowed'
                 }`}
             >
-              {tab.label}
+              <span className={`flex h-6 w-6 flex-none items-center justify-center rounded-full text-xs font-semibold ${isCurrent || isComplete
+                ? 'bg-teal-600 text-white'
+                : 'bg-gray-200 text-gray-500'
+                }`}>
+                {isComplete ? '✓' : index + 1}
+              </span>
+              <span className="hidden sm:inline">{step.label}</span>
+              <span className="sm:hidden">Étape {index + 1}</span>
             </button>
-          ))}
+            );
+          })}
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
@@ -695,7 +768,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                   </div>
 
                   {/* Email */}
-                  {/* <div>
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Adresse Électronique <span className="text-red-500">*</span>
                     </label>
@@ -709,10 +782,10 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                       placeholder="email@exemple.com"
                     />
                     {errors.email && <p className="mt-1 text-sm text-red-500">{errors.email}</p>}
-                  </div> */}
+                  </div>
 
                   {/* Password */}
-                  {/* <div>
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Mot de Passe <span className="text-red-500">*</span>
                     </label>
@@ -735,7 +808,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                       </button>
                     </div>
                     {errors.password && <p className="mt-1 text-sm text-red-500">{errors.password}</p>}
-                  </div> */}
+                  </div>
 
                   {/* Gender */}
                   <div>
@@ -1301,31 +1374,58 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
 
           {/* Footer */}
           <div className="flex items-center justify-between p-6 border-t border-gray-200 flex-shrink-0 bg-white">
-            <button
-              type="button"
-              onClick={handleClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
-            >
-              Annuler
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="px-6 py-2 text-sm font-medium text-white bg-teal-600 border border-transparent rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-70 disabled:cursor-not-allowed relative overflow-hidden"
-              style={{
-                position: 'relative'
-              }}
-            >
-              {isLoading ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Ajout en cours...
-                </>
-              ) : 'Ajouter Membre'}
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={handleClose}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+              >
+                Annuler
+              </button>
+              {currentStepIndex > 0 && (
+                <button
+                  type="button"
+                  onClick={handlePrevious}
+                  className="px-4 py-2 text-sm font-medium text-teal-700 bg-white border border-teal-200 rounded-md hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+                >
+                  Précédent
+                </button>
+              )}
+            </div>
+
+            {!isLastStep ? (
+              <button
+                key="member-form-next"
+                type="button"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  handleNext();
+                }}
+                className="inline-flex items-center gap-2 px-6 py-2 text-sm font-medium text-white bg-teal-600 border border-transparent rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+              >
+                Suivant
+                <ArrowRightIcon className="h-4 w-4" />
+              </button>
+            ) : (
+              <button
+                key="member-form-submit"
+                type="button"
+                onClick={submitMember}
+                disabled={isLoading}
+                className="px-6 py-2 text-sm font-medium text-white bg-teal-600 border border-transparent rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-70 disabled:cursor-not-allowed relative overflow-hidden"
+              >
+                {isLoading ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Ajout en cours...
+                  </>
+                ) : 'Ajouter Membre'}
+              </button>
+            )}
           </div>
         </form>
       </div>
@@ -1530,6 +1630,11 @@ export default function Membres() {
   const [isBulkImporting, setIsBulkImporting] = useState(false);
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const [selectedMemberForAction, setSelectedMemberForAction] = useState<Member | null>(null);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [showOfflineQueuedDialog, setShowOfflineQueuedDialog] = useState(false);
+  const [queuedMemberName, setQueuedMemberName] = useState('');
+  const [queuedMembers, setQueuedMembers] = useState<Member[]>([]);
+  const [newMemberCode, setNewMemberCode] = useState<string>('');
   const itemsPerPage = 7;
 
   // Get user data and church ID
@@ -1602,6 +1707,28 @@ export default function Membres() {
     setIsLoading(isMembersLoading);
   }, [isMembersLoading]);
 
+  useEffect(() => {
+    let isCancelled = false;
+
+    const loadQueuedMembers = async () => {
+      if (!churchId) {
+        if (!isCancelled) setQueuedMembers([]);
+        return;
+      }
+      const previews = await getQueuedMemberPreviews(churchId);
+      if (!isCancelled) setQueuedMembers(previews);
+    };
+
+    const handleQueueChange = () => void loadQueuedMembers();
+    void loadQueuedMembers();
+    window.addEventListener('ecclesys:member-queue-change', handleQueueChange);
+
+    return () => {
+      isCancelled = true;
+      window.removeEventListener('ecclesys:member-queue-change', handleQueueChange);
+    };
+  }, [churchId]);
+
   // Calculate age from birthDate
   const calculateAge = (birthDate: string | undefined): number => {
     if (!birthDate) return 0;
@@ -1618,6 +1745,11 @@ export default function Membres() {
     return age;
   };
 
+  const formatMemberCode = (code?: string) => {
+    if (!code) return '—';
+    return code.startsWith('ELC-') ? code : `ELC-${code}`;
+  };
+
   // Get age category from birthDate
   const getAgeCategoryFromBirthDate = (birthDate: string | undefined): AgeCategory => {
     if (!birthDate) return 'adulte';
@@ -1632,9 +1764,10 @@ export default function Membres() {
 
   // Filter members based on all criteria
   const filteredMembers = useMemo(() => {
-    if (!membersData) return [];
+    const availableMembers: Member[] = [...queuedMembers, ...(membersData || [])];
+    if (availableMembers.length === 0) return [];
 
-    return membersData.filter((member: Member) => {
+    return availableMembers.filter((member: Member) => {
       // Basic search by name, email, or phone based on searchType
       let basicSearchMatch = true;
       if (searchQuery) {
@@ -1682,7 +1815,7 @@ export default function Membres() {
 
       return true;
     });
-  }, [membersData, searchQuery, filters]);
+  }, [membersData, queuedMembers, searchQuery, filters]);
 
   // Pagination calculations
   const totalPages = Math.ceil(filteredMembers.length / itemsPerPage);
@@ -1882,6 +2015,7 @@ export default function Membres() {
   };
 
   const handleRowClick = (member: Member) => {
+    if (member._offlinePending) return;
     navigate(`/tableau-de-bord/admin/person/${member.id}`);
   };
 
@@ -1936,7 +2070,8 @@ export default function Membres() {
 
   // Export functions
   const generatePDF = async (members: Member[]) => {
-    const doc = new jsPDF();
+    // Use landscape orientation for more columns
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
     const currentDate = new Date();
     const formattedDate = currentDate.toLocaleDateString('fr-FR', {
       year: 'numeric',
@@ -1947,76 +2082,145 @@ export default function Membres() {
     // Set font size and add title
     doc.setFontSize(18);
     doc.setTextColor(44, 62, 80);
-    doc.text('LISTE DES MEMBRES DE L\'ÉGLISE', 105, 20, { align: 'center' });
+    doc.text('LISTE DES MEMBRES DE L\'ÉGLISE', 148, 15, { align: 'center' });
 
     // Add church name
-    doc.setFontSize(14);
+    doc.setFontSize(12);
     doc.setTextColor(127, 140, 141);
-    doc.text(userData?.church?.name || 'Église', 105, 30, { align: 'center' });
+    doc.text(userData?.church?.name || 'Église', 148, 22, { align: 'center' });
 
     // Add info section
-    doc.setFontSize(12);
+    doc.setFontSize(10);
     doc.setTextColor(51, 51, 51);
-    doc.text(`Date du rapport: ${formattedDate}`, 20, 45);
-    doc.text(`Nombre total de membres: ${members.length}`, 20, 52);
+    doc.text(`Date du rapport: ${formattedDate}`, 10, 30);
+    doc.text(`Nombre total de membres: ${members.length}`, 10, 35);
 
-    // Add table headers
-    let yPos = 65;
-    const colWidths = [40, 40, 50, 60];
-    const startX = 20;
+    // Define all column headers with shortened names to fit
+    const headers = [
+      'Code', 'Prénom', 'Nom', 'Genre', 'Date Naiss.', 'NI/NU', 'Ville',
+      'Pays', 'État Civil', 'Date Baptême', 'Grp. Sang.', 'Ministère',
+      'Baptisé(e)', 'Téléphone', 'Email', 'Rôle'
+    ];
+
+    // Column widths - adjusted to fit landscape mode (297mm - 20mm margins = 277mm total)
+    // Fill the complete printable width after removing the two export columns.
+    const colWidths = [14, 17, 17, 14, 19, 14, 16, 16, 17, 19, 16, 17, 15, 19, 31, 16];
+    const startX = 10;
+    let yPos = 42;
+    const lineHeight = 6;
+    const pageHeight = 210; // A4 landscape height
+
+    // Helper function to format dates
+    const formatDate = (dateString?: string) => {
+      if (!dateString) return '';
+      try {
+        return new Date(dateString).toLocaleDateString('fr-FR', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        });
+      } catch {
+        return '';
+      }
+    };
 
     // Table header
     doc.setFillColor(248, 249, 250);
     doc.setDrawColor(221, 221, 221);
-    doc.rect(startX, yPos - 5, colWidths.reduce((a, b) => a + b, 0), 10, 'FD');
+    doc.rect(startX, yPos - 4, colWidths.reduce((a, b) => a + b, 0), 8, 'FD');
 
     doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7);
     doc.setTextColor(44, 62, 80);
-    doc.text('Prénom', startX + 5, yPos);
-    doc.text('Nom', startX + colWidths[0] + 5, yPos);
-    doc.text('Email', startX + colWidths[0] + colWidths[1] + 5, yPos);
-    doc.text('Téléphone', startX + colWidths[0] + colWidths[1] + colWidths[2] + 5, yPos);
+
+    let xPos = startX + 1;
+    headers.forEach((header, index) => {
+      doc.text(header, xPos, yPos, { maxWidth: colWidths[index] - 2 });
+      xPos += colWidths[index];
+    });
 
     // Table rows
-    yPos += 10;
+    yPos += 6;
     doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6);
     doc.setTextColor(51, 51, 51);
 
     members.forEach((member, index) => {
-      if (yPos > 270) {
+      if (yPos > pageHeight - 10) {
         doc.addPage();
-        yPos = 20;
+        yPos = 15;
       }
 
       // Alternate row background
       if (index % 2 === 1) {
         doc.setFillColor(248, 249, 250);
-        doc.rect(startX, yPos - 5, colWidths.reduce((a, b) => a + b, 0), 10, 'F');
+        doc.rect(startX, yPos - 4, colWidths.reduce((a, b) => a + b, 0), lineHeight, 'F');
       }
 
-      doc.text(member.firstname || '', startX + 5, yPos);
-      doc.text(member.lastname || '', startX + colWidths[0] + 5, yPos);
-      doc.text(member.email || '', startX + colWidths[0] + colWidths[1] + 5, yPos);
-      doc.text(member.mobilePhone || '', startX + colWidths[0] + colWidths[1] + colWidths[2] + 5, yPos);
+      // Prepare row data
+      const rowData = [
+        formatMemberCode(member.code),
+        member.firstname || '',
+        member.lastname || '',
+        member.sex || '',
+        formatDate(member.birthDate),
+        member.nif || '',
+        member.city || '',
+        member.country || '',
+        member.etatCivil || '',
+        formatDate(member.baptismDate),
+        member.groupeSanguin || '',
+        member.minister || '',
+        member.isBaptized ? 'Oui' : 'Non',
+        member.mobilePhone || '',
+        member.email || '',
+        member.role || ''
+      ];
 
-      yPos += 10;
+      xPos = startX + 1;
+      rowData.forEach((data, colIndex) => {
+        doc.text(String(data), xPos, yPos, { maxWidth: colWidths[colIndex] - 2 });
+        xPos += colWidths[colIndex];
+      });
+
+      yPos += lineHeight;
     });
 
     doc.save('membres-eglise.pdf');
   };
 
   const generateExcel = (members: Member[]) => {
+    // Helper function to format dates
+    const formatDate = (dateString?: string) => {
+      if (!dateString) return '';
+      try {
+        return new Date(dateString).toLocaleDateString('fr-FR', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        });
+      } catch {
+        return '';
+      }
+    };
+
     const worksheet = XLSX.utils.json_to_sheet(
       members.map(member => ({
+        'Code du membre': formatMemberCode(member.code),
         'Prénom': member.firstname || '',
         'Nom': member.lastname || '',
-        'Email': member.email || '',
-        'Téléphone': member.mobilePhone || '',
         'Genre': member.sex || '',
+        'Date de Naissance': formatDate(member.birthDate),
+        'NI/NU': member.nif || '',
         'Ville': member.city || '',
         'Pays': member.country || '',
-        'Profession': member.profession || '',
         'État Civil': member.etatCivil || '',
+        'Date de Baptême': formatDate(member.baptismDate),
+        'Groupe Sanguin': member.groupeSanguin || '',
+        'Ministère': member.minister || '',
+        'Baptisé(e)': member.isBaptized ? 'Oui' : 'Non',
+        'Téléphone': member.mobilePhone || '',
+        'Email': member.email || '',
         'Rôle': member.role || ''
       }))
     );
@@ -2027,6 +2231,20 @@ export default function Membres() {
   };
 
   const generateWord = async (members: Member[]) => {
+    // Helper function to format dates
+    const formatDate = (dateString?: string) => {
+      if (!dateString) return '';
+      try {
+        return new Date(dateString).toLocaleDateString('fr-FR', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        });
+      } catch {
+        return '';
+      }
+    };
+
     const doc = new Document({
       sections: [{
         properties: {},
@@ -2080,18 +2298,42 @@ export default function Membres() {
             rows: [
               new TableRow({
                 children: [
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Prénom', bold: true })] })] }),
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Nom', bold: true })] })] }),
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Email', bold: true })] })] }),
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Téléphone', bold: true })] })] })
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Code', bold: true, size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Prénom', bold: true, size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Nom', bold: true, size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Genre', bold: true, size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Date Naiss.', bold: true, size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'NI/NU', bold: true, size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Ville', bold: true, size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Pays', bold: true, size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'État Civil', bold: true, size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Date Baptême', bold: true, size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Grp. Sang.', bold: true, size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Ministère', bold: true, size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Baptisé(e)', bold: true, size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Téléphone', bold: true, size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Email', bold: true, size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Rôle', bold: true, size: 16 })] })] })
                 ]
               }),
               ...members.map(member => new TableRow({
                 children: [
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.firstname || '' })] })] }),
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.lastname || '' })] })] }),
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.email || '' })] })] }),
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.mobilePhone || '' })] })] })
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: formatMemberCode(member.code), size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.firstname || '', size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.lastname || '', size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.sex || '', size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: formatDate(member.birthDate), size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.nif || '', size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.city || '', size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.country || '', size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.etatCivil || '', size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: formatDate(member.baptismDate), size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.groupeSanguin || '', size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.minister || '', size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.isBaptized ? 'Oui' : 'Non', size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.mobilePhone || '', size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.email || '', size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.role || '', size: 16 })] })] })
                 ]
               }))
             ]
@@ -2124,77 +2366,90 @@ export default function Membres() {
   };
 
   const handleAddMember = async (formData: AddMemberFormData) => {
+    if (!formData.firstname) {
+      alert('Le nom est obligatoire');
+      return;
+    }
+
+    if (!formData.lastname) {
+      alert('Le prénom est obligatoire');
+      return;
+    }
+
+    let requestPayload: MemberRequest;
+    const offlineOperationId = createMemberOperationId();
+
+    // Preserve image files as FormData; Dexie can store the Blob while offline.
+    if (formData.profileImage) {
+      const formDataObj = new FormData();
+      formDataObj.append('profileImage', formData.profileImage);
+      formDataObj.append('offlineOperationId', offlineOperationId);
+
+      Object.keys(formData).forEach(key => {
+        if (key === 'profileImage') return;
+        const value = formData[key as keyof AddMemberFormData];
+        if (value === null || value === undefined) return;
+        if (key === 'gender') {
+          formDataObj.append('sex', String(value));
+        } else if (key === 'isActiveMember') {
+          formDataObj.append('membreActif', String(value));
+        } else {
+          formDataObj.append(key, String(value));
+        }
+      });
+
+      if (churchId) formDataObj.append('churchId', churchId);
+      requestPayload = formDataObj;
+    } else {
+      const mappedData: Record<string, unknown> = {
+        ...formData,
+        sex: formData.gender,
+        membreActif: formData.isActiveMember,
+        churchId: churchId || '',
+        offlineOperationId,
+      };
+      delete mappedData.gender;
+      delete mappedData.isActiveMember;
+      delete mappedData.profileImage;
+      requestPayload = mappedData;
+    }
+
+    const markAsQueued = async () => {
+      await queueMemberCreation(requestPayload, churchId || '');
+      setQueuedMemberName(`${formData.firstname} ${formData.lastname}`.trim());
+      setIsAddMemberModalOpen(false);
+      setShowOfflineQueuedDialog(true);
+    };
+
     setIsAddingMember(true);
     try {
-      // Validate required fields
-      if (!formData.firstname) {
-        alert('Le nom est obligatoire');
+      if (!navigator.onLine) {
+        await markAsQueued();
         return;
       }
 
-      if (!formData.lastname) {
-        alert('Le prénom est obligatoire');
-        return;
-      }
-
-
-
-
-      // If there's a profile image, use FormData to handle the multipart request
+      let result: any;
       if (formData.profileImage) {
-        const formDataObj = new FormData();
-
-        // Add the image file
-        formDataObj.append('profileImage', formData.profileImage);
-
-        // Add all other form fields
-        Object.keys(formData).forEach(key => {
-          if (key === 'profileImage') return;
-          const value = formData[key as keyof AddMemberFormData];
-          if (value === null || value === undefined) return;
-          if (key === 'gender') {
-            formDataObj.append('sex', String(value));
-          } else if (key === 'isActiveMember') {
-            formDataObj.append('membreActif', String(value));
-          } else {
-            formDataObj.append(key, String(value));
-          }
-        });
-
-        // Add church ID
-        if (churchId) {
-          formDataObj.append('churchId', churchId);
-        }
-
-        await register(formDataObj).unwrap();
+        result = await register(requestPayload as FormData).unwrap();
       } else {
-        // No image, use regular JSON request
-        const mappedData: any = {
-          ...formData,
-          sex: formData.gender,
-          membreActif: formData.isActiveMember,
-        };
-        delete mappedData.gender;
-        delete mappedData.isActiveMember;
-        const userData = {
-          ...mappedData,
-          churchId: churchId || '',
-          profileImage: undefined
-        };
-
-        await register(userData).unwrap();
+        result = await register(requestPayload as Record<string, unknown> as any).unwrap();
       }
 
-      // Close modal and show success message
-      setIsAddMemberModalOpen(false);
-      // alert('Membre ajouté avec succès!');
+      if (result?.user) setNewMemberCode(result.user);
 
-      // Refetch users to update the list
-      // refetch();
+      setIsAddMemberModalOpen(false);
+      setShowSuccessDialog(true);
     } catch (error: any) {
+      if (isOfflineNetworkError(error)) {
+        try {
+          await markAsQueued();
+          return;
+        } catch (queueError) {
+          console.error('Error queueing member:', queueError);
+        }
+      }
       console.error('Error adding member:', error);
       const errorMessage = getApiErrorMessage(error, 'Erreur lors de l\'ajout du membre');
-      console.log("error : ", error)
       alert(`Erreur d'enregistrement: ${errorMessage}`);
     } finally {
       setIsAddingMember(false);
@@ -2215,6 +2470,148 @@ export default function Membres() {
 
   return (
     <div className="">
+      <AnimatePresence>
+        {showOfflineQueuedDialog && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+            onClick={() => setShowOfflineQueuedDialog(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.92, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.92, opacity: 0, y: 20 }}
+              className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-2xl"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
+                <svg className="h-9 w-9 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6l4 2m5-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h2 className="mb-2 text-2xl font-bold text-slate-900">Membre enregistré hors ligne</h2>
+              <p className="mb-2 font-medium text-teal-700">{queuedMemberName}</p>
+              <p className="mb-6 text-slate-600">
+                Cet enregistrement est protégé sur cet appareil et sera envoyé automatiquement dès que la connexion reviendra.
+              </p>
+              <button
+                onClick={() => setShowOfflineQueuedDialog(false)}
+                className="w-full rounded-lg bg-teal-700 px-5 py-3 font-semibold text-white transition hover:bg-teal-800"
+              >
+                Compris
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Success Dialog */}
+      <AnimatePresence>
+        {showSuccessDialog && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50"
+            onClick={() => setShowSuccessDialog(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.5, opacity: 0, y: -50 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.5, opacity: 0, y: 50 }}
+              transition={{ type: "spring", duration: 0.5 }}
+              className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 relative"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Success Icon */}
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                className="mx-auto w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6"
+              >
+                <svg className="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </motion.div>
+
+              {/* Title */}
+              <motion.h2
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="text-2xl font-bold text-center text-gray-900 mb-2"
+              >
+                Membre Enregistré !
+              </motion.h2>
+
+              {/* Description */}
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="text-center text-gray-600 mb-6"
+              >
+                Le membre a été ajouté avec succès à votre église.
+              </motion.p>
+
+              {/* Member Code Card */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.5 }}
+                className="bg-gradient-to-r from-teal-50 to-cyan-50 border-2 border-teal-200 rounded-xl p-6 mb-6"
+              >
+                <p className="text-sm text-gray-600 text-center mb-2">Code du Membre</p>
+                <motion.p
+                  initial={{ scale: 0.8 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.6, type: "spring" }}
+                  className="text-2xl font-bold text-center text-teal-600 tracking-wider"
+                >
+                  {formatMemberCode(newMemberCode)}
+                </motion.p>
+                <p className="text-xs text-gray-500 text-center mt-3">
+                  Ce code unique identifie le membre dans le système
+                </p>
+              </motion.div>
+
+              {/* Close Button */}
+              <motion.button
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.7 }}
+                onClick={() => setShowSuccessDialog(false)}
+                className="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 shadow-md"
+              >
+                Fermer
+              </motion.button>
+
+              {/* Decorative Confetti */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: [0, 1, 1, 0] }}
+                transition={{ duration: 2, times: [0, 0.1, 0.9, 1] }}
+                className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden rounded-2xl"
+              >
+                {[...Array(20)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ y: -20, x: Math.random() * 100 + '%', opacity: 1 }}
+                    animate={{ y: '100vh', opacity: 0 }}
+                    transition={{ duration: 2 + Math.random(), delay: Math.random() * 0.5 }}
+                    className="absolute w-2 h-2 bg-gradient-to-br from-teal-400 to-cyan-400 rounded-full"
+                    style={{ left: `${Math.random() * 100}%` }}
+                  />
+                ))}
+              </motion.div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Gestion des Membres</h1>
@@ -2340,6 +2737,9 @@ export default function Membres() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Code
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Membre
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -2362,7 +2762,7 @@ export default function Membres() {
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredMembers.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center">
+                  <td colSpan={7} className="px-6 py-12 text-center">
                     <div className="flex flex-col items-center">
                       <UserIcon className="h-12 w-12 text-gray-400 mb-4" />
                       <h3 className="text-lg font-medium text-gray-900 mb-2">Aucun membre trouvé</h3>
@@ -2381,9 +2781,17 @@ export default function Membres() {
                 currentPageMembers.map((member) => (
                   <tr
                     key={member.id}
-                    className="hover:bg-gray-50 cursor-pointer transition-colors"
+                    className={`${member._offlinePending ? 'bg-amber-50/70 cursor-default' : 'hover:bg-gray-50 cursor-pointer'} transition-colors`}
                     onClick={() => handleRowClick(member)}
                   >
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex rounded-lg px-3 py-1.5 text-sm font-semibold ring-1 ring-inset ${member._offlinePending
+                        ? 'bg-amber-100 text-amber-800 ring-amber-200'
+                        : 'bg-teal-50 font-mono text-teal-800 ring-teal-200'
+                        }`}>
+                        {member._offlinePending ? 'En attente' : formatMemberCode(member.code)}
+                      </span>
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10">
@@ -2407,6 +2815,11 @@ export default function Membres() {
                           <div className="text-sm text-gray-500">
                             {member.birthDate && `${calculateAge(member.birthDate)} ans`}
                           </div>
+                          {member._offlinePending && (
+                            <div className={`mt-1 text-xs font-medium ${member._offlineStatus === 'failed' ? 'text-red-600' : 'text-amber-700'}`}>
+                              {member._offlineStatus === 'failed' ? 'Synchronisation à vérifier' : 'En attente de synchronisation'}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -2432,7 +2845,12 @@ export default function Membres() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex items-center justify-end space-x-2">
+                      {member._offlinePending ? (
+                        <span className="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
+                          Actions disponibles après synchronisation
+                        </span>
+                      ) : (
+                        <div className="flex items-center justify-end space-x-2">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -2504,7 +2922,8 @@ export default function Membres() {
                           <TrashIcon className="h-5 w-5" />
                           <span className="absolute bottom-full right-0 mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">Supprimer</span>
                         </button>
-                      </div>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))

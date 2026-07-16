@@ -20,6 +20,7 @@ import {
 import { CalendarDaysIcon } from '@heroicons/react/24/solid';
 import CreateEventModal from '../../components/modals/CreateEventModal';
 import EditEventModal from '../../components/modals/EditEventModal';
+import { useAuth } from '../../Auth/auth';
 
 interface Event {
   id: string;
@@ -42,6 +43,12 @@ interface Event {
 }
 
 export default function Evenements() {
+  const { user } = useAuth();
+  const isMember = user?.role === 'Membre';
+  const eventBasePath = isMember
+    ? '/tableau-de-bord/evenements'
+    : '/tableau-de-bord/admin/evenements';
+
   // State management
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -175,22 +182,24 @@ export default function Evenements() {
             Liste des événements ({filteredEvents.length})
           </p>
         </div>
-        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none space-x-2">
-          <button
-            onClick={() => setShowExportModal(true)}
-            className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-          >
-            <ArrowDownTrayIcon className="-ml-0.5 mr-2 h-4 w-4" aria-hidden="true" />
-            Exporter
-          </button>
-          <button
-            onClick={() => setIsCreateEventModalOpen(true)}
-            className="inline-flex items-center rounded-md border border-transparent bg-indigo-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-          >
-            <PlusIcon className="-ml-0.5 mr-2 h-4 w-4" aria-hidden="true" />
-            Ajouter un événement
-          </button>
-        </div>
+        {!isMember && (
+          <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none space-x-2">
+            <button
+              onClick={() => setShowExportModal(true)}
+              className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            >
+              <ArrowDownTrayIcon className="-ml-0.5 mr-2 h-4 w-4" aria-hidden="true" />
+              Exporter
+            </button>
+            <button
+              onClick={() => setIsCreateEventModalOpen(true)}
+              className="inline-flex items-center rounded-md border border-transparent bg-indigo-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            >
+              <PlusIcon className="-ml-0.5 mr-2 h-4 w-4" aria-hidden="true" />
+              Ajouter un événement
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Search and filters */}
@@ -222,16 +231,20 @@ export default function Evenements() {
                 <div className="flex flex-col items-center justify-center py-12 bg-white">
                   <CalendarDaysIcon className="h-12 w-12 text-gray-400" />
                   <h3 className="mt-2 text-sm font-medium text-gray-900">Aucun événement</h3>
-                  <p className="mt-1 text-sm text-gray-500">Commencez par créer un nouvel événement.</p>
-                  <div className="mt-6">
-                    <button
-                      onClick={() => setIsCreateEventModalOpen(true)}
-                      className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                    >
-                      <PlusIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-                      Créer un événement
-                    </button>
-                  </div>
+                  <p className="mt-1 text-sm text-gray-500">
+                    {isMember ? "Aucun événement n'est actuellement disponible." : 'Commencez par créer un nouvel événement.'}
+                  </p>
+                  {!isMember && (
+                    <div className="mt-6">
+                      <button
+                        onClick={() => setIsCreateEventModalOpen(true)}
+                        className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                      >
+                        <PlusIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+                        Créer un événement
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <table className="min-w-full divide-y divide-gray-300">
@@ -249,16 +262,18 @@ export default function Evenements() {
                       <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
                         Fréquence
                       </th>
-                      <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
-                        <span className="sr-only">Actions</span>
-                      </th>
+                      {!isMember && (
+                        <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                          <span className="sr-only">Actions</span>
+                        </th>
+                      )}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 bg-white">
                     {currentPageEvents.map((event) => (
                       <tr key={event.id}>
                         <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
-                          <Link to={`/tableau-de-bord/admin/evenements/${event.id}`} className="text-indigo-600 hover:text-indigo-900">
+                          <Link to={`${eventBasePath}/${event.id}`} className="text-indigo-600 hover:text-indigo-900">
                             {event.title}
                           </Link>
                         </td>
@@ -284,7 +299,8 @@ export default function Evenements() {
                             {event.frequency}
                           </span>
                         </td>
-                        <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                        {!isMember && (
+                          <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
                           <Menu as="div" className="relative inline-block text-left">
                             <div>
                               <Menu.Button className="inline-flex w-full justify-center rounded-md bg-white px-2 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-100">
@@ -332,7 +348,8 @@ export default function Evenements() {
                               </div>
                             </Menu.Items>
                           </Menu>
-                        </td>
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>
@@ -395,7 +412,7 @@ export default function Evenements() {
       )}
 
       {/* Delete Modal */}
-      {isDeleteModalOpen && (
+      {!isMember && isDeleteModalOpen && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div className="mt-3 text-center">
@@ -428,7 +445,7 @@ export default function Evenements() {
       )}
 
       {/* Export Modal */}
-      {showExportModal && (
+      {!isMember && showExportModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div className="mt-3 text-center">
@@ -465,24 +482,27 @@ export default function Evenements() {
       )}
       
       {/* Create Event Modal */}
-      <CreateEventModal
-        isOpen={isCreateEventModalOpen}
-        onClose={() => setIsCreateEventModalOpen(false)}
-        onSubmit={handleCreateEvent}
-        isLoading={isCreatingEvent}
-      />
-      
-      {/* Edit Event Modal */}
-      <EditEventModal
-        isOpen={isEditEventModalOpen}
-        onClose={() => {
-          setIsEditEventModalOpen(false);
-          setSelectedEventForAction(null);
-        }}
-        onSubmit={handleUpdateEvent}
-        isLoading={isEditingEvent}
-        event={selectedEventForAction}
-      />
+      {!isMember && (
+        <>
+          <CreateEventModal
+            isOpen={isCreateEventModalOpen}
+            onClose={() => setIsCreateEventModalOpen(false)}
+            onSubmit={handleCreateEvent}
+            isLoading={isCreatingEvent}
+          />
+
+          <EditEventModal
+            isOpen={isEditEventModalOpen}
+            onClose={() => {
+              setIsEditEventModalOpen(false);
+              setSelectedEventForAction(null);
+            }}
+            onSubmit={handleUpdateEvent}
+            isLoading={isEditingEvent}
+            event={selectedEventForAction}
+          />
+        </>
+      )}
     </div>
   );
 }
