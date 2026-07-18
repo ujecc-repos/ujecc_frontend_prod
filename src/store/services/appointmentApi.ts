@@ -9,6 +9,7 @@ interface Appointment {
   time: string;
   duration: string;
   notes: string;
+  externalParticipants?: string | null;
   assignedUsers: User[];
   churchId?: string;
 }
@@ -28,6 +29,7 @@ interface CreateAppointmentRequest {
   time: string;
   duration: string;
   notes: string;
+  externalParticipants?: string;
   userIds: string[];
   churchId?: string;
 }

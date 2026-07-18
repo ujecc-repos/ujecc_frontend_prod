@@ -38,6 +38,7 @@ import { TfiStatsUp } from "react-icons/tfi";
 import { motion } from 'framer-motion';
 import { useGetLogoutMutation } from '../store/services/authApi';
 import { useGetUserByTokenQuery } from '../store/services/authApi';
+import { useGetConversationsQuery } from '../store/services/messageApi';
 
 
 
@@ -51,6 +52,16 @@ const DashboardLayout = ({ userRole }: { userRole: UserRole }) => {
   const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({});
   const [logOut] = useGetLogoutMutation()
   const { data: userToken } = useGetUserByTokenQuery()
+  const { data: navbarConversations = [] } = useGetConversationsQuery(undefined, {
+    skip: !userToken?.id,
+    pollingInterval: 8000,
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+  });
+  const unreadMessageCount = navbarConversations.reduce(
+    (total, conversation) => total + (conversation.unreadCount || 0),
+    0,
+  );
   // const { user, logout } = useAuth();
   // const user = { name: 'User', email: 'user@example.com' }; // Temporary mock user
   const logout = () => Promise.resolve(); // Temporary mock logout
@@ -587,15 +598,23 @@ const DashboardLayout = ({ userRole }: { userRole: UserRole }) => {
             <div className="flex items-center gap-x-4 lg:gap-x-6">
               <button
                 type="button"
-                className="-m-2.5 p-2.5 text-gray-400 hover:text-gray-500 relative"
+                onClick={() => navigate('/tableau-de-bord/messagerie')}
+                className={`group relative -m-2.5 flex h-11 w-11 items-center justify-center rounded-2xl transition ${unreadMessageCount > 0
+                  ? 'bg-teal-50 text-teal-700 hover:bg-teal-100'
+                  : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'
+                  }`}
+                aria-label={unreadMessageCount > 0
+                  ? `${unreadMessageCount} message${unreadMessageCount > 1 ? 's' : ''} non lu${unreadMessageCount > 1 ? 's' : ''}`
+                  : 'Aucun nouveau message'}
+                title={unreadMessageCount > 0 ? `${unreadMessageCount} nouveau${unreadMessageCount > 1 ? 'x' : ''} message${unreadMessageCount > 1 ? 's' : ''}` : 'Messagerie'}
               >
-                <span className="sr-only">View notifications</span>
-                <BellIcon className="h-6 w-6" aria-hidden="true" />
-                {/* {notificationCount > 0 && (
-                  <span className="absolute top-[11px] right-[14px] inline-flex items-center justify-center w-5 h-5 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
-                    {notificationCount}
+                <span className="sr-only">Notifications de messagerie</span>
+                <BellIcon className={`h-6 w-6 transition-transform ${unreadMessageCount > 0 ? 'group-hover:-rotate-6' : ''}`} aria-hidden="true" />
+                {unreadMessageCount > 0 && (
+                  <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-extrabold leading-none text-white shadow-md shadow-red-500/25 ring-2 ring-white">
+                    {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
                   </span>
-                )} */}
+                )}
               </button>
 
               {/* Profile dropdown */}
