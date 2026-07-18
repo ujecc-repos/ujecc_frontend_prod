@@ -45,6 +45,7 @@ interface QueueSummary {
 
 export interface SyncResult extends QueueSummary {
   synced: number;
+  discarded: number;
 }
 
 export interface QueuedMemberPreview {
@@ -228,24 +229,43 @@ export const queueMemberCreation = async (
   return id;
 };
 
-const extractError = async (response: Response): Promise<string> => {
+interface SyncErrorResponse {
+  message: string;
+  code?: string;
+}
+
+const extractError = async (response: Response): Promise<SyncErrorResponse> => {
   try {
-    const data = await response.clone().json() as { message?: string; error?: string };
-    return data.message || data.error || `Erreur serveur (${response.status})`;
+    const data = await response.clone().json() as { message?: string; error?: string; code?: string };
+    return {
+      message: data.message || data.error || `Erreur serveur (${response.status})`,
+      code: data.code,
+    };
   } catch {
-    return `Erreur serveur (${response.status})`;
+    return { message: `Erreur serveur (${response.status})` };
   }
+};
+
+const isDuplicateMemberError = (response: Response, error: SyncErrorResponse) => {
+  if (response.status !== 400) return false;
+  if (error.code === 'DUPLICATE_EMAIL' || error.code === 'DUPLICATE_NIF') return true;
+
+  // Compatibility with an older deployed backend that returned only a message.
+  const normalizedMessage = error.message.toLowerCase();
+  return normalizedMessage.includes('adresse email existe déjà') ||
+    normalizedMessage.includes('nif existe déjà');
 };
 
 const performSync = async (): Promise<SyncResult> => {
   const token = localStorage.getItem('token');
   const currentOwnerId = getCurrentUserId();
   if (!navigator.onLine || !token) {
-    return { ...(await getMemberQueueSummary()), synced: 0 };
+    return { ...(await getMemberQueueSummary()), synced: 0, discarded: 0 };
   }
 
   const records = await db.memberCreations.orderBy('createdAt').toArray();
   let synced = 0;
+  let discarded = 0;
 
   for (const record of records) {
     if (record.ownerId && currentOwnerId && record.ownerId !== currentOwnerId) continue;
@@ -281,10 +301,17 @@ const performSync = async (): Promise<SyncResult> => {
         continue;
       }
 
+      const syncError = await extractError(response);
+      if (isDuplicateMemberError(response, syncError)) {
+        await db.memberCreations.delete(record.id!);
+        discarded += 1;
+        continue;
+      }
+
       await db.memberCreations.update(record.id!, {
         status: 'failed',
         attempts: record.attempts + 1,
-        lastError: await extractError(response),
+        lastError: syncError.message,
       });
     } catch (error) {
       await db.memberCreations.update(record.id!, {
@@ -297,7 +324,7 @@ const performSync = async (): Promise<SyncResult> => {
   }
 
   const summary = await getMemberQueueSummary();
-  const result = { ...summary, synced };
+  const result = { ...summary, synced, discarded };
   emitQueueChange(result);
   return result;
 };
