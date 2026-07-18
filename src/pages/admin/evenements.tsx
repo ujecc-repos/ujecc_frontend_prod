@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { Fragment, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   useGetEventsByChurchQuery,
@@ -7,7 +7,7 @@ import {
   useUpdateEventMutation,
 } from '../../store/services/eventApi';
 import { useGetUserByTokenQuery } from '../../store/services/authApi';
-import { Menu } from '@headlessui/react';
+import { Dialog, Menu, Transition } from '@headlessui/react';
 import {
   PlusIcon,
   MagnifyingGlassIcon,
@@ -16,10 +16,15 @@ import {
   PencilSquareIcon,
   EllipsisVerticalIcon,
   EyeIcon,
+  XMarkIcon,
+  MapPinIcon,
+  ClockIcon,
+  DocumentTextIcon,
 } from '@heroicons/react/24/outline';
 import { CalendarDaysIcon } from '@heroicons/react/24/solid';
 import CreateEventModal from '../../components/modals/CreateEventModal';
 import EditEventModal from '../../components/modals/EditEventModal';
+import { useAuth } from '../../Auth/auth';
 
 interface Event {
   id: string;
@@ -41,13 +46,179 @@ interface Event {
   frequency?: string;
 }
 
+const formatEventDate = (value?: string) => {
+  if (!value) return 'Non définie';
+  const datePart = value.slice(0, 10);
+  const match = datePart.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return value;
+
+  const [, year, month, day] = match;
+  return new Intl.DateTimeFormat('fr-FR', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(Number(year), Number(month) - 1, Number(day)));
+};
+
+interface ViewEventModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  event: Event | null;
+}
+
+const ViewEventModal = ({ isOpen, onClose, event }: ViewEventModalProps) => {
+  if (!event) return null;
+
+  const statusLabels: Record<Event['status'], string> = {
+    upcoming: 'À venir',
+    ongoing: 'En cours',
+    completed: 'Terminé',
+    cancelled: 'Annulé',
+  };
+  const statusClasses: Record<Event['status'], string> = {
+    upcoming: 'bg-blue-100 text-blue-800',
+    ongoing: 'bg-green-100 text-green-800',
+    completed: 'bg-slate-100 text-slate-700',
+    cancelled: 'bg-red-100 text-red-800',
+  };
+
+  return (
+    <Transition appear show={isOpen} as={Fragment}>
+      <Dialog as="div" className="relative z-[200]" onClose={onClose}>
+        <Transition.Child
+          as={Fragment}
+          enter="ease-out duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="ease-in duration-200"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+        >
+          <div className="fixed inset-0 bg-slate-900/15 backdrop-blur-[1px]" />
+        </Transition.Child>
+
+        <div className="fixed inset-0 z-[201] overflow-y-auto">
+          <div className="flex min-h-full items-start justify-center p-4 py-6 text-center sm:items-center sm:p-6">
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0 scale-95"
+              enterTo="opacity-100 scale-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100 scale-100"
+              leaveTo="opacity-0 scale-95"
+            >
+              <Dialog.Panel className="flex max-h-[calc(100vh-3rem)] w-full max-w-3xl transform flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white text-left align-middle shadow-2xl shadow-slate-900/15 transition-all">
+                <div className="flex shrink-0 items-start justify-between border-b border-slate-200 bg-gradient-to-r from-indigo-50 via-white to-white px-6 py-5 sm:px-8">
+                  <div className="flex min-w-0 items-center">
+                    <div className="mr-4 flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-indigo-600 shadow-sm">
+                      <CalendarDaysIcon className="h-6 w-6 text-white" aria-hidden="true" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-indigo-700">Détails de l’événement</p>
+                      <Dialog.Title as="h3" className="truncate text-xl font-semibold text-slate-900 sm:text-2xl">
+                        {event.title}
+                      </Dialog.Title>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="ml-4 rounded-full p-2 text-slate-400 transition-colors hover:bg-white hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    onClick={onClose}
+                    aria-label="Fermer"
+                  >
+                    <XMarkIcon className="h-6 w-6" aria-hidden="true" />
+                  </button>
+                </div>
+
+                <div className="overflow-y-auto px-6 py-6 sm:px-8">
+                  <div className="mb-6 flex flex-wrap gap-2">
+                    <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${statusClasses[event.status] ?? statusClasses.upcoming}`}>
+                      {statusLabels[event.status] ?? 'À venir'}
+                    </span>
+                    <span className="inline-flex rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">
+                      {event.frequency || 'Non récurrent'}
+                    </span>
+                    {event.type && (
+                      <span className="inline-flex rounded-full bg-purple-50 px-3 py-1 text-xs font-semibold text-purple-700">{event.type}</span>
+                    )}
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="flex items-start rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+                      <CalendarDaysIcon className="mr-3 h-5 w-5 flex-shrink-0 text-indigo-600" />
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">Date</p>
+                        <p className="mt-1 text-sm text-slate-600">
+                          {formatEventDate(event.startDate)}
+                          {event.endDate && event.endDate !== event.startDate ? ` – ${formatEventDate(event.endDate)}` : ''}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+                      <ClockIcon className="mr-3 h-5 w-5 flex-shrink-0 text-indigo-600" />
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">Heure</p>
+                        <p className="mt-1 text-sm text-slate-600">
+                          {event.startPeriode || 'Non définie'}
+                          {event.endPeriode && event.endPeriode !== event.startPeriode ? ` – ${event.endPeriode}` : ''}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start rounded-xl border border-slate-200 p-4 sm:col-span-2">
+                      <MapPinIcon className="mr-3 h-5 w-5 flex-shrink-0 text-indigo-600" />
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">Lieu</p>
+                        <p className="mt-1 text-sm text-slate-600">{event.location || 'Aucun lieu indiqué'}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start rounded-xl border border-slate-200 p-4 sm:col-span-2">
+                      <DocumentTextIcon className="mr-3 h-5 w-5 flex-shrink-0 text-indigo-600" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-slate-900">Description</p>
+                        <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-slate-600">
+                          {event.description || 'Aucune description disponible.'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex shrink-0 justify-end border-t border-slate-200 bg-slate-50 px-6 py-4 sm:px-8">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="inline-flex min-w-24 justify-center rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                  >
+                    Fermer
+                  </button>
+                </div>
+              </Dialog.Panel>
+            </Transition.Child>
+          </div>
+        </div>
+      </Dialog>
+    </Transition>
+  );
+};
+
 export default function Evenements() {
+  const { user } = useAuth();
+  const isMember = user?.role === 'Membre';
+  const eventBasePath = isMember
+    ? '/tableau-de-bord/evenements'
+    : '/tableau-de-bord/admin/evenements';
+
   // State management
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [eventsPerPage] = useState(10);
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
   const [isEditEventModalOpen, setIsEditEventModalOpen] = useState(false);
+  const [isViewEventModalOpen, setIsViewEventModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [selectedEventForAction, setSelectedEventForAction] = useState<Event | null>(null);
@@ -175,22 +346,24 @@ export default function Evenements() {
             Liste des événements ({filteredEvents.length})
           </p>
         </div>
-        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none space-x-2">
-          <button
-            onClick={() => setShowExportModal(true)}
-            className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-          >
-            <ArrowDownTrayIcon className="-ml-0.5 mr-2 h-4 w-4" aria-hidden="true" />
-            Exporter
-          </button>
-          <button
-            onClick={() => setIsCreateEventModalOpen(true)}
-            className="inline-flex items-center rounded-md border border-transparent bg-indigo-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-          >
-            <PlusIcon className="-ml-0.5 mr-2 h-4 w-4" aria-hidden="true" />
-            Ajouter un événement
-          </button>
-        </div>
+        {!isMember && (
+          <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none space-x-2">
+            <button
+              onClick={() => setShowExportModal(true)}
+              className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            >
+              <ArrowDownTrayIcon className="-ml-0.5 mr-2 h-4 w-4" aria-hidden="true" />
+              Exporter
+            </button>
+            <button
+              onClick={() => setIsCreateEventModalOpen(true)}
+              className="inline-flex items-center rounded-md border border-transparent bg-indigo-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            >
+              <PlusIcon className="-ml-0.5 mr-2 h-4 w-4" aria-hidden="true" />
+              Ajouter un événement
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Search and filters */}
@@ -213,7 +386,7 @@ export default function Evenements() {
       <div className="mt-8 flex flex-col">
         <div className="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
           <div className="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
-            <div className="overflow-hidden md:rounded-lg">
+            <div className="md:rounded-lg">
               {isLoadingEvents ? (
                 <div className="flex justify-center items-center h-64">
                   <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
@@ -222,16 +395,20 @@ export default function Evenements() {
                 <div className="flex flex-col items-center justify-center py-12 bg-white">
                   <CalendarDaysIcon className="h-12 w-12 text-gray-400" />
                   <h3 className="mt-2 text-sm font-medium text-gray-900">Aucun événement</h3>
-                  <p className="mt-1 text-sm text-gray-500">Commencez par créer un nouvel événement.</p>
-                  <div className="mt-6">
-                    <button
-                      onClick={() => setIsCreateEventModalOpen(true)}
-                      className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                    >
-                      <PlusIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-                      Créer un événement
-                    </button>
-                  </div>
+                  <p className="mt-1 text-sm text-gray-500">
+                    {isMember ? "Aucun événement n'est actuellement disponible." : 'Commencez par créer un nouvel événement.'}
+                  </p>
+                  {!isMember && (
+                    <div className="mt-6">
+                      <button
+                        onClick={() => setIsCreateEventModalOpen(true)}
+                        className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                      >
+                        <PlusIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+                        Créer un événement
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <table className="min-w-full divide-y divide-gray-300">
@@ -249,16 +426,18 @@ export default function Evenements() {
                       <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
                         Fréquence
                       </th>
-                      <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
-                        <span className="sr-only">Actions</span>
-                      </th>
+                      {!isMember && (
+                        <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                          <span className="sr-only">Actions</span>
+                        </th>
+                      )}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 bg-white">
                     {currentPageEvents.map((event) => (
                       <tr key={event.id}>
                         <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
-                          <Link to={`/tableau-de-bord/admin/evenements/${event.id}`} className="text-indigo-600 hover:text-indigo-900">
+                          <Link to={`${eventBasePath}/${event.id}`} className="text-indigo-600 hover:text-indigo-900">
                             {event.title}
                           </Link>
                         </td>
@@ -284,14 +463,21 @@ export default function Evenements() {
                             {event.frequency}
                           </span>
                         </td>
-                        <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                        {!isMember && (
+                          <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
                           <Menu as="div" className="relative inline-block text-left">
                             <div>
                               <Menu.Button className="inline-flex w-full justify-center rounded-md bg-white px-2 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-100">
                                 <EllipsisVerticalIcon className="h-5 w-5" aria-hidden="true" />
                               </Menu.Button>
                             </div>
-                            <Menu.Items className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                            <Menu.Items
+                              anchor="bottom end"
+                              portal
+                              modal={false}
+                              transition
+                              className="z-[100] w-56 origin-top-right rounded-lg bg-white shadow-xl ring-1 ring-black/5 focus:outline-none [--anchor-gap:0.5rem] transition duration-100 ease-out data-closed:scale-95 data-closed:opacity-0"
+                            >
                               <div className="py-1">
                                 <Menu.Item>
                                   {({ active }) => (
@@ -309,13 +495,16 @@ export default function Evenements() {
                                 </Menu.Item>
                                 <Menu.Item>
                                   {({ active }) => (
-                                    <Link
-                                      to={`/tableau-de-bord/admin/evenements/${event.id}`}
+                                    <button
+                                      onClick={() => {
+                                        setSelectedEventForAction(event);
+                                        setIsViewEventModalOpen(true);
+                                      }}
                                       className={`${active ? 'bg-gray-100' : ''} group flex items-center px-4 py-2 text-sm text-blue-700 w-full text-left`}
                                     >
                                       <EyeIcon className="mr-3 h-5 w-5 text-blue-400" aria-hidden="true" />
                                       Voir les détails
-                                    </Link>
+                                    </button>
                                   )}
                                 </Menu.Item>
                                 <Menu.Item>
@@ -332,7 +521,8 @@ export default function Evenements() {
                               </div>
                             </Menu.Items>
                           </Menu>
-                        </td>
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>
@@ -395,7 +585,16 @@ export default function Evenements() {
       )}
 
       {/* Delete Modal */}
-      {isDeleteModalOpen && (
+      <ViewEventModal
+        isOpen={isViewEventModalOpen}
+        onClose={() => {
+          setIsViewEventModalOpen(false);
+          setSelectedEventForAction(null);
+        }}
+        event={selectedEventForAction}
+      />
+
+      {!isMember && isDeleteModalOpen && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div className="mt-3 text-center">
@@ -428,7 +627,7 @@ export default function Evenements() {
       )}
 
       {/* Export Modal */}
-      {showExportModal && (
+      {!isMember && showExportModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div className="mt-3 text-center">
@@ -465,24 +664,27 @@ export default function Evenements() {
       )}
       
       {/* Create Event Modal */}
-      <CreateEventModal
-        isOpen={isCreateEventModalOpen}
-        onClose={() => setIsCreateEventModalOpen(false)}
-        onSubmit={handleCreateEvent}
-        isLoading={isCreatingEvent}
-      />
-      
-      {/* Edit Event Modal */}
-      <EditEventModal
-        isOpen={isEditEventModalOpen}
-        onClose={() => {
-          setIsEditEventModalOpen(false);
-          setSelectedEventForAction(null);
-        }}
-        onSubmit={handleUpdateEvent}
-        isLoading={isEditingEvent}
-        event={selectedEventForAction}
-      />
+      {!isMember && (
+        <>
+          <CreateEventModal
+            isOpen={isCreateEventModalOpen}
+            onClose={() => setIsCreateEventModalOpen(false)}
+            onSubmit={handleCreateEvent}
+            isLoading={isCreatingEvent}
+          />
+
+          <EditEventModal
+            isOpen={isEditEventModalOpen}
+            onClose={() => {
+              setIsEditEventModalOpen(false);
+              setSelectedEventForAction(null);
+            }}
+            onSubmit={handleUpdateEvent}
+            isLoading={isEditingEvent}
+            event={selectedEventForAction}
+          />
+        </>
+      )}
     </div>
   );
 }

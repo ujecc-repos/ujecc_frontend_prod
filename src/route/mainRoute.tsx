@@ -51,6 +51,8 @@ import Invitation from "../pages/invite/invite";
 import ChurchMap from "../pages/super-admin/mapping";
 import Recovery from "../pages/super-admin/recovery";
 import MappingForDirector from "../pages/director/mappingForDirector";
+import Messagerie from "../pages/messagerie";
+import AdminOnlyRoute from "./adminOnlyRoute";
 
 
 const router = createBrowserRouter([
@@ -69,6 +71,18 @@ const router = createBrowserRouter([
                         index: true,
                         element: <MainPage />
 
+                    },
+                    {
+                        path: "/tableau-de-bord/messagerie",
+                        element: <Messagerie />
+                    },
+                    {
+                        path: "/tableau-de-bord/evenements",
+                        element: <Evenements />
+                    },
+                    {
+                        path: "/tableau-de-bord/evenements/:id",
+                        element: <EventDetails />
                     },
                     {
                         path: "/tableau-de-bord/admin/membres",
@@ -96,11 +110,11 @@ const router = createBrowserRouter([
                     },
                     {
                         path: "/tableau-de-bord/admin/ministères",
-                        element: <Ministere />
+                        element: <AdminOnlyRoute><Ministere /></AdminOnlyRoute>
                     },
                     {
                         path: "/tableau-de-bord/admin/ministères/:id/users",
-                        element: <MinistryUsers />
+                        element: <AdminOnlyRoute><MinistryUsers /></AdminOnlyRoute>
                     },
                     {
                         path: "/tableau-de-bord/admin/evenements",
@@ -176,8 +190,8 @@ const router = createBrowserRouter([
                     },
                     { path: "/tableau-de-bord/admin/anniversaires", element: <Anniversaire /> },
                     { path: "/tableau-de-bord/admin/transferts", element: <Transfert /> },
-                    { path: "/tableau-de-bord/admin/rendez-vous", element: <RendezVous /> },
-                    { path: "/tableau-de-bord/admin/rendez-vous/creation", element: <CreationRendezVous /> },
+                    { path: "/tableau-de-bord/rendez-vous", element: <AdminOnlyRoute><RendezVous /></AdminOnlyRoute> },
+                    { path: "/tableau-de-bord/rendez-vous/creation", element: <AdminOnlyRoute><CreationRendezVous /></AdminOnlyRoute> },
                     { path: "/tableau-de-bord/admin/finances", element: <Finance /> },
                     { path: "/tableau-de-bord/admin/depense", element: <Depense /> },
                     { path: "/tableau-de-bord/mon-compte", element: <UserProfile /> },

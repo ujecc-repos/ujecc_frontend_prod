@@ -1,10 +1,15 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGetEventByIdQuery } from '../../store/services/eventApi';
 import { ArrowLeftIcon, CalendarDaysIcon, MapPinIcon, ClockIcon, XCircleIcon } from '@heroicons/react/24/outline';
+import { useAuth } from '../../Auth/auth';
 
 export default function EventDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const eventListPath = user?.role === 'Membre'
+    ? '/tableau-de-bord/evenements'
+    : '/tableau-de-bord/admin/evenements';
   const { data: event, isLoading, error } = useGetEventByIdQuery(id || '');
 
   // Get status class and label
@@ -65,7 +70,7 @@ export default function EventDetails() {
         </div>
         <div className="mt-4 sm:mt-0">
           <button
-            onClick={() => navigate(`/tableau-de-bord/admin/evenements`)}
+            onClick={() => navigate(eventListPath)}
             className="inline-flex items-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
           >
             Retour à la liste

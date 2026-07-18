@@ -11,12 +11,11 @@ interface Appointment {
   name: string;
   visibility: string;
   description: string;
-  endPeriode?: string;
-  startPeriode?: string;
-  startDate?: string;
-  endDate?: string;
+  date: string;
+  time: string;
   duration: string;
   notes: string;
+  externalParticipants?: string | null;
   assignedUsers: User[];
   churchId?: string;
 }
@@ -28,6 +27,42 @@ interface User {
   email: string;
   profileImage?: string;
 }
+
+const getExternalParticipantNames = (value?: string | null) =>
+  value
+    ?.split(/\r?\n|,/)
+    .map((name) => name.trim())
+    .filter(Boolean) ?? [];
+
+const getAppointmentDateTime = (appointment: Pick<Appointment, 'date' | 'time'>) => {
+  const datePart = appointment.date?.slice(0, 10);
+  const dateMatch = datePart?.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!dateMatch) return null;
+
+  const [, year, month, day] = dateMatch;
+  const timeMatch = appointment.time?.match(/^(\d{1,2}):(\d{2})/);
+  const hours = timeMatch ? Number(timeMatch[1]) : 0;
+  const minutes = timeMatch ? Number(timeMatch[2]) : 0;
+  const value = new Date(Number(year), Number(month) - 1, Number(day), hours, minutes);
+
+  return Number.isNaN(value.getTime()) ? null : value;
+};
+
+const formatAppointmentDate = (appointment: Pick<Appointment, 'date' | 'time'>) => {
+  const value = getAppointmentDateTime(appointment);
+  if (!value) return 'Date non définie';
+
+  return new Intl.DateTimeFormat('fr-FR', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  }).format(value);
+};
+
+const appointmentIsCompleted = (appointment: Pick<Appointment, 'date' | 'time'>) => {
+  const value = getAppointmentDateTime(appointment);
+  return value ? value.getTime() < Date.now() : false;
+};
 
 // const CreateAppointmentModal: React.FC<CreateAppointmentModalProps> = ({ isOpen, onClose, onSubmit, users, churchId }) => {
 //   const [step, setStep] = useState(1);
@@ -287,11 +322,12 @@ interface ViewAppointmentModalProps {
 const ViewAppointmentModal: React.FC<ViewAppointmentModalProps> = ({ isOpen, onClose, appointment }) => {
   if (!appointment) return null;
 
-  const isCompleted = new Date(`${appointment.startDate}T${appointment.startPeriode}`) < new Date();
+  const isCompleted = appointmentIsCompleted(appointment);
+  const externalParticipantNames = getExternalParticipantNames(appointment.externalParticipants);
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-10" onClose={onClose}>
+      <Dialog as="div" className="relative z-[200]" onClose={onClose}>
         <Transition.Child
           as={Fragment}
           enter="ease-out duration-300"
@@ -301,11 +337,11 @@ const ViewAppointmentModal: React.FC<ViewAppointmentModalProps> = ({ isOpen, onC
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-black bg-opacity-25" />
+          <div className="fixed inset-0 bg-slate-900/15 backdrop-blur-[1px]" />
         </Transition.Child>
 
-        <div className="fixed inset-0 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4 text-center">
+        <div className="fixed inset-0 z-[201] overflow-y-auto">
+          <div className="flex min-h-full items-start justify-center p-4 py-6 text-center sm:items-center sm:p-6">
             <Transition.Child
               as={Fragment}
               enter="ease-out duration-300"
@@ -315,66 +351,71 @@ const ViewAppointmentModal: React.FC<ViewAppointmentModalProps> = ({ isOpen, onC
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                <div className="flex justify-between items-center mb-4">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 h-10 w-10 rounded-full bg-teal-100 flex items-center justify-center mr-3">
-                      <CalendarIcon className="h-6 w-6 text-teal-600" aria-hidden="true" />
+              <Dialog.Panel className="flex max-h-[calc(100vh-3rem)] w-full max-w-3xl transform flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white text-left align-middle shadow-2xl shadow-slate-900/15 transition-all">
+                <div className="flex shrink-0 items-start justify-between border-b border-slate-200 bg-gradient-to-r from-teal-50 via-white to-white px-6 py-5 sm:px-8">
+                  <div className="flex min-w-0 items-center">
+                    <div className="mr-4 flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-teal-600 shadow-sm">
+                      <CalendarIcon className="h-6 w-6 text-white" aria-hidden="true" />
                     </div>
-                    <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900">
-                      {appointment.name}
-                    </Dialog.Title>
+                    <div className="min-w-0">
+                      <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-teal-700">Détails du rendez-vous</p>
+                      <Dialog.Title as="h3" className="truncate text-xl font-semibold text-slate-900 sm:text-2xl">
+                        {appointment.name}
+                      </Dialog.Title>
+                    </div>
                   </div>
                   <button
                     type="button"
-                    className="text-gray-400 hover:text-gray-500"
+                    className="ml-4 rounded-full p-2 text-slate-400 transition-colors hover:bg-white hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
                     onClick={onClose}
+                    aria-label="Fermer"
                   >
                     <XMarkIcon className="h-6 w-6" aria-hidden="true" />
                   </button>
                 </div>
 
-                <div className="mt-2">
-                  <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${isCompleted ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'} mb-4`}>
+                <div className="overflow-y-auto px-6 py-6 sm:px-8">
+                  <div className={`mb-6 inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${isCompleted ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
                     <div className={`mr-1.5 h-2 w-2 rounded-full ${isCompleted ? 'bg-green-600' : 'bg-yellow-600'}`}></div>
                     {isCompleted ? 'Complété' : 'En attente'}
                   </div>
 
-                  <div className="space-y-4">
-                    <div className="flex items-start p-2 rounded-md hover:bg-gray-50">
-                      <CalendarIcon className="h-5 w-5 text-teal-500 mr-3" />
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="flex items-start rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+                      <CalendarIcon className="mr-3 h-5 w-5 flex-shrink-0 text-teal-600" />
                       <div>
-                        <p className="text-sm font-medium text-gray-900">Date</p>
-                        <p className="text-sm text-gray-500">
-                          {appointment.startDate && new Date(appointment.startDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                        <p className="text-sm font-semibold text-slate-900">Date</p>
+                        <p className="mt-1 text-sm text-slate-600">
+                          {formatAppointmentDate(appointment)}
                         </p>
                       </div>
                     </div>
 
-                    <div className="flex items-start p-2 rounded-md hover:bg-gray-50">
-                      <ClockIcon className="h-5 w-5 text-teal-500 mr-3" />
+                    <div className="flex items-start rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+                      <ClockIcon className="mr-3 h-5 w-5 flex-shrink-0 text-teal-600" />
                       <div>
-                        <p className="text-sm font-medium text-gray-900">Heure et durée</p>
-                        <p className="text-sm text-gray-500">
-                          {appointment.startPeriode} ({appointment.duration} minutes)
+                        <p className="text-sm font-semibold text-slate-900">Heure et durée</p>
+                        <p className="mt-1 text-sm text-slate-600">
+                          {appointment.time || 'Heure non définie'}
+                          {appointment.duration ? ` (${appointment.duration} minutes)` : ''}
                         </p>
                       </div>
                     </div>
 
                     {appointment.description && (
-                      <div className="flex items-start p-2 rounded-md hover:bg-gray-50">
-                        <DocumentTextIcon className="h-5 w-5 text-teal-500 mr-3" />
+                      <div className="flex items-start rounded-xl border border-slate-200 p-4 sm:col-span-2">
+                        <DocumentTextIcon className="mr-3 h-5 w-5 flex-shrink-0 text-teal-600" />
                         <div>
-                          <p className="text-sm font-medium text-gray-900">Description</p>
-                          <p className="text-sm text-gray-500">{appointment.description}</p>
+                          <p className="text-sm font-semibold text-slate-900">Description</p>
+                          <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-600">{appointment.description}</p>
                         </div>
                       </div>
                     )}
 
-                    <div className="flex items-start p-2 rounded-md hover:bg-gray-50">
-                      <EyeIcon className="h-5 w-5 text-teal-500 mr-3" />
+                    <div className="flex items-start rounded-xl border border-slate-200 p-4">
+                      <EyeIcon className="mr-3 h-5 w-5 flex-shrink-0 text-teal-600" />
                       <div>
-                        <p className="text-sm font-medium text-gray-900">Visibilité</p>
+                        <p className="text-sm font-semibold text-slate-900">Visibilité</p>
                         <div className={`inline-flex items-center px-2.5 py-0.5 mt-1 rounded-full text-xs font-medium ${appointment.visibility === 'public' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}`}>
                           <div className={`mr-1.5 h-2 w-2 rounded-full ${appointment.visibility === 'public' ? 'bg-blue-600' : 'bg-purple-600'}`}></div>
                           {appointment.visibility === 'public' ? 'Public' : 'Privé'}
@@ -383,20 +424,20 @@ const ViewAppointmentModal: React.FC<ViewAppointmentModalProps> = ({ isOpen, onC
                     </div>
 
                     {appointment.notes && (
-                      <div className="flex items-start p-2 rounded-md hover:bg-gray-50">
-                        <DocumentTextIcon className="h-5 w-5 text-teal-500 mr-3" />
+                      <div className="flex items-start rounded-xl border border-slate-200 p-4">
+                        <DocumentTextIcon className="mr-3 h-5 w-5 flex-shrink-0 text-teal-600" />
                         <div>
-                          <p className="text-sm font-medium text-gray-900">Notes</p>
-                          <p className="text-sm text-gray-500">{appointment.notes}</p>
+                          <p className="text-sm font-semibold text-slate-900">Notes</p>
+                          <p className="mt-1 whitespace-pre-wrap text-sm text-slate-600">{appointment.notes}</p>
                         </div>
                       </div>
                     )}
 
-                    <div className="flex items-start p-2 rounded-md hover:bg-gray-50">
-                      <UserIcon className="h-5 w-5 text-teal-500 mr-3" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Participants</p>
-                        {appointment.assignedUsers && appointment.assignedUsers.length > 0 ? (
+                    <div className="flex items-start rounded-xl border border-slate-200 p-4 sm:col-span-2">
+                      <UserIcon className="mr-3 h-5 w-5 flex-shrink-0 text-teal-600" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-slate-900">Participants</p>
+                        {appointment.assignedUsers && appointment.assignedUsers.length > 0 && (
                           <div className="mt-2 flex flex-wrap gap-2">
                             {appointment.assignedUsers.map(user => (
                               <div key={user.id} className="flex items-center bg-gray-100 rounded-full px-3 py-1">
@@ -407,7 +448,20 @@ const ViewAppointmentModal: React.FC<ViewAppointmentModalProps> = ({ isOpen, onC
                               </div>
                             ))}
                           </div>
-                        ) : (
+                        )}
+                        {externalParticipantNames.length > 0 && (
+                          <div className="mt-3">
+                            <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Participants externes</p>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {externalParticipantNames.map((name, index) => (
+                                <span key={`${name}-${index}`} className="rounded-full border border-teal-100 bg-teal-50 px-3 py-1 text-xs text-teal-800">
+                                  {name}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {(!appointment.assignedUsers?.length && !externalParticipantNames.length) && (
                           <p className="text-sm text-gray-500">Aucun participant</p>
                         )}
                       </div>
@@ -415,10 +469,10 @@ const ViewAppointmentModal: React.FC<ViewAppointmentModalProps> = ({ isOpen, onC
                   </div>
                 </div>
 
-                <div className="mt-6">
+                <div className="flex shrink-0 justify-end border-t border-slate-200 bg-slate-50 px-6 py-4 sm:px-8">
                   <button
                     type="button"
-                    className="inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition-colors"
+                    className="inline-flex min-w-24 justify-center rounded-lg bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
                     onClick={onClose}
                   >
                     Fermer
@@ -541,12 +595,14 @@ const RendezVous: React.FC = () => {
 
   // Filter appointments based on search query and upcoming filter
   const filteredAppointments = appointments.filter(appointment => {
-    const matchesSearch = appointment.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      appointment.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    const normalizedSearch = searchQuery.toLowerCase();
+    const matchesSearch = appointment.name.toLowerCase().includes(normalizedSearch) ||
+      appointment.description?.toLowerCase().includes(normalizedSearch) ||
+      appointment.externalParticipants?.toLowerCase().includes(normalizedSearch);
     
     if (showUpcoming) {
-      const appointmentDate = new Date(`${appointment.startDate}`);
-      return matchesSearch && appointmentDate >= new Date();
+      const appointmentDate = getAppointmentDateTime(appointment);
+      return matchesSearch && Boolean(appointmentDate && appointmentDate.getTime() >= Date.now());
     }
     
     return matchesSearch;
@@ -554,9 +610,9 @@ const RendezVous: React.FC = () => {
 
   // Sort appointments by date (newest first)
   const sortedAppointments = [...filteredAppointments].sort((a, b) => {
-    const dateA = new Date(`${a.startDate}`);
-    const dateB = new Date(`${b.startDate}`);
-    return dateB.getTime() - dateA.getTime();
+    const dateA = getAppointmentDateTime(a)?.getTime() ?? 0;
+    const dateB = getAppointmentDateTime(b)?.getTime() ?? 0;
+    return dateB - dateA;
   });
 
   const handleDeleteAppointment = async () => {
@@ -594,7 +650,7 @@ const RendezVous: React.FC = () => {
         <div className="mt-4 sm:mt-0 flex space-x-3">
           <button
             type="button"
-            onClick={() => navigate('/tableau-de-bord/admin/rendez-vous/creation')}
+            onClick={() => navigate('/tableau-de-bord/rendez-vous/creation')}
             className="inline-flex items-center justify-center rounded-md border border-transparent bg-teal-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 sm:w-auto transition-colors"
           >
             <PlusIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
@@ -657,10 +713,8 @@ const RendezVous: React.FC = () => {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {sortedAppointments.map((appointment) => {
-                      // const appointmentDate = new Date(`${appointment.startDate}`);
-                      // const isCompleted = appointmentDate < new Date();
-                      // const formattedDate = format(appointmentDate, 'dd MMMM yyyy', { locale: fr });
-                      // const formattedTime = appointment.startPeriode;
+                      const isCompleted = appointmentIsCompleted(appointment);
+                      const formattedDate = formatAppointmentDate(appointment);
 
                       return (
                         <tr 
@@ -680,32 +734,43 @@ const RendezVous: React.FC = () => {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            {/* <div className="text-sm text-gray-900">{formattedDate}</div> */}
-                            {/* <div className="text-sm text-gray-500">{formattedTime} ({appointment.duration} min)</div> */}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {/* <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${isCompleted ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                              {isCompleted ? 'Complété' : 'En attente'}
-                            </span> */}
-                            <span></span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="flex -space-x-2 overflow-hidden">
-                                {appointment.assignedUsers?.slice(0, 3).map((user, index) => (
-                                  <div key={index} className="inline-block h-8 w-8 rounded-full ring-2 ring-white bg-gray-200 flex items-center justify-center">
-                                    <UserIcon className="h-5 w-5 text-gray-500" />
-                                    <span>{user.firstname} {user.lastname}</span>
-                                  </div>
-                                ))}
-                                {appointment.assignedUsers && appointment.assignedUsers.length > 3 && (
-                                  <div className="inline-block h-8 w-8 rounded-full ring-2 ring-white bg-gray-100 flex items-center justify-center">
-                                    <span className="text-xs text-gray-500">+{appointment.assignedUsers.length - 3}</span>
-                                  </div>
-                                )}
-                              </div>
-                              <span className="ml-2 text-sm text-gray-500">{appointment.assignedUsers?.length || 0} participant(s)</span>
+                            <div className="text-sm font-medium text-gray-900">{formattedDate}</div>
+                            <div className="mt-1 flex items-center text-sm text-gray-500">
+                              <ClockIcon className="mr-1.5 h-4 w-4 text-gray-400" />
+                              <span>{appointment.time || 'Heure non définie'}</span>
+                              {appointment.duration && <span className="ml-1">· {appointment.duration} min</span>}
                             </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${isCompleted ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                              <span className={`mr-1.5 h-2 w-2 rounded-full ${isCompleted ? 'bg-green-600' : 'bg-yellow-500'}`} />
+                              {isCompleted ? 'Complété' : 'En attente'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {(() => {
+                              const participantNames = [
+                                ...(appointment.assignedUsers ?? []).map((user) => `${user.firstname} ${user.lastname}`),
+                                ...getExternalParticipantNames(appointment.externalParticipants),
+                              ];
+
+                              return participantNames.length ? (
+                              <div className="max-w-xs">
+                                <div
+                                  className="truncate text-sm font-medium text-gray-900"
+                                  title={participantNames.join(', ')}
+                                >
+                                  {participantNames.slice(0, 2).join(', ')}
+                                  {participantNames.length > 2 && ` +${participantNames.length - 2}`}
+                                </div>
+                                <div className="mt-1 text-xs text-gray-500">
+                                  {participantNames.length} participant{participantNames.length > 1 ? 's' : ''}
+                                </div>
+                              </div>
+                              ) : (
+                              <span className="text-sm text-gray-500">Aucun participant</span>
+                              );
+                            })()}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${appointment.visibility === 'public' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}`}>
@@ -720,42 +785,44 @@ const RendezVous: React.FC = () => {
                               >
                                 <EllipsisVerticalIcon className="h-5 w-5" />
                               </Menu.Button>
-                              <Transition
-                                as={Fragment}
-                                enter="transition ease-out duration-100"
-                                enterFrom="transform opacity-0 scale-95"
-                                enterTo="transform opacity-100 scale-100"
-                                leave="transition ease-in duration-75"
-                                leaveFrom="transform opacity-100 scale-100"
-                                leaveTo="transform opacity-0 scale-95"
+                              <Menu.Items
+                                anchor="bottom end"
+                                portal
+                                modal={false}
+                                transition
+                                className="z-[100] w-48 origin-top-right rounded-md bg-white shadow-xl ring-1 ring-black/5 focus:outline-none [--anchor-gap:0.5rem] transition duration-100 ease-out data-closed:scale-95 data-closed:opacity-0"
                               >
-                                <Menu.Items className="absolute right-0 z-10 mt-2 w-48 origin-top-right bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                                  <div className="py-1">
-                                    <Menu.Item>
-                                      {({ active }) => (
-                                        <button
-                                          onClick={() => openViewModal(appointment)}
-                                          className={`${active ? 'bg-gray-100' : ''} group flex items-center px-4 py-2 text-sm text-gray-700 w-full text-left`}
-                                        >
-                                          <EyeIcon className="mr-3 h-4 w-4 text-gray-400" />
-                                          Voir détails
-                                        </button>
-                                      )}
-                                    </Menu.Item>
-                                    <Menu.Item>
-                                      {({ active }) => (
-                                        <button
-                                          onClick={() => openDeleteModal(appointment)}
-                                          className={`${active ? 'bg-gray-100' : ''} group flex items-center px-4 py-2 text-sm text-red-700 w-full text-left`}
-                                        >
-                                          <TrashIcon className="mr-3 h-4 w-4 text-red-400" />
-                                          Supprimer
-                                        </button>
-                                      )}
-                                    </Menu.Item>
-                                  </div>
-                                </Menu.Items>
-                              </Transition>
+                                <div className="py-1">
+                                  <Menu.Item>
+                                    {({ active }) => (
+                                      <button
+                                        onClick={(event) => {
+                                          event.stopPropagation();
+                                          openViewModal(appointment);
+                                        }}
+                                        className={`${active ? 'bg-gray-100' : ''} group flex items-center px-4 py-2 text-sm text-gray-700 w-full text-left`}
+                                      >
+                                        <EyeIcon className="mr-3 h-4 w-4 text-gray-400" />
+                                        Voir détails
+                                      </button>
+                                    )}
+                                  </Menu.Item>
+                                  <Menu.Item>
+                                    {({ active }) => (
+                                      <button
+                                        onClick={(event) => {
+                                          event.stopPropagation();
+                                          openDeleteModal(appointment);
+                                        }}
+                                        className={`${active ? 'bg-gray-100' : ''} group flex items-center px-4 py-2 text-sm text-red-700 w-full text-left`}
+                                      >
+                                        <TrashIcon className="mr-3 h-4 w-4 text-red-400" />
+                                        Supprimer
+                                      </button>
+                                    )}
+                                  </Menu.Item>
+                                </div>
+                              </Menu.Items>
                             </Menu>
                           </td>
                         </tr>
@@ -773,7 +840,7 @@ const RendezVous: React.FC = () => {
                   <div className="mt-8">
                     <button
                       type="button"
-                      onClick={() => navigate('/tableau-de-bord/admin/creation-rendez-vous')}
+                      onClick={() => navigate('/tableau-de-bord/rendez-vous/creation')}
                       className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-colors"
                     >
                       <PlusIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />

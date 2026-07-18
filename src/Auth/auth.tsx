@@ -3,12 +3,14 @@ import { createContext, useContext, useEffect, useState } from 'react';
 
 interface AuthContextType {
   user: any;
+  isInitializing: boolean;
   login: (userData: any, token: string) => void;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
+  isInitializing: true,
   login: () => {},
   logout: () => {}
 });
@@ -17,6 +19,7 @@ export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }: {children: any}) => {
   const [user, setUser] = useState(null);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   // Function to check if token is expired
   const isTokenExpired = (token: string): boolean => {
@@ -43,6 +46,7 @@ export const AuthProvider = ({ children }: {children: any}) => {
       localStorage.removeItem('role');
       setUser(null);
     }
+    setIsInitializing(false);
   }, [])
 
   const login = (userData: any, token: string) => {
@@ -59,7 +63,7 @@ export const AuthProvider = ({ children }: {children: any}) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, isInitializing, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

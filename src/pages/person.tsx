@@ -15,6 +15,7 @@ import {
 import { QRCodeSVG } from 'qrcode.react';
 import { useGetUserByIdQuery } from '../store/services/authApi';
 import { useGetUserByTokenQuery } from '../store/services/authApi';
+import { calculateAgeFromDateOnly, formatDateOnly } from '../utils/dateOnly';
 
 const PersonDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -33,18 +34,7 @@ const PersonDetail: React.FC = () => {
   const qrCodeRef = useRef<HTMLDivElement>(null);
 
   const calculateAge = (birthDate: string | undefined): number => {
-    if (!birthDate) return 0;
-
-    const today = new Date();
-    const birthDateObj = new Date(birthDate);
-    let age = today.getFullYear() - birthDateObj.getFullYear();
-    const monthDiff = today.getMonth() - birthDateObj.getMonth();
-
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDateObj.getDate())) {
-      age--;
-    }
-
-    return age;
+    return calculateAgeFromDateOnly(birthDate);
   };
 
   const downloadQRCode = () => {
@@ -80,8 +70,7 @@ const PersonDetail: React.FC = () => {
   };
 
   const formatDate = (dateString: string | undefined): string => {
-    if (!dateString) return 'Non renseigné';
-    return new Date(dateString).toLocaleDateString('fr-FR', {
+    return formatDateOnly(dateString, {
       year: 'numeric',
       month: 'long',
       day: 'numeric'

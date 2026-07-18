@@ -5,13 +5,11 @@ interface Appointment {
   name: string;
   visibility: string;
   description: string;
-  endPeriod?: string;
-  startPeriode?: string;
-  startDate?: string;
-  endDate?: string;
+  date: string;
   time: string;
   duration: string;
   notes: string;
+  externalParticipants?: string | null;
   assignedUsers: User[];
   churchId?: string;
 }
@@ -31,6 +29,7 @@ interface CreateAppointmentRequest {
   time: string;
   duration: string;
   notes: string;
+  externalParticipants?: string;
   userIds: string[];
   churchId?: string;
 }

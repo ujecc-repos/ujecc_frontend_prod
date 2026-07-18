@@ -32,6 +32,13 @@ import {
 import {
   useCreatePresenceMutation,
 } from '../../store/services/presenceApi';
+import { createOfflineOperationId, isOfflineNetworkError } from '../../offline/memberQueue';
+import {
+  getQueuedPresenceMarks,
+  queuePresenceMark,
+  type PresenceQueueInput,
+} from '../../offline/presenceQueue';
+import type { QueuedPresenceMark } from '../../offline/memberQueue';
 
 
 // Types
@@ -81,6 +88,7 @@ export default function ServiceAndPresence() {
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [presenceStatus, setPresenceStatus] = useState('PRESENT');
   const [isMarkingPresence, setIsMarkingPresence] = useState(false);
+  const [queuedPresences, setQueuedPresences] = useState<QueuedPresenceMark[]>([]);
 
   // QR Scanner State
   const [showQrScanner, setShowQrScanner] = useState(false);
@@ -115,6 +123,36 @@ export default function ServiceAndPresence() {
     { value: 'ABSENT', label: 'Absent' },
     { value: 'MOTIVE', label: 'Excusé' }
   ];
+
+  const attendanceDateToday = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const refreshQueuedPresences = async () => {
+    setQueuedPresences(await getQueuedPresenceMarks(churchId));
+  };
+
+  useEffect(() => {
+    const handleQueueChange = () => void refreshQueuedPresences();
+    void refreshQueuedPresences();
+    window.addEventListener('ecclesys:presence-queue-change', handleQueueChange);
+    return () => window.removeEventListener('ecclesys:presence-queue-change', handleQueueChange);
+  }, [churchId]);
+
+  const resetPresenceForm = () => {
+    setSelectedService(null);
+    setSelectedUser(null);
+    setPresenceStatus('PRESENT');
+  };
+
+  const savePresenceOffline = async (input: PresenceQueueInput) => {
+    await queuePresenceMark(input);
+    toast.info('Présence enregistrée hors ligne. Elle sera synchronisée automatiquement.');
+  };
 
   // Handle create service
   const handleCreateService = async (e: React.FormEvent) => {
@@ -182,18 +220,46 @@ export default function ServiceAndPresence() {
       return;
     }
 
+    const offlineOperationId = createOfflineOperationId();
+    const attendanceDate = attendanceDateToday();
+    const queueInput: PresenceQueueInput = {
+      operationId: offlineOperationId,
+      attendanceDate,
+      churchId,
+      serviceId: selectedService.value,
+      serviceName: selectedService.label,
+      utilisateurId: selectedUser.value,
+      userName: selectedUser.label,
+      statut: presenceStatus,
+    };
+
     setIsMarkingPresence(true);
     try {
+      if (!navigator.onLine) {
+        await savePresenceOffline(queueInput);
+        resetPresenceForm();
+        return;
+      }
+
       await createPresence({
         serviceId: selectedService.value,
         utilisateurId: selectedUser.value,
-        statut: presenceStatus
+        statut: presenceStatus,
+        attendanceDate,
+        offlineOperationId,
       }).unwrap();
       toast.success('Présence marquée avec succès!');
-      setSelectedService(null);
-      setSelectedUser(null);
-      setPresenceStatus('PRESENT');
+      resetPresenceForm();
     } catch (error: any) {
+      if (isOfflineNetworkError(error)) {
+        try {
+          await savePresenceOffline(queueInput);
+          resetPresenceForm();
+          return;
+        } catch (queueError) {
+          console.error('Error queueing presence:', queueError);
+        }
+      }
       console.log('Full error object:', error);
       console.log('Error data:', error?.data);
       const errorMsg = error?.data?.error || error?.data?.message || error?.message || 'Erreur lors du marquage de la présence';
@@ -259,18 +325,52 @@ export default function ServiceAndPresence() {
   const handleQrScan = async (result: string) => {
     if (!result || !selectedServiceForQr || isScanning) return;
 
+    const service = services?.find(item => item.id === selectedServiceForQr);
+    const member = users?.find(item => item.id === result);
+    const offlineOperationId = createOfflineOperationId();
+    const attendanceDate = attendanceDateToday();
+    const queueInput: PresenceQueueInput = {
+      operationId: offlineOperationId,
+      attendanceDate,
+      churchId,
+      serviceId: selectedServiceForQr,
+      serviceName: service?.nom || 'Service',
+      utilisateurId: result,
+      userName: member ? `${member.firstname} ${member.lastname}` : 'Membre scanné',
+      statut: 'PRESENT',
+    };
+
     setIsScanning(true);
     try {
+      if (!navigator.onLine) {
+        await savePresenceOffline(queueInput);
+        setShowQrScanner(false);
+        setSelectedServiceForQr(null);
+        return;
+      }
+
       await createPresence({
         serviceId: selectedServiceForQr,
         utilisateurId: result,
-        statut: 'PRESENT'
+        statut: 'PRESENT',
+        attendanceDate,
+        offlineOperationId,
       }).unwrap();
 
       toast.success('Présence marquée avec succès via QR code!');
       setShowQrScanner(false);
       setSelectedServiceForQr(null);
     } catch (error: any) {
+      if (isOfflineNetworkError(error)) {
+        try {
+          await savePresenceOffline(queueInput);
+          setShowQrScanner(false);
+          setSelectedServiceForQr(null);
+          return;
+        } catch (queueError) {
+          console.error('Error queueing QR presence:', queueError);
+        }
+      }
       console.error('Error marking presence:', error);
       console.log('Error data:', error?.data);
       const errorMsg = error?.data?.error || error?.data?.message || error?.message || 'Erreur lors du marquage de la présence';
@@ -541,7 +641,7 @@ export default function ServiceAndPresence() {
                     </label>
                     <Select
                       value={statusOptions.find(option => option.value === presenceStatus)}
-                      onChange={(option) => setPresenceStatus(option?.value || 'Présent')}
+                      onChange={(option) => setPresenceStatus(option?.value || 'PRESENT')}
                       options={statusOptions}
                       className="react-select-container"
                       classNamePrefix="react-select"
@@ -560,6 +660,39 @@ export default function ServiceAndPresence() {
                     )}
                   </button>
                 </form>
+
+                {queuedPresences.length > 0 && (
+                  <div className="mt-8 border-t border-gray-200 pt-6">
+                    <div className="mb-4 flex items-center justify-between">
+                      <h3 className="font-semibold text-gray-900">Présences hors ligne</h3>
+                      <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">
+                        {queuedPresences.length} en attente
+                      </span>
+                    </div>
+                    <div className="space-y-3">
+                      {queuedPresences.map((presence) => (
+                        <div key={presence.operationId} className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="font-medium text-gray-900">{presence.userName}</p>
+                              <p className="text-sm text-gray-600">{presence.serviceName} · {presence.attendanceDate.split('-').reverse().join('/')}</p>
+                            </div>
+                            <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${presence.status === 'failed'
+                              ? 'bg-red-100 text-red-700'
+                              : 'bg-amber-100 text-amber-800'
+                              }`}>
+                              {presence.status === 'failed' ? 'À vérifier' : 'Synchronisation en attente'}
+                            </span>
+                          </div>
+                          <p className="mt-2 text-xs font-medium text-teal-700">
+                            {statusOptions.find(option => option.value === presence.statut)?.label || presence.statut}
+                          </p>
+                          {presence.lastError && <p className="mt-1 text-xs text-red-600">{presence.lastError}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </Tab.Panel>
           </Tab.Panels>
