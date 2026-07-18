@@ -38,6 +38,7 @@ const CreationRendezVous: React.FC = () => {
     time: '',
     duration: '30',
     selectedUsers: [] as string[],
+    externalParticipants: '',
   });
   
   // User options for react-select
@@ -92,6 +93,7 @@ const CreationRendezVous: React.FC = () => {
         time: formData.time,
         duration: formData.duration, // Keep as string to match API expectations
         userIds: formData.selectedUsers,
+        externalParticipants: formData.externalParticipants,
         churchId: currentUser?.church?.id || '',
       };
 
@@ -147,8 +149,8 @@ const CreationRendezVous: React.FC = () => {
     
     // Validation pour l'étape 3
     if (step === 3) {
-      if (formData.selectedUsers.length === 0) {
-        setValidationMessage('Veuillez sélectionner au moins un participant');
+      if (formData.selectedUsers.length === 0 && !formData.externalParticipants.trim()) {
+        setValidationMessage('Veuillez sélectionner un participant ou saisir au moins un participant externe');
         setValidationModal(true);
         return;
       }
@@ -241,6 +243,7 @@ const CreationRendezVous: React.FC = () => {
       icon: <UserGroupIcon className="h-6 w-6 text-teal-500" />,
       fields: [
         { name: 'selectedUsers', label: 'Sélectionner les participants', type: 'userSelect', required: false, placeholder: 'Sélectionner des participants...' },
+        { name: 'externalParticipants', label: 'Autres participants (hors de l’église)', type: 'textarea', required: false, placeholder: 'Saisissez les noms des participants externes, un nom par ligne...' },
       ],
     },
   ];
@@ -316,16 +319,23 @@ const CreationRendezVous: React.FC = () => {
               )}
               
               {field.type === 'textarea' && (
-                <textarea
-                  id={field.name}
-                  name={field.name}
-                  value={formData[field.name as keyof typeof formData] as string}
-                  onChange={handleInputChange}
-                  placeholder={field.placeholder}
-                  rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  required={field.required}
-                />
+                <div>
+                  <textarea
+                    id={field.name}
+                    name={field.name}
+                    value={formData[field.name as keyof typeof formData] as string}
+                    onChange={handleInputChange}
+                    placeholder={field.placeholder}
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    required={field.required}
+                  />
+                  {field.name === 'externalParticipants' && (
+                    <p className="mt-2 text-sm text-gray-500">
+                      Ajoutez ici les personnes qui ne possèdent pas de compte dans cette église.
+                    </p>
+                  )}
+                </div>
               )}
               
               {field.type === 'select' && (

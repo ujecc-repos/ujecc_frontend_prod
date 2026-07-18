@@ -200,7 +200,7 @@ const FilterModal: React.FC<FilterModalProps> = ({ isOpen, onClose, filters, onA
                 <h4 className="text-sm font-medium text-gray-900 mb-3">Type de recherche</h4>
                 <div className="space-y-2">
                   {[
-                    { value: 'name', label: 'Nom' },
+                    { value: 'name', label: 'Nom ou code' },
                     { value: 'email', label: 'Email' },
                     { value: 'phone', label: 'Téléphone' }
                   ].map((option) => (
@@ -1768,17 +1768,24 @@ export default function Membres() {
     if (availableMembers.length === 0) return [];
 
     return availableMembers.filter((member: Member) => {
-      // Basic search by name, email, or phone based on searchType
+      // Basic search by name/member code, email, or phone based on searchType
       let basicSearchMatch = true;
       if (searchQuery) {
+        const normalizedSearch = searchQuery.trim().toLowerCase();
         if (filters.searchType === 'name') {
+          const fullName = `${member.firstname || ''} ${member.lastname || ''}`.trim().toLowerCase();
+          const memberCode = member.code?.toLowerCase() || '';
+          const formattedMemberCode = member.code ? formatMemberCode(member.code).toLowerCase() : '';
           basicSearchMatch =
-            (member.firstname?.toLowerCase().includes(searchQuery.toLowerCase()) || false) ||
-            (member.lastname?.toLowerCase().includes(searchQuery.toLowerCase()) || false);
+            (member.firstname?.toLowerCase().includes(normalizedSearch) || false) ||
+            (member.lastname?.toLowerCase().includes(normalizedSearch) || false) ||
+            fullName.includes(normalizedSearch) ||
+            memberCode.includes(normalizedSearch) ||
+            formattedMemberCode.includes(normalizedSearch);
         } else if (filters.searchType === 'email') {
-          basicSearchMatch = member.email?.toLowerCase().includes(searchQuery.toLowerCase()) || false;
+          basicSearchMatch = member.email?.toLowerCase().includes(normalizedSearch) || false;
         } else if (filters.searchType === 'phone') {
-          basicSearchMatch = member.mobilePhone?.toLowerCase().includes(searchQuery.toLowerCase()) || false;
+          basicSearchMatch = member.mobilePhone?.toLowerCase().includes(normalizedSearch) || false;
         }
       }
       if (!basicSearchMatch) return false;
@@ -2626,7 +2633,11 @@ export default function Membres() {
             <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
               type="text"
-              placeholder="Rechercher..."
+              placeholder={filters.searchType === 'name'
+                ? 'Rechercher par nom ou code...'
+                : filters.searchType === 'email'
+                  ? 'Rechercher par email...'
+                  : 'Rechercher par téléphone...'}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"

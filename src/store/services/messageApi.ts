@@ -27,6 +27,7 @@ export interface Conversation {
   id: string;
   title?: string | null;
   isGroup: boolean;
+  ownerId?: string | null;
   createdAt: string;
   updatedAt: string;
   unreadCount: number;
@@ -41,7 +42,7 @@ export interface Conversation {
 }
 
 const baseQuery = fetchBaseQuery({
-  baseUrl: `${import.meta.env.VITE_API_URL}/messages`,
+  baseUrl: `${import.meta.env.VITE_API_URL || '/api'}/messages`,
   prepareHeaders: (headers) => {
     const token = localStorage.getItem('token');
     if (token) headers.set('authorization', `Bearer ${token}`);
@@ -77,6 +78,56 @@ export const messageApi = createApi({
         method: 'POST',
         body: { participantId },
       }),
+      invalidatesTags: [{ type: 'Conversation', id: 'LIST' }],
+    }),
+    createGroupConversation: builder.mutation<{ id: string }, { title: string; participantIds: string[] }>({
+      query: (body) => ({
+        url: '/conversations/groups',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: [{ type: 'Conversation', id: 'LIST' }],
+    }),
+    addGroupParticipants: builder.mutation<Conversation, { conversationId: string; participantIds: string[] }>({
+      query: ({ conversationId, participantIds }) => ({
+        url: `/conversations/${conversationId}/participants`,
+        method: 'POST',
+        body: { participantIds },
+      }),
+      invalidatesTags: (_result, _error, { conversationId }) => [
+        { type: 'Conversation', id: conversationId },
+        { type: 'Conversation', id: 'LIST' },
+      ],
+    }),
+    removeGroupParticipant: builder.mutation<void, { conversationId: string; participantId: string }>({
+      query: ({ conversationId, participantId }) => ({
+        url: `/conversations/${conversationId}/participants/${participantId}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: (_result, _error, { conversationId }) => [
+        { type: 'Conversation', id: conversationId },
+        { type: 'Conversation', id: 'LIST' },
+      ],
+    }),
+    deleteConversation: builder.mutation<void, string>({
+      query: (conversationId) => ({
+        url: `/conversations/${conversationId}`,
+        method: 'DELETE',
+      }),
+      async onQueryStarted(conversationId, { dispatch, queryFulfilled }) {
+        const conversationPatch = dispatch(
+          messageApi.util.updateQueryData('getConversations', undefined, (draft) => {
+            const index = draft.findIndex((conversation) => conversation.id === conversationId);
+            if (index >= 0) draft.splice(index, 1);
+          })
+        );
+
+        try {
+          await queryFulfilled;
+        } catch {
+          conversationPatch.undo();
+        }
+      },
       invalidatesTags: [{ type: 'Conversation', id: 'LIST' }],
     }),
     sendMessage: builder.mutation<ChatMessage, { conversationId: string; content: string; attachment?: File | null }>({
@@ -141,6 +192,62 @@ export const messageApi = createApi({
         { type: 'Conversation', id: 'LIST' },
       ],
     }),
+    editMessage: builder.mutation<ChatMessage, { conversationId: string; messageId: string; content: string }>({
+      query: ({ conversationId, messageId, content }) => ({
+        url: `/conversations/${conversationId}/messages/${messageId}`,
+        method: 'PATCH',
+        body: { content },
+      }),
+      async onQueryStarted({ conversationId, messageId, content }, { dispatch, queryFulfilled }) {
+        const messagePatch = dispatch(
+          messageApi.util.updateQueryData('getConversationMessages', conversationId, (draft) => {
+            const message = draft.find((item) => item.id === messageId);
+            if (message) {
+              message.content = content;
+              message.updatedAt = new Date().toISOString();
+            }
+          })
+        );
+
+        try {
+          const { data: savedMessage } = await queryFulfilled;
+          dispatch(messageApi.util.updateQueryData('getConversationMessages', conversationId, (draft) => {
+            const index = draft.findIndex((message) => message.id === messageId);
+            if (index >= 0) draft[index] = savedMessage;
+          }));
+        } catch {
+          messagePatch.undo();
+        }
+      },
+      invalidatesTags: (_result, _error, { conversationId }) => [
+        { type: 'Message', id: conversationId },
+        { type: 'Conversation', id: 'LIST' },
+      ],
+    }),
+    deleteMessage: builder.mutation<void, { conversationId: string; messageId: string }>({
+      query: ({ conversationId, messageId }) => ({
+        url: `/conversations/${conversationId}/messages/${messageId}`,
+        method: 'DELETE',
+      }),
+      async onQueryStarted({ conversationId, messageId }, { dispatch, queryFulfilled }) {
+        const messagePatch = dispatch(
+          messageApi.util.updateQueryData('getConversationMessages', conversationId, (draft) => {
+            const index = draft.findIndex((message) => message.id === messageId);
+            if (index >= 0) draft.splice(index, 1);
+          })
+        );
+
+        try {
+          await queryFulfilled;
+        } catch {
+          messagePatch.undo();
+        }
+      },
+      invalidatesTags: (_result, _error, { conversationId }) => [
+        { type: 'Message', id: conversationId },
+        { type: 'Conversation', id: 'LIST' },
+      ],
+    }),
     markConversationRead: builder.mutation<void, string>({
       query: (conversationId) => ({
         url: `/conversations/${conversationId}/read`,
@@ -156,6 +263,12 @@ export const {
   useGetConversationMessagesQuery,
   useSearchMessageUsersQuery,
   useStartConversationMutation,
+  useCreateGroupConversationMutation,
+  useAddGroupParticipantsMutation,
+  useRemoveGroupParticipantMutation,
+  useDeleteConversationMutation,
   useSendMessageMutation,
+  useEditMessageMutation,
+  useDeleteMessageMutation,
   useMarkConversationReadMutation,
 } = messageApi;

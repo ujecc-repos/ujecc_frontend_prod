@@ -15,6 +15,7 @@ interface Appointment {
   time: string;
   duration: string;
   notes: string;
+  externalParticipants?: string | null;
   assignedUsers: User[];
   churchId?: string;
 }
@@ -26,6 +27,12 @@ interface User {
   email: string;
   profileImage?: string;
 }
+
+const getExternalParticipantNames = (value?: string | null) =>
+  value
+    ?.split(/\r?\n|,/)
+    .map((name) => name.trim())
+    .filter(Boolean) ?? [];
 
 const getAppointmentDateTime = (appointment: Pick<Appointment, 'date' | 'time'>) => {
   const datePart = appointment.date?.slice(0, 10);
@@ -316,10 +323,11 @@ const ViewAppointmentModal: React.FC<ViewAppointmentModalProps> = ({ isOpen, onC
   if (!appointment) return null;
 
   const isCompleted = appointmentIsCompleted(appointment);
+  const externalParticipantNames = getExternalParticipantNames(appointment.externalParticipants);
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-10" onClose={onClose}>
+      <Dialog as="div" className="relative z-[200]" onClose={onClose}>
         <Transition.Child
           as={Fragment}
           enter="ease-out duration-300"
@@ -329,11 +337,11 @@ const ViewAppointmentModal: React.FC<ViewAppointmentModalProps> = ({ isOpen, onC
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-black bg-opacity-25" />
+          <div className="fixed inset-0 bg-slate-900/15 backdrop-blur-[1px]" />
         </Transition.Child>
 
-        <div className="fixed inset-0 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4 text-center">
+        <div className="fixed inset-0 z-[201] overflow-y-auto">
+          <div className="flex min-h-full items-start justify-center p-4 py-6 text-center sm:items-center sm:p-6">
             <Transition.Child
               as={Fragment}
               enter="ease-out duration-300"
@@ -343,47 +351,51 @@ const ViewAppointmentModal: React.FC<ViewAppointmentModalProps> = ({ isOpen, onC
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                <div className="flex justify-between items-center mb-4">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 h-10 w-10 rounded-full bg-teal-100 flex items-center justify-center mr-3">
-                      <CalendarIcon className="h-6 w-6 text-teal-600" aria-hidden="true" />
+              <Dialog.Panel className="flex max-h-[calc(100vh-3rem)] w-full max-w-3xl transform flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white text-left align-middle shadow-2xl shadow-slate-900/15 transition-all">
+                <div className="flex shrink-0 items-start justify-between border-b border-slate-200 bg-gradient-to-r from-teal-50 via-white to-white px-6 py-5 sm:px-8">
+                  <div className="flex min-w-0 items-center">
+                    <div className="mr-4 flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-teal-600 shadow-sm">
+                      <CalendarIcon className="h-6 w-6 text-white" aria-hidden="true" />
                     </div>
-                    <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900">
-                      {appointment.name}
-                    </Dialog.Title>
+                    <div className="min-w-0">
+                      <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-teal-700">Détails du rendez-vous</p>
+                      <Dialog.Title as="h3" className="truncate text-xl font-semibold text-slate-900 sm:text-2xl">
+                        {appointment.name}
+                      </Dialog.Title>
+                    </div>
                   </div>
                   <button
                     type="button"
-                    className="text-gray-400 hover:text-gray-500"
+                    className="ml-4 rounded-full p-2 text-slate-400 transition-colors hover:bg-white hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
                     onClick={onClose}
+                    aria-label="Fermer"
                   >
                     <XMarkIcon className="h-6 w-6" aria-hidden="true" />
                   </button>
                 </div>
 
-                <div className="mt-2">
-                  <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${isCompleted ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'} mb-4`}>
+                <div className="overflow-y-auto px-6 py-6 sm:px-8">
+                  <div className={`mb-6 inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${isCompleted ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
                     <div className={`mr-1.5 h-2 w-2 rounded-full ${isCompleted ? 'bg-green-600' : 'bg-yellow-600'}`}></div>
                     {isCompleted ? 'Complété' : 'En attente'}
                   </div>
 
-                  <div className="space-y-4">
-                    <div className="flex items-start p-2 rounded-md hover:bg-gray-50">
-                      <CalendarIcon className="h-5 w-5 text-teal-500 mr-3" />
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="flex items-start rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+                      <CalendarIcon className="mr-3 h-5 w-5 flex-shrink-0 text-teal-600" />
                       <div>
-                        <p className="text-sm font-medium text-gray-900">Date</p>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm font-semibold text-slate-900">Date</p>
+                        <p className="mt-1 text-sm text-slate-600">
                           {formatAppointmentDate(appointment)}
                         </p>
                       </div>
                     </div>
 
-                    <div className="flex items-start p-2 rounded-md hover:bg-gray-50">
-                      <ClockIcon className="h-5 w-5 text-teal-500 mr-3" />
+                    <div className="flex items-start rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+                      <ClockIcon className="mr-3 h-5 w-5 flex-shrink-0 text-teal-600" />
                       <div>
-                        <p className="text-sm font-medium text-gray-900">Heure et durée</p>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm font-semibold text-slate-900">Heure et durée</p>
+                        <p className="mt-1 text-sm text-slate-600">
                           {appointment.time || 'Heure non définie'}
                           {appointment.duration ? ` (${appointment.duration} minutes)` : ''}
                         </p>
@@ -391,19 +403,19 @@ const ViewAppointmentModal: React.FC<ViewAppointmentModalProps> = ({ isOpen, onC
                     </div>
 
                     {appointment.description && (
-                      <div className="flex items-start p-2 rounded-md hover:bg-gray-50">
-                        <DocumentTextIcon className="h-5 w-5 text-teal-500 mr-3" />
+                      <div className="flex items-start rounded-xl border border-slate-200 p-4 sm:col-span-2">
+                        <DocumentTextIcon className="mr-3 h-5 w-5 flex-shrink-0 text-teal-600" />
                         <div>
-                          <p className="text-sm font-medium text-gray-900">Description</p>
-                          <p className="text-sm text-gray-500">{appointment.description}</p>
+                          <p className="text-sm font-semibold text-slate-900">Description</p>
+                          <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-600">{appointment.description}</p>
                         </div>
                       </div>
                     )}
 
-                    <div className="flex items-start p-2 rounded-md hover:bg-gray-50">
-                      <EyeIcon className="h-5 w-5 text-teal-500 mr-3" />
+                    <div className="flex items-start rounded-xl border border-slate-200 p-4">
+                      <EyeIcon className="mr-3 h-5 w-5 flex-shrink-0 text-teal-600" />
                       <div>
-                        <p className="text-sm font-medium text-gray-900">Visibilité</p>
+                        <p className="text-sm font-semibold text-slate-900">Visibilité</p>
                         <div className={`inline-flex items-center px-2.5 py-0.5 mt-1 rounded-full text-xs font-medium ${appointment.visibility === 'public' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}`}>
                           <div className={`mr-1.5 h-2 w-2 rounded-full ${appointment.visibility === 'public' ? 'bg-blue-600' : 'bg-purple-600'}`}></div>
                           {appointment.visibility === 'public' ? 'Public' : 'Privé'}
@@ -412,20 +424,20 @@ const ViewAppointmentModal: React.FC<ViewAppointmentModalProps> = ({ isOpen, onC
                     </div>
 
                     {appointment.notes && (
-                      <div className="flex items-start p-2 rounded-md hover:bg-gray-50">
-                        <DocumentTextIcon className="h-5 w-5 text-teal-500 mr-3" />
+                      <div className="flex items-start rounded-xl border border-slate-200 p-4">
+                        <DocumentTextIcon className="mr-3 h-5 w-5 flex-shrink-0 text-teal-600" />
                         <div>
-                          <p className="text-sm font-medium text-gray-900">Notes</p>
-                          <p className="text-sm text-gray-500">{appointment.notes}</p>
+                          <p className="text-sm font-semibold text-slate-900">Notes</p>
+                          <p className="mt-1 whitespace-pre-wrap text-sm text-slate-600">{appointment.notes}</p>
                         </div>
                       </div>
                     )}
 
-                    <div className="flex items-start p-2 rounded-md hover:bg-gray-50">
-                      <UserIcon className="h-5 w-5 text-teal-500 mr-3" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Participants</p>
-                        {appointment.assignedUsers && appointment.assignedUsers.length > 0 ? (
+                    <div className="flex items-start rounded-xl border border-slate-200 p-4 sm:col-span-2">
+                      <UserIcon className="mr-3 h-5 w-5 flex-shrink-0 text-teal-600" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-slate-900">Participants</p>
+                        {appointment.assignedUsers && appointment.assignedUsers.length > 0 && (
                           <div className="mt-2 flex flex-wrap gap-2">
                             {appointment.assignedUsers.map(user => (
                               <div key={user.id} className="flex items-center bg-gray-100 rounded-full px-3 py-1">
@@ -436,7 +448,20 @@ const ViewAppointmentModal: React.FC<ViewAppointmentModalProps> = ({ isOpen, onC
                               </div>
                             ))}
                           </div>
-                        ) : (
+                        )}
+                        {externalParticipantNames.length > 0 && (
+                          <div className="mt-3">
+                            <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Participants externes</p>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {externalParticipantNames.map((name, index) => (
+                                <span key={`${name}-${index}`} className="rounded-full border border-teal-100 bg-teal-50 px-3 py-1 text-xs text-teal-800">
+                                  {name}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {(!appointment.assignedUsers?.length && !externalParticipantNames.length) && (
                           <p className="text-sm text-gray-500">Aucun participant</p>
                         )}
                       </div>
@@ -444,10 +469,10 @@ const ViewAppointmentModal: React.FC<ViewAppointmentModalProps> = ({ isOpen, onC
                   </div>
                 </div>
 
-                <div className="mt-6">
+                <div className="flex shrink-0 justify-end border-t border-slate-200 bg-slate-50 px-6 py-4 sm:px-8">
                   <button
                     type="button"
-                    className="inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition-colors"
+                    className="inline-flex min-w-24 justify-center rounded-lg bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
                     onClick={onClose}
                   >
                     Fermer
@@ -570,8 +595,10 @@ const RendezVous: React.FC = () => {
 
   // Filter appointments based on search query and upcoming filter
   const filteredAppointments = appointments.filter(appointment => {
-    const matchesSearch = appointment.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      appointment.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    const normalizedSearch = searchQuery.toLowerCase();
+    const matchesSearch = appointment.name.toLowerCase().includes(normalizedSearch) ||
+      appointment.description?.toLowerCase().includes(normalizedSearch) ||
+      appointment.externalParticipants?.toLowerCase().includes(normalizedSearch);
     
     if (showUpcoming) {
       const appointmentDate = getAppointmentDateTime(appointment);
@@ -721,25 +748,29 @@ const RendezVous: React.FC = () => {
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            {appointment.assignedUsers?.length ? (
+                            {(() => {
+                              const participantNames = [
+                                ...(appointment.assignedUsers ?? []).map((user) => `${user.firstname} ${user.lastname}`),
+                                ...getExternalParticipantNames(appointment.externalParticipants),
+                              ];
+
+                              return participantNames.length ? (
                               <div className="max-w-xs">
                                 <div
                                   className="truncate text-sm font-medium text-gray-900"
-                                  title={appointment.assignedUsers.map((user) => `${user.firstname} ${user.lastname}`).join(', ')}
+                                  title={participantNames.join(', ')}
                                 >
-                                  {appointment.assignedUsers
-                                    .slice(0, 2)
-                                    .map((user) => `${user.firstname} ${user.lastname}`)
-                                    .join(', ')}
-                                  {appointment.assignedUsers.length > 2 && ` +${appointment.assignedUsers.length - 2}`}
+                                  {participantNames.slice(0, 2).join(', ')}
+                                  {participantNames.length > 2 && ` +${participantNames.length - 2}`}
                                 </div>
                                 <div className="mt-1 text-xs text-gray-500">
-                                  {appointment.assignedUsers.length} participant{appointment.assignedUsers.length > 1 ? 's' : ''}
+                                  {participantNames.length} participant{participantNames.length > 1 ? 's' : ''}
                                 </div>
                               </div>
-                            ) : (
+                              ) : (
                               <span className="text-sm text-gray-500">Aucun participant</span>
-                            )}
+                              );
+                            })()}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${appointment.visibility === 'public' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}`}>
