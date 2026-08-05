@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useLoginMutation } from '../store/services/authApi';
@@ -7,15 +7,78 @@ import { useNavigate } from 'react-router-dom';
 import { loginSchema, type LoginFormData } from '../validations/auth';
 import { useAuth } from '../Auth/auth';
 import Ecclesys from "../assets/Ecclesys 1.png"
+import { ArrowDownTrayIcon, ShareIcon, XMarkIcon } from '@heroicons/react/24/outline';
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+}
+
+const getIsIOS = () => {
+  const userAgent = window.navigator.userAgent.toLowerCase();
+  return /iphone|ipad|ipod/.test(userAgent) ||
+    (window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1);
+};
+
+const getIsStandalone = () =>
+  window.matchMedia('(display-mode: standalone)').matches ||
+  Boolean((window.navigator as Navigator & { standalone?: boolean }).standalone);
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isIOS] = useState(getIsIOS);
+  const [isInstalled, setIsInstalled] = useState(getIsStandalone);
+  const [showIOSInstructions, setShowIOSInstructions] = useState(false);
+  const [installMessage, setInstallMessage] = useState<string | null>(null);
 
   const [loginMutation, { isLoading }] = useLoginMutation();
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const captureInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      setInstallPrompt(event as BeforeInstallPromptEvent);
+      setInstallMessage(null);
+    };
+    const handleInstalled = () => {
+      setIsInstalled(true);
+      setInstallPrompt(null);
+      setShowIOSInstructions(false);
+      setInstallMessage('Ecclesys a été installé avec succès.');
+    };
+
+    window.addEventListener('beforeinstallprompt', captureInstallPrompt);
+    window.addEventListener('appinstalled', handleInstalled);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', captureInstallPrompt);
+      window.removeEventListener('appinstalled', handleInstalled);
+    };
+  }, []);
+
+  const handleInstall = async () => {
+    if (isIOS) {
+      setShowIOSInstructions(true);
+      return;
+    }
+
+    if (!installPrompt) {
+      setInstallMessage("Ouvrez le menu de votre navigateur, puis choisissez « Installer l’application » ou « Ajouter à l’écran d’accueil ».");
+      return;
+    }
+
+    await installPrompt.prompt();
+    const choice = await installPrompt.userChoice;
+    if (choice.outcome === 'accepted') {
+      setInstallMessage('Installation en cours…');
+    } else {
+      setInstallMessage('Installation annulée. Vous pourrez réessayer à tout moment.');
+    }
+    setInstallPrompt(null);
+  };
 
   const { control, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -195,8 +258,92 @@ export default function Login() {
               )}
             </button>
           </form>
+
+          {!isInstalled && (
+            <div className="mt-7 border-t border-gray-200 pt-6">
+              <button
+                type="button"
+                onClick={() => void handleInstall()}
+                className="group flex w-full items-center justify-center gap-3 rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-semibold text-teal-800 transition-all hover:border-teal-300 hover:bg-teal-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+              >
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-teal-700 shadow-sm transition-transform group-hover:-translate-y-0.5">
+                  <ArrowDownTrayIcon className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <span className="text-left">
+                  <span className="block">Installer Ecclesys</span>
+                  <span className="block text-xs font-normal text-teal-700/80">
+                    Accès rapide et fonctionnement hors connexion
+                  </span>
+                </span>
+              </button>
+              {installMessage && (
+                <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-center text-xs leading-5 text-slate-600">
+                  {installMessage}
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </div>
+
+      {showIOSInstructions && (
+        <div
+          className="fixed inset-0 z-[300] flex items-end justify-center bg-slate-900/20 p-4 backdrop-blur-[1px] sm:items-center"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="ios-install-title"
+          onMouseDown={(event) => {
+            if (event.currentTarget === event.target) setShowIOSInstructions(false);
+          }}
+        >
+          <div className="w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/20">
+            <div className="flex items-start justify-between border-b border-slate-100 bg-gradient-to-r from-teal-50 to-white px-5 py-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-teal-600 text-white shadow-sm">
+                  <ArrowDownTrayIcon className="h-6 w-6" aria-hidden="true" />
+                </div>
+                <div>
+                  <h2 id="ios-install-title" className="font-semibold text-slate-900">Installer sur iPhone ou iPad</h2>
+                  <p className="mt-0.5 text-xs text-slate-500">Utilisez Safari pour ajouter Ecclesys.</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowIOSInstructions(false)}
+                className="rounded-full p-2 text-slate-400 hover:bg-white hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                aria-label="Fermer"
+              >
+                <XMarkIcon className="h-5 w-5" aria-hidden="true" />
+              </button>
+            </div>
+
+            <ol className="space-y-4 px-5 py-5 text-sm text-slate-700">
+              <li className="flex items-center gap-3">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal-100 font-semibold text-teal-800">1</span>
+                <span>Ouvrez cette page dans <strong className="font-semibold text-slate-900">Safari</strong>.</span>
+              </li>
+              <li className="flex items-center gap-3">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal-100 font-semibold text-teal-800">2</span>
+                <span className="flex items-center gap-2">Touchez le bouton <ShareIcon className="h-5 w-5 text-blue-600" aria-label="Partager" /> <strong className="font-semibold text-slate-900">Partager</strong>.</span>
+              </li>
+              <li className="flex items-center gap-3">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal-100 font-semibold text-teal-800">3</span>
+                <span>Sélectionnez <strong className="font-semibold text-slate-900">Sur l’écran d’accueil</strong>, puis touchez <strong className="font-semibold text-slate-900">Ajouter</strong>.</span>
+              </li>
+            </ol>
+
+            <div className="border-t border-slate-100 bg-slate-50 px-5 py-4">
+              <button
+                type="button"
+                onClick={() => setShowIOSInstructions(false)}
+                className="w-full rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+              >
+                J’ai compris
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
