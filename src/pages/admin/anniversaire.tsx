@@ -13,6 +13,7 @@ import 'react-datepicker/dist/react-datepicker.css';
 import { useEffect } from 'react';
 
 // Style pour le DatePicker
+// let's start it
 const datePickerStyles = `
   .react-datepicker-wrapper {
     width: 100%;
