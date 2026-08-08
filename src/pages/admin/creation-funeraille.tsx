@@ -6,17 +6,22 @@ import { ArrowLeftIcon, DocumentIcon, XMarkIcon } from '@heroicons/react/24/outl
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { Dialog } from '@headlessui/react';
-import { useCreateFuneralMutation } from '../../store/services/funeralApi';
+import AsyncSelect from 'react-select/async';
+import { useCreateFuneralMutation, useLazySearchFuneralMembersQuery, type FuneralMember } from '../../store/services/funeralApi';
 import { useGetUserByTokenQuery } from '../../store/services/authApi';
 import moment from 'moment';
+import { parseDateOnly } from '../../utils/dateOnly';
 
 export default function CreationFuneraille() {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isChurchMember, setIsChurchMember] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<FuneralMember | null>(null);
   
   const [createFuneral, { isLoading }] = useCreateFuneralMutation();
+  const [searchFuneralMembers] = useLazySearchFuneralMembersQuery();
   const { data: userToken } = useGetUserByTokenQuery();
 
   const [formData, setFormData] = useState({
@@ -33,15 +38,48 @@ export default function CreationFuneraille() {
     funeralTime: '',
     funeralLocation: '',
     deathCertificate: null as File | null,
+    memberId: '',
   });
+
+  type MemberOption = { value: string; label: string; member: FuneralMember };
+
+  const loadMemberOptions = async (inputValue: string): Promise<MemberOption[]> => {
+    const query = inputValue.trim();
+    if (query.length < 2) return [];
+
+    try {
+      const members = await searchFuneralMembers(query).unwrap();
+      return members.map((member) => ({
+        value: member.id,
+        label: `${member.firstname} ${member.lastname}${member.code ? ` · ${member.code}` : ''}`,
+        member,
+      }));
+    } catch {
+      return [];
+    }
+  };
+
+  const handleMemberSelection = (option: MemberOption | null) => {
+    const member = option?.member || null;
+    setSelectedMember(member);
+    setFormData(prev => ({
+      ...prev,
+      memberId: member?.id || '',
+      fullname: member ? `${member.firstname} ${member.lastname}`.trim() : '',
+      birthDate: parseDateOnly(member?.birthDate),
+    }));
+    setErrors(prev => ({ ...prev, memberId: '', fullname: '', birthDate: '' }));
+  };
 
   // Validation des champs
   const validateStep = (step: number) => {
     const newErrors: Record<string, string> = {};
 
     if (step === 0) {
+      if (isChurchMember && !formData.memberId) newErrors.memberId = 'Veuillez sélectionner le membre concerné';
       if (!formData.fullname) newErrors.fullname = 'Le nom complet est obligatoire';
       if (!formData.birthDate) newErrors.birthDate = 'La date de naissance est obligatoire';
+      if (!formData.deathDate) newErrors.deathDate = 'La date de décès est obligatoire';
       if (!formData.deathCertificate) {
         newErrors.deathCertificate = 'Le certificat de décès est obligatoire';
       } else {
@@ -150,7 +188,7 @@ export default function CreationFuneraille() {
       // Ajout des champs texte
       formDataToSend.append('fullname', formData.fullname);
       formDataToSend.append('birthDate', formData.birthDate ? moment(formData.birthDate).format('YYYY-MM-DD') : '');
-      // Suppression de l'envoi du champ deathDate qui n'existe pas dans le modèle Prisma
+      formDataToSend.append('deathDate', formData.deathDate ? moment(formData.deathDate).format('YYYY-MM-DD') : '');
       formDataToSend.append('funeralDate', formData.funeralDate ? moment(formData.funeralDate).format('YYYY-MM-DD') : '');
       formDataToSend.append('funeralTime', formData.funeralTime);
       formDataToSend.append('relationShip', formData.relationShip);
@@ -162,6 +200,7 @@ export default function CreationFuneraille() {
       formDataToSend.append('funeralLocation', formData.funeralLocation);
       formDataToSend.append('churchId', userToken?.church?.id || '1');
       formDataToSend.append('status', 'en attente');
+      if (formData.memberId) formDataToSend.append('memberId', formData.memberId);
       
       // Ajout du fichier de certificat de décès
       if (formData.deathCertificate) {
@@ -203,7 +242,7 @@ export default function CreationFuneraille() {
           label: 'Date de Décès',
           placeholder: 'Sélectionnez la date de décès',
           type: 'date',
-          required: false,
+          required: true,
         },
         {
           name: 'deathCertificate',
@@ -336,6 +375,68 @@ export default function CreationFuneraille() {
           <h2 className="text-xl font-semibold text-gray-800 mb-4">
             {formSections[currentStep].title}
           </h2>
+
+          {currentStep === 0 && (
+            <div className="mb-6 rounded-xl border border-gray-200 bg-gray-50 p-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="font-semibold text-gray-800">Le défunt était-il membre de cette église ?</p>
+                  <p className="mt-1 text-sm text-gray-500">La sélection d’un membre le rendra automatiquement inactif après l’enregistrement.</p>
+                </div>
+                <div className="flex rounded-lg border border-gray-300 bg-white p-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsChurchMember(true);
+                      setErrors(prev => ({ ...prev, memberId: '' }));
+                    }}
+                    className={`rounded-md px-4 py-2 text-sm font-medium transition ${isChurchMember ? 'bg-teal-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+                  >
+                    Oui, membre
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsChurchMember(false);
+                      handleMemberSelection(null);
+                    }}
+                    className={`rounded-md px-4 py-2 text-sm font-medium transition ${!isChurchMember ? 'bg-teal-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+                  >
+                    Non, personne externe
+                  </button>
+                </div>
+              </div>
+
+              {isChurchMember && (
+                <div className="mt-4">
+                  <label className="mb-2 block font-medium text-gray-700">Rechercher le membre <span className="text-red-500">*</span></label>
+                  <AsyncSelect<MemberOption, false>
+                    cacheOptions
+                    defaultOptions={false}
+                    loadOptions={loadMemberOptions}
+                    value={selectedMember ? {
+                      value: selectedMember.id,
+                      label: `${selectedMember.firstname} ${selectedMember.lastname}${selectedMember.code ? ` · ${selectedMember.code}` : ''}`,
+                      member: selectedMember,
+                    } : null}
+                    onChange={handleMemberSelection}
+                    noOptionsMessage={({ inputValue }) => inputValue.trim().length < 2 ? 'Saisissez au moins 2 caractères' : 'Aucun membre actif trouvé'}
+                    loadingMessage={() => 'Recherche en cours…'}
+                    placeholder="Nom, prénom, code ou téléphone…"
+                    styles={{
+                      control: (base, state) => ({
+                        ...base,
+                        minHeight: 46,
+                        borderColor: errors.memberId ? '#ef4444' : state.isFocused ? '#0d9488' : '#d1d5db',
+                        boxShadow: state.isFocused ? '0 0 0 1px #0d9488' : 'none',
+                      }),
+                    }}
+                  />
+                  {errors.memberId && <p className="mt-1 text-sm text-red-500">{errors.memberId}</p>}
+                </div>
+              )}
+            </div>
+          )}
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {formSections[currentStep].fields.map((field) => (
@@ -520,7 +621,10 @@ export default function CreationFuneraille() {
                       funeralTime: '',
                       funeralLocation: '',
                       deathCertificate: null,
+                      memberId: '',
                     });
+                    setIsChurchMember(false);
+                    setSelectedMember(null);
                     setCurrentStep(0);
                   }}
                   className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"

@@ -53,6 +53,7 @@ import Recovery from "../pages/super-admin/recovery";
 import MappingForDirector from "../pages/director/mappingForDirector";
 import Messagerie from "../pages/messagerie";
 import AdminOnlyRoute from "./adminOnlyRoute";
+import Visiteurs from "../pages/admin/visiteurs";
 
 
 const router = createBrowserRouter([
@@ -87,6 +88,10 @@ const router = createBrowserRouter([
                     {
                         path: "/tableau-de-bord/admin/membres",
                         element: <Membres />
+                    },
+                    {
+                        path: "/tableau-de-bord/admin/visiteurs",
+                        element: <AdminOnlyRoute><Visiteurs /></AdminOnlyRoute>
                     },
                     {
                         path: "/tableau-de-bord/admin/membres/invite",

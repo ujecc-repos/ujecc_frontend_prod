@@ -246,6 +246,7 @@ export default function ServiceAndPresence() {
         utilisateurId: selectedUser.value,
         statut: presenceStatus,
         attendanceDate,
+        markedAt: new Date().toISOString(),
         offlineOperationId,
       }).unwrap();
       toast.success('Présence marquée avec succès!');
@@ -354,6 +355,7 @@ export default function ServiceAndPresence() {
         utilisateurId: result,
         statut: 'PRESENT',
         attendanceDate,
+        markedAt: new Date().toISOString(),
         offlineOperationId,
       }).unwrap();
 

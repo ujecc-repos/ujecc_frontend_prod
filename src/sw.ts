@@ -84,7 +84,9 @@ registerRoute(
 
 // All application data is read-only offline. Only successful GET responses are cached.
 registerRoute(
-  ({ request, url }) => request.method === 'GET' && url.pathname.startsWith('/api/'),
+  ({ request, url }) => request.method === 'GET'
+    && url.pathname.startsWith('/api/')
+    && !url.pathname.includes('/reports/export'),
   ({ event, request }) => {
     const strategy = self.navigator.onLine ? apiNetworkFirst : apiCacheFirst;
     return strategy.handle({ event, request });

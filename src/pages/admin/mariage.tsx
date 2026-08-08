@@ -10,6 +10,7 @@ import {
   XMarkIcon,
   ArrowRightIcon,
   DocumentIcon,
+  EyeIcon,
 } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 import { useGetUserByTokenQuery } from '../../store/services/authApi';
@@ -23,6 +24,7 @@ import { fr } from 'date-fns/locale';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import moment from 'moment';
+import RecordDetailsModal from '../../components/RecordDetailsModal';
 
 interface Marriage {
   id: string;
@@ -54,6 +56,7 @@ export default function Mariage() {
   const [showExportModal, setShowExportModal] = useState(false);
   const [marriageToDelete, setMarriageToDelete] = useState<Marriage | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [viewingMarriage, setViewingMarriage] = useState<Marriage | null>(null);
 
   // États pour le modal de modification
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -130,9 +133,7 @@ export default function Mariage() {
 
   // Handle row click to navigate to detail page
   const handleRowClick = (marriage: Marriage) => {
-    // Navigate to detail page (to be implemented)
-    // navigate(`/tableau-de-bord/admin/mariages/${marriage.id}`);
-    console.log('View marriage details:', marriage.id);
+    setViewingMarriage(marriage);
   };
 
   // Handle delete marriage
@@ -602,6 +603,14 @@ export default function Mariage() {
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end space-x-2">
                         <button
+                          onClick={(e) => { e.stopPropagation(); setViewingMarriage(marriage); }}
+                          className="p-1.5 text-teal-600 hover:text-teal-800 hover:bg-teal-50 rounded-full transition-colors group relative"
+                          title="Voir les informations"
+                        >
+                          <EyeIcon className="h-5 w-5" />
+                          <span className="absolute bottom-full right-0 mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">Voir</span>
+                        </button>
+                        <button
                           onClick={(e) => handleEditMarriage(marriage, e)}
                           className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors group relative"
                           title="Modifier"
@@ -771,6 +780,20 @@ export default function Mariage() {
       )}
 
       {/* Export Modal */}
+      <RecordDetailsModal
+        open={Boolean(viewingMarriage)}
+        onClose={() => setViewingMarriage(null)}
+        onEdit={() => { if (viewingMarriage) navigate(`/tableau-de-bord/admin/mariage/edit/${viewingMarriage.id}`); }}
+        accentLabel="Dossier de mariage"
+        title={viewingMarriage ? `${viewingMarriage.brideFullname} & ${viewingMarriage.groomFullname}` : ''}
+        subtitle={viewingMarriage ? `Mariage prévu le ${formatDate(viewingMarriage.weddingDate)}` : ''}
+        sections={viewingMarriage ? [
+          { title: 'Époux', items: [{ label: 'Nom de la mariée', value: viewingMarriage.brideFullname }, { label: 'Date de naissance de la mariée', value: formatDate(viewingMarriage.birthDate) }, { label: 'Nom du marié', value: viewingMarriage.groomFullname }, { label: 'Date de naissance du marié', value: formatDate(viewingMarriage.goomBirthDate) }] },
+          { title: 'Cérémonie', items: [{ label: 'Date du mariage', value: formatDate(viewingMarriage.weddingDate) }, { label: 'Lieu', value: viewingMarriage.weddingLocation }, { label: 'Officiant', value: viewingMarriage.officiantName }, { label: 'Officier de l’état civil', value: viewingMarriage.civilStateOfficer }, { label: 'Témoin / signature', value: viewingMarriage.witnessSignature }, { label: 'Statut', value: getStatus(viewingMarriage) }] },
+        ] : []}
+        documents={viewingMarriage ? [{ label: 'Certificat de mariage', path: viewingMarriage.weddingCertificate }, { label: 'Document de la mariée', path: viewingMarriage.brideCertificate }, { label: 'Document du marié', path: viewingMarriage.grooomCertificate }] : []}
+      />
+
       {showExportModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg w-full max-w-md mx-4">

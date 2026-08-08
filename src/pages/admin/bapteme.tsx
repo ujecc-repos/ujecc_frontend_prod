@@ -11,6 +11,7 @@ import {
   TrashIcon,
   ExclamationTriangleIcon,
   PencilIcon,
+  EyeIcon,
 } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 import { useGetUserByTokenQuery } from '../../store/services/authApi';
@@ -26,6 +27,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Dialog } from '@headlessui/react';
 import { toast } from 'react-toastify';
+import RecordDetailsModal from '../../components/RecordDetailsModal';
 
 interface Baptism {
   id: string;
@@ -57,6 +59,7 @@ export default function Bapteme() {
   const [showExportModal, setShowExportModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [baptismToDelete, setBaptismToDelete] = useState<Baptism | null>(null);
+  const [viewingBaptism, setViewingBaptism] = useState<Baptism | null>(null);
 
   // Get current user and church ID
   const { data: userData } = useGetUserByTokenQuery();
@@ -467,7 +470,7 @@ export default function Bapteme() {
                   <tr
                     key={baptism.id}
                     className="hover:bg-gray-50 cursor-pointer transition-colors"
-                  // onClick={() => handleRowClick(baptism)}
+                    onClick={() => setViewingBaptism(baptism)}
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
@@ -506,6 +509,13 @@ export default function Bapteme() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end space-x-2">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setViewingBaptism(baptism); }}
+                          className="text-teal-600 hover:text-teal-900 p-2 rounded-full hover:bg-teal-50 transition-colors"
+                          title="Voir les informations"
+                        >
+                          <EyeIcon className="h-5 w-5" />
+                        </button>
                         <button
                           onClick={(e) => handleEditClick(baptism, e)}
                           className="text-blue-600 hover:text-blue-900 p-2 rounded-full hover:bg-blue-50 transition-colors"
@@ -579,6 +589,21 @@ export default function Bapteme() {
           </div>
         </div>
       )}
+
+      <RecordDetailsModal
+        open={Boolean(viewingBaptism)}
+        onClose={() => setViewingBaptism(null)}
+        onEdit={() => { if (viewingBaptism) navigate(`/tableau-de-bord/admin/bapteme/edit/${viewingBaptism.id}`); }}
+        accentLabel="Dossier de baptême"
+        title={viewingBaptism?.fullName || ''}
+        subtitle={viewingBaptism ? `Baptême du ${formatDate(viewingBaptism.baptismDate)}` : ''}
+        sections={viewingBaptism ? [
+          { title: 'Identité', items: [{ label: 'Nom complet', value: viewingBaptism.fullName }, { label: 'Date de naissance', value: formatDate(viewingBaptism.birthDate) }, { label: 'Lieu de naissance', value: viewingBaptism.placeOfBirth }, { label: 'Ancienne église', value: viewingBaptism.previousChurch }] },
+          { title: 'Parcours spirituel', items: [{ label: 'Date de conversion', value: formatDate(viewingBaptism.conversionDate || '') }, { label: 'Date de classe de baptême', value: formatDate(viewingBaptism.baptismClassDate || '') }, { label: 'Témoignage', value: viewingBaptism.testimony, wide: true }] },
+          { title: 'Cérémonie', items: [{ label: 'Date du baptême', value: formatDate(viewingBaptism.baptismDate) }, { label: 'Lieu du baptême', value: viewingBaptism.baptismLocation }, { label: 'Officiant', value: viewingBaptism.officiantName }, { label: 'Témoin', value: viewingBaptism.withness }, { label: 'Statut', value: getStatus(viewingBaptism) }] },
+        ] : []}
+        documents={viewingBaptism ? [{ label: 'Certificat de baptême', path: viewingBaptism.baptismCertificate }] : []}
+      />
 
       {/* Delete Confirmation Modal */}
       <Dialog open={showDeleteModal} onClose={cancelDelete} className="relative z-50">

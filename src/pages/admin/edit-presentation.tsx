@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, DocumentIcon } from '@heroicons/react/24/outline';
 import { useGetUserByTokenQuery } from '../../store/services/authApi';
 import { useGetPresentationQuery, useUpdatePresentationMutation } from '../../store/services/presentationApi';
 import DatePicker from 'react-datepicker';
@@ -38,6 +38,7 @@ export default function EditPresentation() {
         phone: '',
         witness: '',
         description: '',
+        birthCertificate: null as File | null,
     });
 
     // Load existing data when presentation is fetched
@@ -55,16 +56,33 @@ export default function EditPresentation() {
                 phone: presentation.phone || '',
                 witness: presentation.witness || '',
                 description: presentation.description || '',
+                birthCertificate: null,
             });
         }
     }, [presentation]);
 
     // Handle input changes
-    const handleInputChange = (name: string, value: string | Date | null) => {
+    const handleInputChange = (name: string, value: string | Date | File | null) => {
         setFormData(prevData => ({
             ...prevData,
             [name]: value
         }));
+    };
+
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        if (file.type !== 'application/pdf') {
+            toast.error('Seuls les fichiers PDF sont acceptés.');
+            event.target.value = '';
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error('La taille du fichier ne doit pas dépasser 5 Mo.');
+            event.target.value = '';
+            return;
+        }
+        handleInputChange('birthCertificate', file);
     };
 
     // Handle form submission
@@ -74,21 +92,20 @@ export default function EditPresentation() {
         try {
             setIsLoading(true);
 
-            // Prepare data for submission
-            const dataToSend = {
-                childName: formData.childName,
-                dateOfBirth: formData.dateOfBirth ? moment(formData.dateOfBirth).format('YYYY-MM-DD') : '',
-                placeOfBirth: formData.placeOfBirth,
-                presentationDate: formData.presentationDate ? moment(formData.presentationDate).format('YYYY-MM-DD') : '',
-                fatherName: formData.fatherName,
-                motherName: formData.motherName,
-                officiantName: formData.officiantName,
-                address: formData.address,
-                phone: formData.phone,
-                witness: formData.witness,
-                description: formData.description,
-                churchId: churchId,
-            };
+            const dataToSend = new FormData();
+            dataToSend.append('childName', formData.childName);
+            dataToSend.append('dateOfBirth', formData.dateOfBirth ? moment(formData.dateOfBirth).format('YYYY-MM-DD') : '');
+            dataToSend.append('placeOfBirth', formData.placeOfBirth);
+            dataToSend.append('presentationDate', formData.presentationDate ? moment(formData.presentationDate).format('YYYY-MM-DD') : '');
+            dataToSend.append('fatherName', formData.fatherName);
+            dataToSend.append('motherName', formData.motherName);
+            dataToSend.append('officiantName', formData.officiantName);
+            dataToSend.append('address', formData.address);
+            dataToSend.append('phone', formData.phone);
+            dataToSend.append('witness', formData.witness);
+            dataToSend.append('description', formData.description);
+            dataToSend.append('churchId', churchId);
+            if (formData.birthCertificate) dataToSend.append('birthCertificate', formData.birthCertificate);
 
             // Submit update
             await updatePresentation({ id: id!, presentation: dataToSend }).unwrap();
@@ -303,6 +320,16 @@ export default function EditPresentation() {
                                 rows={4}
                                 className="block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500"
                             />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Acte de naissance (PDF, optionnel)</label>
+                            <div className="flex items-center gap-3">
+                                <label htmlFor="birthCertificate" className="inline-flex cursor-pointer items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"><DocumentIcon className="mr-2 h-5 w-5 text-gray-400" />Choisir un fichier</label>
+                                <input id="birthCertificate" type="file" accept="application/pdf" onChange={handleFileChange} className="sr-only" />
+                                <span className="text-sm text-gray-500">{formData.birthCertificate ? formData.birthCertificate.name : presentation.birthCertificate ? 'Fichier existant — choisissez-en un pour le remplacer' : 'Aucun fichier'}</span>
+                            </div>
+                            <p className="mt-1 text-xs text-gray-500">PDF uniquement, 5 Mo maximum.</p>
                         </div>
                     </div>
                 </div>

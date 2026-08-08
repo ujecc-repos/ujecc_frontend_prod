@@ -43,6 +43,8 @@ import EditMemberModal from '../../components/EditMemberModal';
 import TransferMemberModal from '../../components/TransferMemberModal';
 import BulkImportModal from '../../components/BulkImportModal';
 import { createMemberOperationId, getQueuedMemberPreviews, isOfflineNetworkError, queueMemberCreation, type MemberRequest } from '../../offline/memberQueue';
+import { formatPhoneNumbersForExport, getInvalidPhoneNumbers, normalizePhoneNumbers, splitPhoneNumbers } from '../../utils/phoneNumbers';
+import { countryOptions, findCountryOption } from '../../utils/countryOptions';
 
 interface Member {
   id: string;
@@ -51,6 +53,7 @@ interface Member {
   lastname: string;
   email?: string;
   mobilePhone?: string;
+  homePhone?: string;
   picture?: string;
   role?: string;
   sex?: string;
@@ -66,6 +69,8 @@ interface Member {
   minister?: string;
   isBaptized?: boolean;
   baptismDate?: string;
+  membreActif?: boolean;
+  deceasedAt?: string | null;
   _offlinePending?: boolean;
   _offlineStatus?: 'pending' | 'failed';
   _offlineError?: string;
@@ -535,6 +540,16 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
       newErrors.email = 'Format d\'email invalide';
     }
 
+    const invalidPhoneNumbers = getInvalidPhoneNumbers(formData.mobilePhone);
+    if (invalidPhoneNumbers.length > 0) {
+      newErrors.mobilePhone = `Numéro(s) invalide(s) : ${invalidPhoneNumbers.join(', ')}`;
+    }
+
+    const invalidHomePhoneNumbers = getInvalidPhoneNumbers(formData.homePhone);
+    if (invalidHomePhoneNumbers.length > 0) {
+      newErrors.homePhone = `Numéro(s) invalide(s) : ${invalidHomePhoneNumbers.join(', ')}`;
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -544,6 +559,24 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
 
   const handleNext = () => {
     if (activeTab === 'personal' && !validateForm()) return;
+    if (activeTab === 'contact') {
+      const invalidPhoneNumbers = getInvalidPhoneNumbers(formData.mobilePhone);
+      const invalidHomePhoneNumbers = getInvalidPhoneNumbers(formData.homePhone);
+      if (invalidPhoneNumbers.length > 0 || invalidHomePhoneNumbers.length > 0) {
+        setErrors(prev => ({
+          ...prev,
+          mobilePhone: invalidPhoneNumbers.length > 0 ? `Numéro(s) invalide(s) : ${invalidPhoneNumbers.join(', ')}` : '',
+          homePhone: invalidHomePhoneNumbers.length > 0 ? `Numéro(s) invalide(s) : ${invalidHomePhoneNumbers.join(', ')}` : '',
+        }));
+        return;
+      }
+      setFormData(prev => ({
+        ...prev,
+        mobilePhone: normalizePhoneNumbers(prev.mobilePhone),
+        homePhone: normalizePhoneNumbers(prev.homePhone),
+      }));
+      setErrors(prev => ({ ...prev, mobilePhone: '', homePhone: '' }));
+    }
 
     const nextStep = MEMBER_FORM_STEPS[currentStepIndex + 1];
     if (nextStep) setActiveTab(nextStep.key);
@@ -559,9 +592,15 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
     if (activeTab !== 'church') return;
 
     if (validateForm()) {
-      onSubmit(formData);
+      onSubmit({
+        ...formData,
+        mobilePhone: normalizePhoneNumbers(formData.mobilePhone),
+        homePhone: normalizePhoneNumbers(formData.homePhone),
+      });
     } else {
-      setActiveTab('personal');
+      const hasInvalidPhone = getInvalidPhoneNumbers(formData.mobilePhone).length > 0
+        || getInvalidPhoneNumbers(formData.homePhone).length > 0;
+      setActiveTab(hasInvalidPhone ? 'contact' : 'personal');
     }
   };
 
@@ -849,9 +888,25 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                         onClick={() => setShowBirthCalendar(!showBirthCalendar)}
                         readOnly
                         data-calendar-trigger
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer"
+                        className={`w-full py-2 pl-3 ${formData.birthDate ? 'pr-20' : 'pr-10'} border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer`}
                         placeholder="Sélectionner une date"
                       />
+                      {formData.birthDate && (
+                        <button
+                          type="button"
+                          title="Effacer la date de naissance"
+                          aria-label="Effacer la date de naissance"
+                          data-calendar-trigger
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setFormData(prev => ({ ...prev, birthDate: '' }));
+                            setShowBirthCalendar(false);
+                          }}
+                          className="absolute right-9 top-1/2 -translate-y-1/2 rounded-full p-1 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-200"
+                        >
+                          <XMarkIcon className="h-4 w-4" />
+                        </button>
+                      )}
                       <CalendarIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
                       {showBirthCalendar && (
                         <div className="absolute top-full left-0 mt-1 z-50">
@@ -977,28 +1032,34 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
             {activeTab === 'contact' && (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Mobile Phone */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Téléphone</label>
-                    <input
-                      type="number"
+                  {/* Phone numbers are stored together in the existing mobilePhone string. */}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Numéros de téléphone</label>
+                    <textarea
+                      rows={4}
                       value={formData.mobilePhone}
                       onChange={(e) => setFormData(prev => ({ ...prev, mobilePhone: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      placeholder="509 1234 5678"
+                      onBlur={() => setFormData(prev => ({ ...prev, mobilePhone: normalizePhoneNumbers(prev.mobilePhone) }))}
+                      className={`w-full resize-y px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 ${errors.mobilePhone ? 'border-red-500' : 'border-gray-300'}`}
+                      placeholder={'+509 3700-0000\n+509 4100-0000\n+1 305 000-0000'}
                     />
+                    <p className="mt-1 text-xs text-gray-500">Saisissez un numéro par ligne. Les doublons seront supprimés automatiquement.</p>
+                    {errors.mobilePhone && <p className="mt-1 text-sm text-red-500">{errors.mobilePhone}</p>}
                   </div>
 
                   {/* Home Phone */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Numéro de la Personne à contacter</label>
-                    <input
-                      type="number"
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Numéros de la personne à contacter</label>
+                    <textarea
+                      rows={3}
                       value={formData.homePhone}
                       onChange={(e) => setFormData(prev => ({ ...prev, homePhone: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      placeholder="509 1234 5678"
+                      onBlur={() => setFormData(prev => ({ ...prev, homePhone: normalizePhoneNumbers(prev.homePhone) }))}
+                      className={`w-full resize-y px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 ${errors.homePhone ? 'border-red-500' : 'border-gray-300'}`}
+                      placeholder={'+509 3700-0000\n+509 4100-0000'}
                     />
+                    <p className="mt-1 text-xs text-gray-500">Saisissez un numéro par ligne.</p>
+                    {errors.homePhone && <p className="mt-1 text-sm text-red-500">{errors.homePhone}</p>}
                   </div>
 
                   {/* Person to Contact */}
@@ -1097,10 +1158,12 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Pays</label>
                     <Select
-                      value={{ value: 'Haiti', label: 'Haiti' }}
-                      onChange={(selectedOption) => setFormData(prev => ({ ...prev, country: selectedOption?.value || 'Haiti' }))}
-                      options={[{ value: 'Haiti', label: 'Haiti' }]}
-                      isSearchable={false}
+                      value={findCountryOption(formData.country)}
+                      onChange={(selectedOption) => setFormData(prev => ({ ...prev, country: selectedOption?.value || '' }))}
+                      options={countryOptions}
+                      placeholder="Sélectionner ou rechercher un pays"
+                      isSearchable
+                      isClearable
                       className="react-select-container"
                       classNamePrefix="react-select"
                       styles={{
@@ -1123,10 +1186,12 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onSubm
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Pays de Naissance</label>
                     <Select
-                      value={{ value: 'Haiti', label: 'Haiti' }}
-                      onChange={(selectedOption) => setFormData(prev => ({ ...prev, birthCountry: selectedOption?.value || 'Haiti' }))}
-                      options={[{ value: 'Haiti', label: 'Haiti' }]}
-                      isSearchable={false}
+                      value={findCountryOption(formData.birthCountry)}
+                      onChange={(selectedOption) => setFormData(prev => ({ ...prev, birthCountry: selectedOption?.value || '' }))}
+                      options={countryOptions}
+                      placeholder="Sélectionner ou rechercher un pays de naissance"
+                      isSearchable
+                      isClearable
                       className="react-select-container"
                       classNamePrefix="react-select"
                       styles={{
@@ -1785,7 +1850,12 @@ export default function Membres() {
         } else if (filters.searchType === 'email') {
           basicSearchMatch = member.email?.toLowerCase().includes(normalizedSearch) || false;
         } else if (filters.searchType === 'phone') {
-          basicSearchMatch = member.mobilePhone?.toLowerCase().includes(normalizedSearch) || false;
+          const phoneSearch = normalizedSearch.replace(/\D/g, '');
+          basicSearchMatch = [...splitPhoneNumbers(member.mobilePhone), ...splitPhoneNumbers(member.homePhone)].some((phoneNumber) => {
+            const normalizedPhoneNumber = phoneNumber.toLowerCase();
+            return normalizedPhoneNumber.includes(normalizedSearch)
+              || (phoneSearch.length > 0 && normalizedPhoneNumber.replace(/\D/g, '').includes(phoneSearch));
+          });
         }
       }
       if (!basicSearchMatch) return false;
@@ -2179,7 +2249,7 @@ export default function Membres() {
         member.groupeSanguin || '',
         member.minister || '',
         member.isBaptized ? 'Oui' : 'Non',
-        member.mobilePhone || '',
+        formatPhoneNumbersForExport(member.mobilePhone),
         member.email || '',
         member.role || ''
       ];
@@ -2226,7 +2296,7 @@ export default function Membres() {
         'Groupe Sanguin': member.groupeSanguin || '',
         'Ministère': member.minister || '',
         'Baptisé(e)': member.isBaptized ? 'Oui' : 'Non',
-        'Téléphone': member.mobilePhone || '',
+        'Téléphone': formatPhoneNumbersForExport(member.mobilePhone),
         'Email': member.email || '',
         'Rôle': member.role || ''
       }))
@@ -2338,7 +2408,7 @@ export default function Membres() {
                   new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.groupeSanguin || '', size: 16 })] })] }),
                   new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.minister || '', size: 16 })] })] }),
                   new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.isBaptized ? 'Oui' : 'Non', size: 16 })] })] }),
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.mobilePhone || '', size: 16 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: formatPhoneNumbersForExport(member.mobilePhone), size: 16 })] })] }),
                   new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.email || '', size: 16 })] })] }),
                   new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: member.role || '', size: 16 })] })] })
                 ]
@@ -2826,6 +2896,11 @@ export default function Membres() {
                           <div className="text-sm text-gray-500">
                             {member.birthDate && `${calculateAge(member.birthDate)} ans`}
                           </div>
+                          {member.deceasedAt && (
+                            <span className="mt-1 inline-flex rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-700">
+                              Décédé
+                            </span>
+                          )}
                           {member._offlinePending && (
                             <div className={`mt-1 text-xs font-medium ${member._offlineStatus === 'failed' ? 'text-red-600' : 'text-amber-700'}`}>
                               {member._offlineStatus === 'failed' ? 'Synchronisation à vérifier' : 'En attente de synchronisation'}
@@ -2836,7 +2911,9 @@ export default function Membres() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{member.email}</div>
-                      <div className="text-sm text-gray-500">{member.mobilePhone}</div>
+                      <div className="space-y-0.5 text-sm text-gray-500">
+                        {splitPhoneNumbers(member.mobilePhone).map((phoneNumber) => <div key={phoneNumber}>{phoneNumber}</div>)}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{member.sex}</div>

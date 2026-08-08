@@ -33,6 +33,7 @@ export interface User {
   profession?: string;
   sundayClass?: string;
   membreActif: boolean;
+  deceasedAt?: string | null;
   age?: string;
   mobilePhone?: string;
   homePhone?: string;
@@ -116,7 +117,7 @@ export const authApi = createApi({
 
     },
   }),
-  tagTypes: ['User', "Pasteur", "Sanction", "Transfer", "Moisson", "Ministry", "Mission", "SundayClass", "Appointment", "Church", "Event", "Group", "Baptism", "Expense", "Funeral", "Committee", "Death", "Donation", "Offering", "Marriage", "Presentation", "Tithe", "Presence", "Service"],
+  tagTypes: ['User', "Visitor", "Pasteur", "Sanction", "Transfer", "Moisson", "Ministry", "Mission", "SundayClass", "Appointment", "Church", "Event", "Group", "Baptism", "Expense", "Funeral", "Committee", "Death", "Donation", "Offering", "Marriage", "Presentation", "Tithe", "Presence", "Service"],
   endpoints: (builder) => ({
     login: builder.mutation<LoginResponse, LoginRequest>({
       query: (credentials) => ({

@@ -10,13 +10,16 @@ import {
   MagnifyingGlassIcon,
   TrashIcon,
   PencilIcon,
+  EyeIcon,
 } from '@heroicons/react/24/outline';
 import { UserCircleIcon } from '@heroicons/react/24/solid';
+import RecordDetailsModal from '../../components/RecordDetailsModal';
 
 interface Funeral {
   id: string;
   fullname: string;
   birthDate: string;
+  deathDate?: string;
   funeralDate: string;
   funeralTime: string;
   relationShip: string;
@@ -31,6 +34,8 @@ interface Funeral {
   status: "en attente" | "complété";
   createdAt?: string;
   updatedAt?: string;
+  memberId?: string | null;
+  member?: { id: string; code?: string | null } | null;
 }
 
 export default function Funeraille() {
@@ -41,6 +46,7 @@ export default function Funeraille() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [selectedFuneralForAction, setSelectedFuneralForAction] = useState<Funeral | null>(null);
+  const [viewingFuneral, setViewingFuneral] = useState<Funeral | null>(null);
 
   // API hooks
   const { data: userData } = useGetUserByTokenQuery();
@@ -223,11 +229,12 @@ export default function Funeraille() {
                   </thead>
                   <tbody className="divide-y divide-gray-200 bg-white">
                     {currentPageFunerals.map((funeral) => (
-                      <tr key={funeral.id}>
+                      <tr key={funeral.id} className="cursor-pointer transition-colors hover:bg-gray-50" onClick={() => setViewingFuneral(funeral)}>
                         <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
-                          <Link to={`/tableau-de-bord/admin/funeraille/${funeral.id}`} className="text-teal-600 hover:text-teal-900">
-                            {funeral.fullname}
-                          </Link>
+                          <span className="text-teal-600 hover:text-teal-900">{funeral.fullname}</span>
+                          <div className="mt-1 text-xs font-normal text-gray-500">
+                            {funeral.memberId ? `Membre de l’église${funeral.member?.code ? ` · ${funeral.member.code}` : ''}` : 'Personne externe'}
+                          </div>
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                           {formatDate(funeral.funeralDate)}
@@ -250,6 +257,13 @@ export default function Funeraille() {
                         </td>
                         <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
                           <div className="flex items-center justify-end space-x-2">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setViewingFuneral(funeral); }}
+                              className="inline-flex items-center px-2 py-1 text-xs font-medium text-teal-700 bg-teal-100 rounded-md hover:bg-teal-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+                            >
+                              <EyeIcon className="h-3 w-3 mr-1" />
+                              Voir
+                            </button>
                             {/* <Link
                               to={`/tableau-de-bord/admin/funeraille/modifier/${funeral.id}`}
                               onClick={(e) => e.stopPropagation()}
@@ -344,6 +358,21 @@ export default function Funeraille() {
           </div>
         </div>
       )}
+
+      <RecordDetailsModal
+        open={Boolean(viewingFuneral)}
+        onClose={() => setViewingFuneral(null)}
+        onEdit={() => { if (viewingFuneral) window.location.href = `/tableau-de-bord/admin/funeraille/edit/${viewingFuneral.id}`; }}
+        accentLabel="Dossier de funérailles"
+        title={viewingFuneral?.fullname || ''}
+        subtitle={viewingFuneral ? `Funérailles du ${formatDate(viewingFuneral.funeralDate)}` : ''}
+        sections={viewingFuneral ? [
+          { title: 'Personne concernée', items: [{ label: 'Nom complet', value: viewingFuneral.fullname }, { label: 'Type', value: viewingFuneral.memberId ? 'Membre de l’église' : 'Personne externe' }, { label: 'Date de naissance', value: formatDate(viewingFuneral.birthDate) }, { label: 'Date de décès', value: formatDate(viewingFuneral.deathDate || '') }, { label: 'Proche parent', value: viewingFuneral.nextOfKin }, { label: 'Lien de parenté', value: viewingFuneral.relationShip }, { label: 'Adresse électronique', value: viewingFuneral.email }] },
+          { title: 'Cérémonie', items: [{ label: 'Date', value: formatDate(viewingFuneral.funeralDate) }, { label: 'Heure', value: viewingFuneral.funeralTime }, { label: 'Lieu', value: viewingFuneral.funeralLocation }, { label: 'Officiant', value: viewingFuneral.officiantName }, { label: 'Statut', value: getStatusBadge(getStatus(viewingFuneral)).label }] },
+          { title: 'Informations complémentaires', items: [{ label: 'Description', value: viewingFuneral.description, wide: true }] },
+        ] : []}
+        documents={viewingFuneral ? [{ label: 'Certificat de décès', path: viewingFuneral.deathCertificate }] : []}
+      />
 
       {/* Delete Modal */}
       {isDeleteModalOpen && (
