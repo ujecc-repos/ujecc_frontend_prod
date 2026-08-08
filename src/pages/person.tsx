@@ -16,6 +16,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { useGetUserByIdQuery } from '../store/services/authApi';
 import { useGetUserByTokenQuery } from '../store/services/authApi';
 import { calculateAgeFromDateOnly, formatDateOnly } from '../utils/dateOnly';
+import { splitPhoneNumbers } from '../utils/phoneNumbers';
 
 const PersonDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -153,11 +154,13 @@ const PersonDetail: React.FC = () => {
               </h1>
             </div>
             <div className="flex items-center space-x-3">
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${member.membreActif
-                ? 'bg-green-100 text-green-800'
-                : 'bg-gray-100 text-gray-800'
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${member.deceasedAt
+                ? 'bg-slate-200 text-slate-800'
+                : member.membreActif
+                  ? 'bg-green-100 text-green-800'
+                  : 'bg-gray-100 text-gray-800'
                 }`}>
-                {member.membreActif ? 'Membre actif' : 'Membre inactif'}
+                {member.deceasedAt ? 'Décédé' : member.membreActif ? 'Membre actif' : 'Membre inactif'}
               </span>
 
               {/* Timothee Button */}
@@ -233,7 +236,9 @@ const PersonDetail: React.FC = () => {
                     <PhoneIcon className="h-5 w-5 text-gray-400" />
                     <div>
                       <p className="text-sm text-gray-500">Téléphone mobile</p>
-                      <p className="text-gray-900">{member.mobilePhone}</p>
+                      <div className="space-y-1 text-gray-900">
+                        {splitPhoneNumbers(member.mobilePhone).map((phoneNumber) => <p key={phoneNumber}>{phoneNumber}</p>)}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -243,7 +248,9 @@ const PersonDetail: React.FC = () => {
                     <PhoneIcon className="h-5 w-5 text-gray-400" />
                     <div>
                       <p className="text-sm text-gray-500">Téléphone fixe</p>
-                      <p className="text-gray-900">{member.homePhone}</p>
+                      <div className="space-y-1 text-gray-900">
+                        {splitPhoneNumbers(member.homePhone).map((phoneNumber) => <p key={phoneNumber}>{phoneNumber}</p>)}
+                      </div>
                     </div>
                   </div>
                 )}

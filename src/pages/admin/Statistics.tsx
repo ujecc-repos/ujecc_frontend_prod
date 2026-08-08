@@ -165,7 +165,7 @@ export default function Statistics() {
   const transfersCount = useMemo(() => transfersData?.length || 0, [transfersData]);
   const marriagesCount = useMemo(() => marriagesData?.length || 0, [marriagesData]);
   const birthdaysCount = useMemo(() => upcomingBirthdays?.length || 0, [upcomingBirthdays]);
-  const totalMembers = useMemo(() => usersData?.length || 0, [usersData]);
+  const totalMembers = useMemo(() => usersData?.filter(user => user.membreActif).length || 0, [usersData]);
   const pasteursCount = useMemo(() => pasteursData?.length || 0, [pasteursData]);
 
   // Function to generate PDF

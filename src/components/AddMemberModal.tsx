@@ -37,7 +37,7 @@ export default function AddMemberModal({ isOpen, onClose, group, churchId }: Add
   useEffect(() => {
     if (users && group) {
       const existingUserIds = new Set(group.users?.map(user => user.id) || []);
-      const availableUsers = users.filter(user => !existingUserIds.has(user.id)) as User[];
+      const availableUsers = users.filter(user => user.membreActif && !existingUserIds.has(user.id)) as User[];
       
       // Transform users to react-select options
       const options = availableUsers.map(user => ({

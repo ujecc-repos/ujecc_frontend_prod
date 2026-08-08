@@ -90,6 +90,7 @@ const DashboardLayout = ({ userRole }: { userRole: UserRole }) => {
       { name: 'Messagerie', href: '/tableau-de-bord/messagerie', icon: ChatBubbleLeftRightIcon },
       { name: 'Rendez-vous', href: '/tableau-de-bord/rendez-vous', icon: CalendarDaysIcon },
       { name: 'Membres', href: '/tableau-de-bord/admin/membres', icon: UserIcon },
+      { name: 'Visiteurs', href: '/tableau-de-bord/admin/visiteurs', icon: UserPlusIcon },
       {
         name: churchOrganizationLabel,
         href: '/tableau-de-bord/admin/ministères',

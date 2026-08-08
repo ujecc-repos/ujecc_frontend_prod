@@ -135,16 +135,6 @@ export default function CreateSundayClassModal({ isOpen, onClose, onSuccess }: C
     }
   };
 
-  // Age group options
-  const ageGroups = [
-    '3-5 ans',
-    '6-8 ans',
-    '9-11 ans',
-    '12-14 ans',
-    '15-17 ans',
-    'Adultes'
-  ];
-
   return (
     <Dialog open={isOpen} onClose={handleClose} className="relative z-50">
       <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
@@ -204,20 +194,17 @@ export default function CreateSundayClassModal({ isOpen, onClose, onSuccess }: C
               {/* Age Group */}
               <div>
                 <label htmlFor="ageGroup" className="block text-sm font-medium text-gray-700 mb-1">
-                  Groupe d'âge <span className="text-red-500">*</span>
+                  Tranche d'âge <span className="text-red-500">*</span>
                 </label>
-                <select
+                <input
+                  type="text"
                   id="ageGroup"
                   name="ageGroup"
                   value={formData.ageGroup}
                   onChange={handleChange}
                   className={`block w-full rounded-md border ${errors.ageGroup ? 'border-red-300' : 'border-gray-300'} shadow-sm py-2 px-3 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm`}
-                >
-                  <option value="">Sélectionner un groupe d'âge</option>
-                  {ageGroups.map((group) => (
-                    <option key={group} value={group}>{group}</option>
-                  ))}
-                </select>
+                  placeholder="Ex : 3 à 12 ans"
+                />
                 {errors.ageGroup && <p className="mt-1 text-sm text-red-600">{errors.ageGroup}</p>}
               </div>
 

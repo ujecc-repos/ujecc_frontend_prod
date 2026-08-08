@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react';
+import { Fragment, useState, useEffect } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
+import { Dialog, Transition } from '@headlessui/react';
+import Select from 'react-select';
 import {
   MagnifyingGlassIcon,
   UserIcon,
@@ -11,13 +13,20 @@ import {
   ClockIcon,
   FunnelIcon,
   ChevronLeftIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  ArrowDownTrayIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 // Import API hooks
-import { useGetPresencesByServiceQuery } from '../../store/services/presenceApi';
+import {
+  useDownloadPresenceReportMutation,
+  useGetPresencesByServiceQuery,
+  useSearchPresenceReportMembersQuery,
+  type PresenceReportMember,
+} from '../../store/services/presenceApi';
 import { useGetUserByTokenQuery } from '../../store/services/authApi';
 
 // Types
@@ -88,6 +97,18 @@ function getStatusLabel(status: string) {
   }
 }
 
+const localDateValue = (date = new Date()) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const firstDayOfCurrentMonth = () => {
+  const now = new Date();
+  return localDateValue(new Date(now.getFullYear(), now.getMonth(), 1));
+};
+
 export default function ServiceDetails() {
   const { serviceId } = useParams<{ serviceId: string }>();
   const location = useLocation();
@@ -101,12 +122,28 @@ export default function ServiceDetails() {
   const [filterDate, setFilterDate] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportSearch, setReportSearch] = useState('');
+  const [debouncedReportSearch, setDebouncedReportSearch] = useState('');
+  const [reportMember, setReportMember] = useState<PresenceReportMember | null>(null);
+  const [reportDateFrom, setReportDateFrom] = useState(firstDayOfCurrentMonth);
+  const [reportDateTo, setReportDateTo] = useState(localDateValue);
+  const [reportFormat, setReportFormat] = useState<'pdf' | 'xlsx' | 'docx'>('pdf');
+  const [reportError, setReportError] = useState('');
 
   // Debounced search to avoid too many API calls
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const filterTimezoneOffset = filterDate
+    ? new Date(`${filterDate}T12:00:00`).getTimezoneOffset()
+    : undefined;
 
   // Get current user for ministry-based filtering
   const { data: currentUser } = useGetUserByTokenQuery();
+  const { data: reportMembers = [], isFetching: searchingReportMembers } = useSearchPresenceReportMembersQuery(
+    { serviceId: serviceId || '', search: debouncedReportSearch },
+    { skip: !reportOpen || !serviceId || debouncedReportSearch.length < 2 || Boolean(reportMember) },
+  );
+  const [downloadPresenceReport, { isLoading: reportLoading }] = useDownloadPresenceReportMutation();
 
   // Fetch presences with server-side pagination and filters
   const { data, isLoading, error } = useGetPresencesByServiceQuery({
@@ -116,6 +153,7 @@ export default function ServiceDetails() {
     search: debouncedSearch,
     status: statusFilter === 'all' ? '' : statusFilter,
     date: filterDate,
+    timezoneOffset: filterTimezoneOffset,
     userId: currentUser?.id || ''
   });
 
@@ -132,6 +170,11 @@ export default function ServiceDetails() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedReportSearch(reportSearch.trim()), 350);
+    return () => window.clearTimeout(timer);
+  }, [reportSearch]);
+
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
@@ -142,6 +185,44 @@ export default function ServiceDetails() {
     setFilterDate('');
     setStatusFilter('all');
     setCurrentPage(1);
+  };
+
+  const openReportModal = () => {
+    setReportMember(null);
+    setReportSearch('');
+    setDebouncedReportSearch('');
+    setReportDateFrom(firstDayOfCurrentMonth());
+    setReportDateTo(localDateValue());
+    setReportFormat('pdf');
+    setReportError('');
+    setReportOpen(true);
+  };
+
+  const generatePresenceReport = async () => {
+    if (!serviceId || !reportMember) {
+      setReportError('Veuillez rechercher et sélectionner un membre.');
+      return;
+    }
+    if (!reportDateFrom || !reportDateTo || reportDateFrom > reportDateTo) {
+      setReportError('Veuillez choisir un intervalle de dates valide.');
+      return;
+    }
+    setReportError('');
+    try {
+      const timezoneOffset = new Date(`${reportDateFrom}T12:00:00`).getTimezoneOffset();
+      const blob = await downloadPresenceReport({ serviceId, memberId: reportMember.id, dateFrom: reportDateFrom, dateTo: reportDateTo, timezoneOffset, format: reportFormat }).unwrap();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `rapport-presence-${reportMember.code || reportMember.id.slice(0, 8)}-${reportDateFrom}-${reportDateTo}.${reportFormat}`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      setReportOpen(false);
+    } catch {
+      setReportError('Impossible de générer le rapport. Veuillez réessayer.');
+    }
   };
 
   // Pagination handlers
@@ -197,12 +278,10 @@ export default function ServiceDetails() {
             </button>
           </div>
 
-          <h1 className="text-3xl font-bold text-gray-900">
-            Présences - {service?.nom || 'Service'}
-          </h1>
-          <p className="mt-2 text-gray-600">
-            Consultez les présences des membres pour ce service
-          </p>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div><h1 className="text-3xl font-bold text-gray-900">Présences - {service?.nom || 'Service'}</h1><p className="mt-2 text-gray-600">Consultez les présences des membres pour ce service</p></div>
+            <button type="button" onClick={openReportModal} className="inline-flex items-center justify-center gap-2 rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-700"><ArrowDownTrayIcon className="h-5 w-5" />Rapport de présence</button>
+          </div>
         </div>
 
         {/* Statistics Cards */}
@@ -442,6 +521,68 @@ export default function ServiceDetails() {
             </div>
           </div>
         )}
+
+        <Transition appear show={reportOpen} as={Fragment}>
+          <Dialog as="div" className="relative z-[220]" onClose={() => !reportLoading && setReportOpen(false)}>
+            <Transition.Child as={Fragment} enter="ease-out duration-200" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-150" leaveFrom="opacity-100" leaveTo="opacity-0"><div className="fixed inset-0 bg-slate-900/25 backdrop-blur-[2px]" /></Transition.Child>
+            <div className="fixed inset-0 z-[221] overflow-y-auto">
+              <div className="flex min-h-full items-center justify-center p-4 py-6">
+                <Transition.Child as={Fragment} enter="ease-out duration-200" enterFrom="opacity-0 scale-95" enterTo="opacity-100 scale-100" leave="ease-in duration-150" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95">
+                  <Dialog.Panel className="w-full max-w-2xl overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl">
+                    <div className="flex items-start justify-between border-b border-gray-200 bg-gradient-to-r from-teal-50 to-white px-6 py-5 sm:px-8">
+                      <div className="flex items-start gap-3"><div className="rounded-xl bg-teal-100 p-2.5 text-teal-700"><ArrowDownTrayIcon className="h-6 w-6" /></div><div><p className="text-xs font-semibold uppercase tracking-wider text-teal-700">{service?.nom || 'Service'}</p><Dialog.Title className="mt-1 text-xl font-semibold text-gray-900">Rapport individuel de présence</Dialog.Title><p className="mt-1 text-sm text-gray-500">Le rapport est recherché et généré directement depuis le serveur.</p></div></div>
+                      <button type="button" disabled={reportLoading} onClick={() => setReportOpen(false)} className="rounded-full p-2 text-gray-400 hover:bg-white hover:text-gray-700 disabled:opacity-50" aria-label="Fermer"><XMarkIcon className="h-6 w-6" /></button>
+                    </div>
+
+                    <div className="max-h-[70vh] space-y-6 overflow-y-auto px-6 py-6 sm:px-8">
+                      <section>
+                        <h3 className="text-sm font-semibold text-gray-900">Membre concerné</h3>
+                        <div className="mt-3">
+                          <Select
+                            value={reportMember ? { value: reportMember.id, label: `${reportMember.firstname} ${reportMember.lastname}`, member: reportMember } : null}
+                            options={reportSearch.trim().length >= 2 ? reportMembers.map((member) => ({ value: member.id, label: `${member.firstname} ${member.lastname}`, member })) : []}
+                            inputValue={reportSearch}
+                            onInputChange={(value, meta) => { if (meta.action === 'input-change') setReportSearch(value); }}
+                            onChange={(option) => { setReportMember(option?.member || null); setReportSearch(''); setReportError(''); }}
+                            isLoading={searchingReportMembers}
+                            isClearable
+                            isSearchable
+                            filterOption={null}
+                            placeholder="Rechercher par nom, code ou email…"
+                            noOptionsMessage={() => reportSearch.trim().length < 2 ? 'Saisissez au moins deux caractères' : 'Aucun membre trouvé dans ce service'}
+                            loadingMessage={() => 'Recherche sur le serveur…'}
+                            formatOptionLabel={(option) => <div><p className="text-sm font-semibold text-gray-900">{option.member.firstname} {option.member.lastname}</p><p className="text-xs text-gray-500">{option.member.code || option.member.email || 'Membre du service'}</p></div>}
+                            className="react-select-container"
+                            classNamePrefix="react-select"
+                            styles={{
+                              control: (base, state) => ({ ...base, minHeight: 48, borderRadius: 12, borderColor: state.isFocused ? '#14b8a6' : '#e5e7eb', boxShadow: state.isFocused ? '0 0 0 4px rgba(20,184,166,.1)' : 'none', '&:hover': { borderColor: state.isFocused ? '#14b8a6' : '#d1d5db' } }),
+                              menu: (base) => ({ ...base, zIndex: 30, borderRadius: 12, overflow: 'hidden' }),
+                              option: (base, state) => ({ ...base, backgroundColor: state.isSelected ? '#ccfbf1' : state.isFocused ? '#f0fdfa' : 'white', color: '#111827', cursor: 'pointer' }),
+                            }}
+                          />
+                          <p className="mt-2 text-xs text-gray-500">La recherche est exécutée sur le serveur et retourne uniquement les membres présents dans ce service.</p>
+                        </div>
+                      </section>
+
+                      <section><h3 className="text-sm font-semibold text-gray-900">Intervalle du rapport</h3><div className="mt-3 grid gap-4 sm:grid-cols-2"><label className="text-sm font-medium text-gray-700">Date de début<input type="date" value={reportDateFrom} onChange={(event) => setReportDateFrom(event.target.value)} className="mt-2 block w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none hover:border-gray-300 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10" /></label><label className="text-sm font-medium text-gray-700">Date de fin<input type="date" value={reportDateTo} onChange={(event) => setReportDateTo(event.target.value)} className="mt-2 block w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none hover:border-gray-300 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10" /></label></div></section>
+
+                      <section><h3 className="text-sm font-semibold text-gray-900">Format du document</h3><div className="mt-3 grid gap-3 sm:grid-cols-3">{[
+                        { value: 'pdf' as const, label: 'PDF', detail: 'Prêt à imprimer', color: 'bg-red-50 text-red-700' },
+                        { value: 'xlsx' as const, label: 'Excel', detail: 'Données modifiables', color: 'bg-emerald-50 text-emerald-700' },
+                        { value: 'docx' as const, label: 'Word', detail: 'Document éditable', color: 'bg-blue-50 text-blue-700' },
+                      ].map((item) => <button type="button" key={item.value} onClick={() => setReportFormat(item.value)} className={`rounded-xl border p-3 text-left transition ${reportFormat === item.value ? 'border-teal-600 bg-teal-50/50 ring-1 ring-teal-600' : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'}`}><span className={`inline-flex rounded-lg px-2.5 py-1 text-xs font-bold ${item.color}`}>{item.label}</span><span className="mt-2 block text-xs text-gray-500">{item.detail}</span></button>)}</div></section>
+
+                      <div className="rounded-xl border border-teal-100 bg-teal-50/60 px-4 py-3 text-sm text-gray-700"><span className="font-semibold text-teal-800">Rapport :</span> {reportMember ? `${reportMember.firstname} ${reportMember.lastname}` : 'membre à sélectionner'}, du {reportDateFrom.split('-').reverse().join('/')} au {reportDateTo.split('-').reverse().join('/')}, format {reportFormat.toUpperCase()}.</div>
+                      {reportError && <p className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{reportError}</p>}
+                    </div>
+
+                    <div className="flex flex-col-reverse gap-3 border-t border-gray-200 bg-gray-50 px-6 py-4 sm:flex-row sm:justify-end sm:px-8"><button type="button" disabled={reportLoading} onClick={() => setReportOpen(false)} className="rounded-xl border border-gray-300 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50">Annuler</button><button type="button" disabled={reportLoading} onClick={() => void generatePresenceReport()} className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-teal-700 disabled:cursor-wait disabled:opacity-60">{reportLoading ? <><span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />Génération…</> : <><ArrowDownTrayIcon className="h-5 w-5" />Générer le rapport</>}</button></div>
+                  </Dialog.Panel>
+                </Transition.Child>
+              </div>
+            </div>
+          </Dialog>
+        </Transition>
       </div>
     </div>
   );

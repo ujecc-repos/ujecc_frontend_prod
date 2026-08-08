@@ -104,6 +104,7 @@ const syncQueuedPresences = async (): Promise<PresenceSyncResult> => {
           utilisateurId: record.utilisateurId,
           statut: record.statut,
           attendanceDate: record.attendanceDate,
+          markedAt: record.createdAt,
           offlineOperationId: record.operationId,
         }),
       });
