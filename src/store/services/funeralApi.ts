@@ -18,29 +18,43 @@ interface Funeral {
   status: "en attente" | "complété"
   createdAt?: string;
   updatedAt?: string;
+  deathDate?: string;
+  memberId?: string | null;
+  member?: FuneralMember | null;
+}
+
+export interface FuneralMember {
+  id: string;
+  code?: string | null;
+  firstname: string;
+  lastname: string;
+  birthDate?: string | null;
+  mobilePhone?: string | null;
+  email?: string | null;
+  picture?: string | null;
 }
 
 // Pour les requêtes JSON standard
 interface CreateFuneralRequest {
   fullname: string;
   birthDate: string;
+  deathDate: string;
   funeralDate: string;
   funeralTime: string;
   relationShip: string;
   email: string;
+  telephone?: string;
   deathCertificate?: string;
   nextOfKin: string;
   officiantName: string;
   description: string;
   funeralLocation: string;
   churchId?: string;
+  memberId?: string;
   status: "en attente" | "complété"
 }
 
-interface UpdateFuneralRequest {
-  id: string;
-  [key: string]: any;
-}
+interface UpdateFuneralRequest { id: string; funeral: FormData | Partial<CreateFuneralRequest> }
 
 export const funeralApi = authApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -51,7 +65,11 @@ export const funeralApi = authApi.injectEndpoints({
         body: funeralData,
         formData: true, // Indique à RTK Query que nous envoyons FormData
       }),
-      invalidatesTags: ['Funeral'],
+      invalidatesTags: ['Funeral', 'User', 'Church', 'Mission'],
+    }),
+
+    searchFuneralMembers: builder.query<FuneralMember[], string>({
+      query: (query) => `/funerals/member-search?query=${encodeURIComponent(query)}`,
     }),
 
     getFunerals: builder.query<Funeral[], void>({
@@ -65,10 +83,11 @@ export const funeralApi = authApi.injectEndpoints({
     }),
 
     updateFuneral: builder.mutation<Funeral, UpdateFuneralRequest>({
-      query: ({ id, ...patch }) => ({
+      query: ({ id, funeral }) => ({
         url: `/funerals/${id}`,
         method: 'PUT',
-        body: patch,
+        body: funeral,
+        formData: funeral instanceof FormData,
       }),
       invalidatesTags: ["Funeral"],
     }),
@@ -100,6 +119,7 @@ export const funeralApi = authApi.injectEndpoints({
 
 export const {
   useCreateFuneralMutation,
+  useLazySearchFuneralMembersQuery,
   useGetFuneralsQuery,
   useGetFuneralByIdQuery,
   useUpdateFuneralMutation,

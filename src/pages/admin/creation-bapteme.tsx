@@ -130,10 +130,6 @@ export default function CreationBapteme() {
         newErrors.conversionDate = 'La date de conversion est requise.';
       }
       
-      if (!formData.testimony) {
-        newErrors.testimony = 'Le témoignage est requis.';
-      }
-      
       // Validation conditionnelle pour catéchumène
       if (formData.isCatechumene && !formData.catechumeneStartDate) {
         newErrors.catechumeneStartDate = 'La date de début de catéchuménat est requise.';
@@ -289,8 +285,8 @@ export default function CreationBapteme() {
           name: 'testimony',
           label: 'Témoignage',
           type: 'textarea',
-          placeholder: 'Entrez le témoignage',
-          required: true,
+          placeholder: 'Entrez le témoignage (optionnel)',
+          required: false,
         },
         {
           name: 'previousChurch',

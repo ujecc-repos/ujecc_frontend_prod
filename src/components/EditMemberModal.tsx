@@ -13,6 +13,8 @@ import type { Ministry } from '../store/services/ministryApi';
 import { useGetChurchByIdQuery, useGetDepartementCommunesQuery } from '../store/services/churchApi';
 import { useGetGroupsByChurchQuery } from '../store/services/groupApi';
 import { useGetSundayClassesByChurchQuery } from '../store/services/sundayClassApi';
+import { getInvalidPhoneNumbers, normalizePhoneNumbers } from '../utils/phoneNumbers';
+import { countryOptions, findCountryOption } from '../utils/countryOptions';
 
 interface Member {
   id: string;
@@ -264,6 +266,16 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
       newErrors.email = 'Format d\'email invalide';
     }
 
+    const invalidPhoneNumbers = getInvalidPhoneNumbers(formData.mobilePhone);
+    if (invalidPhoneNumbers.length > 0) {
+      newErrors.mobilePhone = `Numéro(s) invalide(s) : ${invalidPhoneNumbers.join(', ')}`;
+    }
+
+    const invalidHomePhoneNumbers = getInvalidPhoneNumbers(formData.homePhone);
+    if (invalidHomePhoneNumbers.length > 0) {
+      newErrors.homePhone = `Numéro(s) invalide(s) : ${invalidHomePhoneNumbers.join(', ')}`;
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -273,6 +285,24 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
 
   const handleNext = () => {
     if (activeTab === 'personal' && !validateForm(false)) return;
+    if (activeTab === 'contact') {
+      const invalidPhoneNumbers = getInvalidPhoneNumbers(formData.mobilePhone);
+      const invalidHomePhoneNumbers = getInvalidPhoneNumbers(formData.homePhone);
+      if (invalidPhoneNumbers.length > 0 || invalidHomePhoneNumbers.length > 0) {
+        setErrors(prev => ({
+          ...prev,
+          mobilePhone: invalidPhoneNumbers.length > 0 ? `Numéro(s) invalide(s) : ${invalidPhoneNumbers.join(', ')}` : '',
+          homePhone: invalidHomePhoneNumbers.length > 0 ? `Numéro(s) invalide(s) : ${invalidHomePhoneNumbers.join(', ')}` : '',
+        }));
+        return;
+      }
+      setFormData(prev => ({
+        ...prev,
+        mobilePhone: normalizePhoneNumbers(prev.mobilePhone),
+        homePhone: normalizePhoneNumbers(prev.homePhone),
+      }));
+      setErrors(prev => ({ ...prev, mobilePhone: '', homePhone: '' }));
+    }
     const nextStep = EDIT_MEMBER_STEPS[currentStepIndex + 1];
     if (nextStep) setActiveTab(nextStep.key);
   };
@@ -285,9 +315,15 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
   const submitMember = () => {
     if (activeTab !== 'church') return;
     if (validateForm()) {
-      onSubmit(formData);
+      onSubmit({
+        ...formData,
+        mobilePhone: normalizePhoneNumbers(formData.mobilePhone),
+        homePhone: normalizePhoneNumbers(formData.homePhone),
+      });
     } else {
-      setActiveTab('personal');
+      const hasInvalidPhone = getInvalidPhoneNumbers(formData.mobilePhone).length > 0
+        || getInvalidPhoneNumbers(formData.homePhone).length > 0;
+      setActiveTab(hasInvalidPhone ? 'contact' : 'personal');
     }
   };
 
@@ -664,28 +700,34 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
             {activeTab === 'contact' && (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Mobile Phone */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Téléphone Mobile</label>
-                    <input
-                      type="number"
+                  {/* Phone numbers stay in the existing mobilePhone string. */}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Numéros de téléphone</label>
+                    <textarea
+                      rows={4}
                       value={formData.mobilePhone}
                       onChange={(e) => setFormData(prev => ({ ...prev, mobilePhone: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      placeholder="Téléphone mobile"
+                      onBlur={() => setFormData(prev => ({ ...prev, mobilePhone: normalizePhoneNumbers(prev.mobilePhone) }))}
+                      className={`w-full resize-y px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 ${errors.mobilePhone ? 'border-red-500' : 'border-gray-300'}`}
+                      placeholder={'+509 3700-0000\n+509 4100-0000\n+1 305 000-0000'}
                     />
+                    <p className="mt-1 text-xs text-gray-500">Saisissez un numéro par ligne. Les doublons seront supprimés automatiquement.</p>
+                    {errors.mobilePhone && <p className="mt-1 text-sm text-red-500">{errors.mobilePhone}</p>}
                   </div>
 
                   {/* Home Phone */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Numéro de la Personne à contacter</label>
-                    <input
-                      type="number"
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Numéros de la personne à contacter</label>
+                    <textarea
+                      rows={3}
                       value={formData.homePhone}
                       onChange={(e) => setFormData(prev => ({ ...prev, homePhone: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      placeholder="Numéro de la personne à contacter"
+                      onBlur={() => setFormData(prev => ({ ...prev, homePhone: normalizePhoneNumbers(prev.homePhone) }))}
+                      className={`w-full resize-y px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 ${errors.homePhone ? 'border-red-500' : 'border-gray-300'}`}
+                      placeholder={'+509 3700-0000\n+509 4100-0000'}
                     />
+                    <p className="mt-1 text-xs text-gray-500">Saisissez un numéro par ligne.</p>
+                    {errors.homePhone && <p className="mt-1 text-sm text-red-500">{errors.homePhone}</p>}
                   </div>
 
                   {/* Person to Contact */}
@@ -742,11 +784,12 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Pays</label>
                     <Select
-                      value={formData.country ? { value: formData.country, label: formData.country } : null}
+                      value={findCountryOption(formData.country)}
                       onChange={(option) => setFormData(prev => ({ ...prev, country: option?.value || '' }))}
-                      options={[{ value: 'Haiti', label: 'Haiti' }]}
+                      options={countryOptions}
                       placeholder="Sélectionner un pays"
                       isClearable
+                      isSearchable
                       classNamePrefix="react-select"
                     />
                   </div>
@@ -769,11 +812,12 @@ const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, onClose, memb
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Pays de Naissance</label>
                     <Select
-                      value={formData.birthCountry ? { value: formData.birthCountry, label: formData.birthCountry } : null}
+                      value={findCountryOption(formData.birthCountry)}
                       onChange={(option) => setFormData(prev => ({ ...prev, birthCountry: option?.value || '' }))}
-                      options={[{ value: 'Haiti', label: 'Haiti' }]}
+                      options={countryOptions}
                       placeholder="Sélectionner un pays de naissance"
                       isClearable
+                      isSearchable
                       classNamePrefix="react-select"
                     />
                   </div>

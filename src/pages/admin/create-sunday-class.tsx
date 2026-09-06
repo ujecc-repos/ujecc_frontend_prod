@@ -14,7 +14,7 @@ export default function CreateSundayClass() {
   const [formData, setFormData] = useState({
     nom: '',
     teacher: '',
-    ageGroup: 'Enfants (3-12 ans)',
+    ageGroup: '',
     startTime: '09:00',
     endTime: '10:30',
     book: '',
@@ -24,13 +24,6 @@ export default function CreateSundayClass() {
   });
   
   const [errors, setErrors] = useState<Record<string, string>>({});
-
-  const ageGroups = [
-    'Enfants (3-12 ans)',
-    'Adolescents (13-17 ans)',
-    'Jeunes (18-30 ans)',
-    'Adultes (31+ ans)'
-  ];
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -174,21 +167,18 @@ export default function CreateSundayClass() {
           {/* Age Group */}
           <div>
             <label htmlFor="ageGroup" className="block text-sm font-medium text-gray-700 mb-1">
-              Groupe d'âge <span className="text-red-500">*</span>
+              Tranche d'âge <span className="text-red-500">*</span>
             </label>
-            <select
+            <input
+              type="text"
               id="ageGroup"
               name="ageGroup"
               value={formData.ageGroup}
               onChange={handleChange}
-              className="block w-full rounded-md border border-gray-300 shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-            >
-              {ageGroups.map((group) => (
-                <option key={group} value={group}>
-                  {group}
-                </option>
-              ))}
-            </select>
+              className={`block w-full rounded-md border ${errors.ageGroup ? 'border-red-300' : 'border-gray-300'} shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
+              placeholder="Ex : 3 à 12 ans"
+            />
+            {errors.ageGroup && <p className="mt-1 text-sm text-red-600">{errors.ageGroup}</p>}
           </div>
 
           {/* Max Students */}

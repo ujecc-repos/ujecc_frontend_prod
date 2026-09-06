@@ -29,6 +29,7 @@ export default function EditFuneraille() {
     const [formData, setFormData] = useState({
         fullname: '',
         birthDate: null as Date | null,
+        deathDate: null as Date | null,
         funeralDate: null as Date | null,
         funeralTime: '',
         relationShip: '',
@@ -46,6 +47,7 @@ export default function EditFuneraille() {
             setFormData({
                 fullname: funeral.fullname || '',
                 birthDate: funeral.birthDate ? new Date(funeral.birthDate) : null,
+                deathDate: funeral.deathDate ? new Date(funeral.deathDate) : null,
                 funeralDate: funeral.funeralDate ? new Date(funeral.funeralDate) : null,
                 funeralTime: funeral.funeralTime || '',
                 relationShip: funeral.relationShip || '',
@@ -97,26 +99,22 @@ export default function EditFuneraille() {
         try {
             setIsLoading(true);
 
-            // Prepare data for submission
-            const dataToSend: any = {
-                fullname: formData.fullname,
-                birthDate: formData.birthDate ? moment(formData.birthDate).format('YYYY-MM-DD') : '',
-                funeralDate: formData.funeralDate ? moment(formData.funeralDate).format('YYYY-MM-DD') : '',
-                funeralTime: formData.funeralTime,
-                relationShip: formData.relationShip,
-                email: formData.email,
-                nextOfKin: formData.nextOfKin,
-                officiantName: formData.officiantName,
-                description: formData.description,
-                funeralLocation: formData.funeralLocation,
-                churchId: churchId,
-            };
+            const dataToSend = new FormData();
+            dataToSend.append('fullname', formData.fullname);
+            dataToSend.append('birthDate', formData.birthDate ? moment(formData.birthDate).format('YYYY-MM-DD') : '');
+            if (formData.deathDate) dataToSend.append('deathDate', moment(formData.deathDate).format('YYYY-MM-DD'));
+            dataToSend.append('funeralDate', formData.funeralDate ? moment(formData.funeralDate).format('YYYY-MM-DD') : '');
+            dataToSend.append('funeralTime', formData.funeralTime);
+            dataToSend.append('relationShip', formData.relationShip);
+            dataToSend.append('email', formData.email);
+            dataToSend.append('nextOfKin', formData.nextOfKin);
+            dataToSend.append('officiantName', formData.officiantName);
+            dataToSend.append('description', formData.description);
+            dataToSend.append('funeralLocation', formData.funeralLocation);
+            dataToSend.append('churchId', churchId);
+            if (formData.deathCertificate) dataToSend.append('deathCertificate', formData.deathCertificate);
 
-            // Note: The funeral API doesn't support FormData for updates, so we can't update the certificate
-            // If you need to update the certificate, the backend needs to be modified to accept formData
-
-            // Submit update
-            await updateFuneral({ id: id!, ...dataToSend }).unwrap();
+            await updateFuneral({ id: id!, funeral: dataToSend }).unwrap();
 
             toast.success('Funéraille modifiée avec succès');
             navigate('/tableau-de-bord/admin/funerailles');
@@ -195,6 +193,20 @@ export default function EditFuneraille() {
                                 showYearDropdown
                                 dropdownMode="select"
                                 required
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Date de décès
+                            </label>
+                            <DatePicker
+                                selected={formData.deathDate}
+                                onChange={(date) => handleInputChange('deathDate', date)}
+                                dateFormat="dd/MM/yyyy"
+                                className="block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500"
+                                showYearDropdown
+                                dropdownMode="select"
                             />
                         </div>
 
@@ -328,15 +340,12 @@ export default function EditFuneraille() {
                                     accept="application/pdf"
                                     onChange={handleFileChange}
                                     className="sr-only"
-                                    disabled
                                 />
                                 <span className="text-sm text-gray-500">
-                                    {funeral.deathCertificate ? 'Fichier existant (modification non supportée)' : 'Aucun fichier'}
+                                    {formData.deathCertificate ? formData.deathCertificate.name : funeral.deathCertificate ? 'Fichier existant — choisissez-en un pour le remplacer' : 'Aucun fichier'}
                                 </span>
                             </div>
-                            <p className="mt-1 text-xs text-gray-500">
-                                Note: La modification du certificat de décès n'est pas encore supportée
-                            </p>
+                            <p className="mt-1 text-xs text-gray-500">PDF uniquement, 5 Mo maximum.</p>
                         </div>
                     </div>
                 </div>

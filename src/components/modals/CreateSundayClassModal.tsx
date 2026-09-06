@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dialog } from '@headlessui/react';
 import { XMarkIcon, ClockIcon } from '@heroicons/react/24/outline';
-import { useCreateSundayClassMutation } from '../../store/services/sundayClassApi';
+import { useCreateSundayClassMutation, useUpdateSundayClassMutation, type SundayClass } from '../../store/services/sundayClassApi';
 import { useGetUserByTokenQuery } from '../../store/services/authApi';
 import { toast } from 'react-toastify';
 
@@ -9,11 +9,15 @@ interface CreateSundayClassModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  sundayClass?: SundayClass | null;
 }
 
-export default function CreateSundayClassModal({ isOpen, onClose, onSuccess }: CreateSundayClassModalProps) {
+export default function CreateSundayClassModal({ isOpen, onClose, onSuccess, sundayClass = null }: CreateSundayClassModalProps) {
   const { data: userData } = useGetUserByTokenQuery();
-  const [createSundayClass, { isLoading }] = useCreateSundayClassMutation();
+  const [createSundayClass, { isLoading: isCreating }] = useCreateSundayClassMutation();
+  const [updateSundayClass, { isLoading: isUpdating }] = useUpdateSundayClassMutation();
+  const isEditing = Boolean(sundayClass);
+  const isLoading = isCreating || isUpdating;
   
   // Form state
   const [formData, setFormData] = useState({
@@ -30,6 +34,27 @@ export default function CreateSundayClassModal({ isOpen, onClose, onSuccess }: C
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (sundayClass) {
+      setFormData({
+        nom: sundayClass.nom || '',
+        teacher: sundayClass.teacher || '',
+        ageGroup: sundayClass.ageGroup || '',
+        startTime: sundayClass.startTime || '',
+        endTime: sundayClass.endTime || '',
+        location: sundayClass.location || '',
+        book: sundayClass.book || '',
+        maxStudents: String(sundayClass.maxStudents || ''),
+        description: sundayClass.description || '',
+        churchId: sundayClass.churchId || userData?.church?.id || '',
+      });
+    } else {
+      resetForm();
+    }
+  }, [isOpen, sundayClass, userData?.church?.id]);
 
   const resetForm = () => {
     setFormData({
@@ -114,36 +139,28 @@ export default function CreateSundayClassModal({ isOpen, onClose, onSuccess }: C
       return;
     }
     
-    // Ensure churchId is set
-    if (!formData.churchId && userData?.church?.id) {
-      setFormData(prev => ({
-        ...prev,
-        churchId: userData.church.id
-      }));
-    }
-    
     try {
-      await createSundayClass(formData).unwrap();
-      toast.success('Classe créée avec succès!');
+      const payload = {
+        ...formData,
+        churchId: formData.churchId || userData?.church?.id || '',
+      };
+
+      if (isEditing && sundayClass) {
+        await updateSundayClass({ id: sundayClass.id, ...payload }).unwrap();
+        toast.success('Classe modifiée avec succès!');
+      } else {
+        await createSundayClass(payload).unwrap();
+        toast.success('Classe créée avec succès!');
+      }
       handleClose();
       if (onSuccess) {
         onSuccess();
       }
     } catch (error) {
-      console.error('Failed to create Sunday class:', error);
-      toast.error('Erreur lors de la création de la classe');
+      console.error('Failed to save Sunday class:', error);
+      toast.error(isEditing ? 'Erreur lors de la modification de la classe' : 'Erreur lors de la création de la classe');
     }
   };
-
-  // Age group options
-  const ageGroups = [
-    '3-5 ans',
-    '6-8 ans',
-    '9-11 ans',
-    '12-14 ans',
-    '15-17 ans',
-    'Adultes'
-  ];
 
   return (
     <Dialog open={isOpen} onClose={handleClose} className="relative z-50">
@@ -153,7 +170,7 @@ export default function CreateSundayClassModal({ isOpen, onClose, onSuccess }: C
         <Dialog.Panel className="mx-auto max-w-2xl rounded bg-white p-6 w-full max-h-[90vh] overflow-y-auto">
           <div className="flex items-center justify-between mb-4">
             <Dialog.Title className="text-lg font-medium text-gray-900">
-              Créer une nouvelle classe
+              {isEditing ? 'Modifier la classe' : 'Créer une nouvelle classe'}
             </Dialog.Title>
             <button
               type="button"
@@ -204,20 +221,17 @@ export default function CreateSundayClassModal({ isOpen, onClose, onSuccess }: C
               {/* Age Group */}
               <div>
                 <label htmlFor="ageGroup" className="block text-sm font-medium text-gray-700 mb-1">
-                  Groupe d'âge <span className="text-red-500">*</span>
+                  Tranche d'âge <span className="text-red-500">*</span>
                 </label>
-                <select
+                <input
+                  type="text"
                   id="ageGroup"
                   name="ageGroup"
                   value={formData.ageGroup}
                   onChange={handleChange}
                   className={`block w-full rounded-md border ${errors.ageGroup ? 'border-red-300' : 'border-gray-300'} shadow-sm py-2 px-3 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm`}
-                >
-                  <option value="">Sélectionner un groupe d'âge</option>
-                  {ageGroups.map((group) => (
-                    <option key={group} value={group}>{group}</option>
-                  ))}
-                </select>
+                  placeholder="Ex : 3 à 12 ans"
+                />
                 {errors.ageGroup && <p className="mt-1 text-sm text-red-600">{errors.ageGroup}</p>}
               </div>
 
@@ -350,10 +364,10 @@ export default function CreateSundayClassModal({ isOpen, onClose, onSuccess }: C
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    Création en cours...
+                    {isEditing ? 'Modification en cours...' : 'Création en cours...'}
                   </>
                 ) : (
-                  'Créer la classe'
+                  isEditing ? 'Enregistrer les modifications' : 'Créer la classe'
                 )}
               </button>
             </div>

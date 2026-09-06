@@ -11,7 +11,7 @@ interface Baptism {
   baptismCertificate: string;
   withness: string;
   placeOfBirth: string;
-  testimony: string;
+  testimony?: string;
   conversionDate: string;
   previousChurch: string;
   status: 'pending' | 'completed';

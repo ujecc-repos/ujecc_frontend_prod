@@ -12,13 +12,15 @@ import {
   InformationCircleIcon,
   TrashIcon,
   ExclamationTriangleIcon,
-  PencilIcon
+  PencilIcon,
+  EyeIcon,
 } from '@heroicons/react/24/outline';
 import { Dialog } from '@headlessui/react';
 import { toast } from 'react-toastify';
 // Import API hooks
 import { useGetUserByTokenQuery } from '../../store/services/authApi';
 import { useGetPresentationsByChurchQuery, useDeletePresentationMutation } from '../../store/services/presentationApi';
+import RecordDetailsModal from '../../components/RecordDetailsModal';
 
 // Types
 interface Presentation {
@@ -34,6 +36,7 @@ interface Presentation {
   phone: string;
   witness: string;
   description: string;
+  birthCertificate?: string;
   churchId?: string;
   church?: any;
   status?: 'pending' | 'completed';
@@ -45,6 +48,7 @@ export default function Presentation() {
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [presentationToDelete, setPresentationToDelete] = useState<Presentation | null>(null);
+  const [viewingPresentation, setViewingPresentation] = useState<Presentation | null>(null);
 
   // Get user token to get church ID
   const { data: userToken } = useGetUserByTokenQuery();
@@ -113,9 +117,7 @@ export default function Presentation() {
 
   // Handle row click to navigate to details
   const handleRowClick = (presentation: Presentation) => {
-    // Navigate to presentation details page
-    // This will be implemented later
-    console.log('Navigate to presentation details:', presentation.id);
+    setViewingPresentation(presentation);
   };
 
   // Handle delete presentation
@@ -341,6 +343,13 @@ export default function Presentation() {
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end space-x-2">
                         <button
+                          onClick={(e) => { e.stopPropagation(); setViewingPresentation(presentation); }}
+                          className="text-teal-600 hover:text-teal-900 transition-colors p-2 rounded-full hover:bg-teal-50"
+                          title="Voir les informations"
+                        >
+                          <EyeIcon className="h-5 w-5" />
+                        </button>
+                        <button
                           onClick={(e) => handleEditClick(presentation, e)}
                           className="text-blue-600 hover:text-blue-900 transition-colors p-2 rounded-full hover:bg-blue-50"
                           title="Modifier la présentation"
@@ -363,6 +372,21 @@ export default function Presentation() {
           </div>
         )}
       </div>
+
+      <RecordDetailsModal
+        open={Boolean(viewingPresentation)}
+        onClose={() => setViewingPresentation(null)}
+        onEdit={() => { if (viewingPresentation) navigate(`/tableau-de-bord/admin/presentation/edit/${viewingPresentation.id}`); }}
+        accentLabel="Dossier de présentation"
+        title={viewingPresentation?.childName || ''}
+        subtitle={viewingPresentation ? `Présentation du ${formatDate(viewingPresentation.presentationDate)}` : ''}
+        sections={viewingPresentation ? [
+          { title: 'Enfant', items: [{ label: 'Nom complet', value: viewingPresentation.childName }, { label: 'Date de naissance', value: formatDate(viewingPresentation.dateOfBirth) }, { label: 'Lieu de naissance', value: viewingPresentation.placeOfBirth }, { label: 'Date de présentation', value: formatDate(viewingPresentation.presentationDate) }] },
+          { title: 'Famille et cérémonie', items: [{ label: 'Père', value: viewingPresentation.fatherName }, { label: 'Mère', value: viewingPresentation.motherName }, { label: 'Officiant', value: viewingPresentation.officiantName }, { label: 'Témoin', value: viewingPresentation.witness }, { label: 'Téléphone', value: viewingPresentation.phone }, { label: 'Adresse', value: viewingPresentation.address }] },
+          { title: 'Informations complémentaires', items: [{ label: 'Description', value: viewingPresentation.description, wide: true }, { label: 'Statut', value: getStatus(viewingPresentation) === 'completed' ? 'Complété' : 'En attente' }] },
+        ] : []}
+        documents={viewingPresentation ? [{ label: 'Acte de naissance', path: viewingPresentation.birthCertificate }] : []}
+      />
 
       {/* Delete Confirmation Modal */}
       <Dialog open={showDeleteModal} onClose={cancelDelete} className="relative z-50">

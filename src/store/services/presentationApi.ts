@@ -72,12 +72,13 @@ export const presentationApi = authApi.injectEndpoints({
 
     updatePresentation: builder.mutation<
       Presentation,
-      { id: string; presentation: Partial<CreatePresentationDto> }
+      { id: string; presentation: FormData | Partial<CreatePresentationDto> }
     >({
       query: ({ id, presentation }) => ({
         url: `/presentations/${id}`,
         method: 'PUT',
         body: presentation,
+        formData: presentation instanceof FormData,
       }),
       invalidatesTags: ['Presentation'],
     }),
