@@ -6,11 +6,12 @@ import {
   UserIcon,
   CakeIcon,
 } from '@heroicons/react/24/outline';
-import { format, parseISO, isValid, parse, differenceInDays, addYears } from 'date-fns';
+import { format, isValid, parse, differenceInCalendarDays, addYears } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { useEffect } from 'react';
+import { parseDateOnly } from '../../utils/dateOnly';
 
 // Style pour le DatePicker
 // let's start it
@@ -65,7 +66,7 @@ const Anniversaire: React.FC = () => {
   // Fetch upcoming birthdays
   const { data: birthdaysData, isLoading: isBirthdaysLoading, error: birthdaysError, refetch } = 
     useGetUpcomingBirthdaysQuery(
-      { churchId: currentUser?.church?.id || '', days: 365 },
+      { churchId: currentUser?.church?.id || '', days: 366 },
       { skip: !currentUser?.church?.id }
     );
 
@@ -74,7 +75,8 @@ const Anniversaire: React.FC = () => {
     if (!birthDate) return 0;
     
     const today = new Date();
-    const birthDateObj = new Date(birthDate);
+    const birthDateObj = parseDate(birthDate);
+    if (!birthDateObj) return 0;
     let age = today.getFullYear() - birthDateObj.getFullYear();
     const monthDiff = today.getMonth() - birthDateObj.getMonth();
     
@@ -88,7 +90,10 @@ const Anniversaire: React.FC = () => {
   // Format date to display
   const formatDate = (dateString: string | undefined): string => {
     if (!dateString) return 'Non renseigné';
-    return new Date(dateString).toLocaleDateString('fr-FR', {
+    const date = parseDate(dateString);
+    if (!date) return 'Non renseigné';
+
+    return date.toLocaleDateString('fr-FR', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
@@ -99,19 +104,20 @@ const Anniversaire: React.FC = () => {
   const parseDate = (dateString: string | undefined): Date | null => {
     if (!dateString) return null;
     
-    // Try parsing ISO format (YYYY-MM-DD)
-    let date = parseISO(dateString);
-    if (isValid(date)) return date;
+    // Keep YYYY-MM-DD and full ISO values on their written calendar day.
+    if (/^\d{4}-\d{2}-\d{2}/.test(dateString)) {
+      return parseDateOnly(dateString);
+    }
     
     // Try parsing DD-MM-YYYY format
-    date = parse(dateString, 'dd-MM-yyyy', new Date());
+    let date = parse(dateString, 'dd-MM-yyyy', new Date());
     if (isValid(date)) return date;
     
     // Try parsing MM/DD/YYYY format
     date = parse(dateString, 'MM/dd/yyyy', new Date());
     if (isValid(date)) return date;
     
-    return null;
+    return parseDateOnly(dateString);
   };
 
   // Calculate days until next birthday
@@ -119,20 +125,22 @@ const Anniversaire: React.FC = () => {
     if (!birthDate) return 999; // Large number for sorting
     
     const today = new Date();
+    today.setHours(12, 0, 0, 0);
     const parsedBirthDate = parseDate(birthDate);
     
     if (!parsedBirthDate) return 999;
     
     // Create this year's birthday
-    const thisYearBirthday = new Date(today.getFullYear(), parsedBirthDate.getMonth(), parsedBirthDate.getDate());
+    const thisYearBirthday = new Date(today.getFullYear(), parsedBirthDate.getMonth(), parsedBirthDate.getDate(), 12);
+    const daysThisYear = differenceInCalendarDays(thisYearBirthday, today);
     
     // If birthday has passed this year, use next year's birthday
-    if (today > thisYearBirthday) {
+    if (daysThisYear < 0) {
       const nextYearBirthday = addYears(thisYearBirthday, 1);
-      return differenceInDays(nextYearBirthday, today);
+      return differenceInCalendarDays(nextYearBirthday, today);
     }
     
-    return differenceInDays(thisYearBirthday, today);
+    return daysThisYear;
   };
 
   // Process birthdays data

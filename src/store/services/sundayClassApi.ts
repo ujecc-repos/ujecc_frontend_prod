@@ -1,6 +1,6 @@
 import { authApi } from './authApi';
 
-interface SundayClass {
+export interface SundayClass {
   id: string;
   nom: string;
   teacher: string;
@@ -9,7 +9,7 @@ interface SundayClass {
   endTime: string;
   location?: string; // Added to match the interface in sunday-class/[id].tsx
   book?: string;
-  maxStudents: number;
+  maxStudents: string;
   description: string;
   churchId: string;
   church?: any;

@@ -3,6 +3,7 @@ import { XMarkIcon } from '@heroicons/react/24/outline';
 import Select from 'react-select';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import { meetingDayOptions, parseMeetingDays } from '../utils/meetingDays';
 
 interface Group {
   id: string;
@@ -11,7 +12,7 @@ interface Group {
   church?: any;
   users?: any[];
   ageGroup: string;
-  meetingDay?: string;
+  meetingDays?: string;
   meetingTime?: string;
   meetingLocation?: string;
   meetingFrequency?: string;
@@ -28,7 +29,7 @@ interface FormData {
   minister: string;
   ageGroup: string;
   maxMembers: string;
-  meetingDay: string;
+  meetingDays: string[];
   meetingTime: Date | null;
   meetingLocation: string;
   meetingFrequency: string;
@@ -54,7 +55,7 @@ const EditGroupModal: React.FC<EditGroupModalProps> = ({ isOpen, onClose, onSubm
     minister: '',
     ageGroup: '',
     maxMembers: '',
-    meetingDay: '',
+    meetingDays: [],
     meetingTime: null,
     meetingLocation: '',
     meetingFrequency: '',
@@ -69,16 +70,6 @@ const EditGroupModal: React.FC<EditGroupModalProps> = ({ isOpen, onClose, onSubm
     { value: "annuel", label: "Annuel"}
   ];
 
-  const dayOptions = [
-    { value: 'lundi', label: 'Lundi' },
-    { value: 'mardi', label: 'Mardi' },
-    { value: 'mercredi', label: 'Mercredi' },
-    { value: 'jeudi', label: 'Jeudi' },
-    { value: 'vendredi', label: 'Vendredi' },
-    { value: 'samedi', label: 'Samedi' },
-    { value: 'dimanche', label: 'Dimanche' }
-  ];
-
   // Initialize form data when group data is available
   useEffect(() => {
     if (group) {
@@ -88,7 +79,7 @@ const EditGroupModal: React.FC<EditGroupModalProps> = ({ isOpen, onClose, onSubm
         minister: group.minister || '',
         ageGroup: group.ageGroup || '',
         maxMembers: group.maxMembers || '',
-        meetingDay: group.meetingDay || '',
+        meetingDays: parseMeetingDays(group.meetingDays),
         meetingTime: group.meetingTime ? new Date(`2000-01-01T${group.meetingTime}`) : null,
         meetingLocation: group.meetingLocation || '',
         meetingFrequency: group.meetingFrequency || '',
@@ -147,7 +138,7 @@ const EditGroupModal: React.FC<EditGroupModalProps> = ({ isOpen, onClose, onSubm
         minister: group.minister || '',
         ageGroup: group.ageGroup || '',
         maxMembers: group.maxMembers || '',
-        meetingDay: group.meetingDay || '',
+        meetingDays: parseMeetingDays(group.meetingDays),
         meetingTime: group.meetingTime ? new Date(`2000-01-01T${group.meetingTime}`) : null,
         meetingLocation: group.meetingLocation || '',
         meetingFrequency: group.meetingFrequency || '',
@@ -167,7 +158,7 @@ const EditGroupModal: React.FC<EditGroupModalProps> = ({ isOpen, onClose, onSubm
         minister: '',
         ageGroup: '',
         maxMembers: '',
-        meetingDay: '',
+        meetingDays: [],
         meetingTime: null,
         meetingLocation: '',
         meetingFrequency: '',
@@ -385,14 +376,19 @@ const EditGroupModal: React.FC<EditGroupModalProps> = ({ isOpen, onClose, onSubm
 
                   {/* Meeting Day */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Jour de réunion</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Jours de réunion</label>
                     <Select
-                      value={dayOptions.find(option => option.value === formData.meetingDay) || null}
-                      onChange={(selectedOption) => setFormData(prev => ({ ...prev, meetingDay: selectedOption?.value || '' }))}
-                      options={dayOptions}
-                      placeholder="Sélectionner le jour"
-                      isClearable
+                      isMulti
+                      value={meetingDayOptions.filter(option => formData.meetingDays.includes(option.value))}
+                      onChange={(selectedOptions) => setFormData(prev => ({
+                        ...prev,
+                        meetingDays: selectedOptions.map(option => option.value),
+                      }))}
+                      options={meetingDayOptions}
+                      placeholder="Sélectionner un ou plusieurs jours"
                       isSearchable
+                      menuPortalTarget={document.body}
+                      menuPosition="fixed"
                       className="react-select-container"
                       classNamePrefix="react-select"
                       styles={{
@@ -406,6 +402,10 @@ const EditGroupModal: React.FC<EditGroupModalProps> = ({ isOpen, onClose, onSubm
                             borderColor: '#14b8a6',
                             boxShadow: '0 0 0 1px #14b8a6'
                           }
+                        }),
+                        menuPortal: (provided) => ({
+                          ...provided,
+                          zIndex: 10000
                         })
                       }}
                     />
