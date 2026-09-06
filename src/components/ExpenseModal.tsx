@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dialog } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
-import { useCreateExpenseMutation } from '../store/services/expenseApi';
+import { useCreateExpenseMutation, useUpdateExpenseMutation, type Expense } from '../store/services/expenseApi';
 
 interface ExpenseModalProps {
   isOpen: boolean;
@@ -10,6 +10,7 @@ interface ExpenseModalProps {
   churchId?: string;
   categories?: string[];
   title?: string;
+  expense?: Expense | null;
 }
 
 interface CreateExpenseRequest {
@@ -23,9 +24,8 @@ interface CreateExpenseRequest {
   currency?: string;
 }
 
-const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSubmit, churchId, categories: _propCategories, title: modalTitle = 'Ajouter une dépense' }) => {
+const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSubmit, churchId, categories: _propCategories, title: modalTitle = 'Ajouter une dépense', expense = null }) => {
   // Form fields
-  const [expenseTitle, setExpenseTitle] = useState('');
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('HTG');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -35,7 +35,9 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSubmit, 
   const [errors, setErrors] = useState<Record<string, string>>({});
   
   // API mutations
-  const [createExpense, { isLoading }] = useCreateExpenseMutation();
+  const [createExpense, { isLoading: isCreating }] = useCreateExpenseMutation();
+  const [updateExpense, { isLoading: isUpdating }] = useUpdateExpenseMutation();
+  const isLoading = isCreating || isUpdating;
 
   // Categories options
   const defaultCategories = [
@@ -66,7 +68,6 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSubmit, 
 
   // Reset form
   const resetForm = () => {
-    setExpenseTitle('');
     setAmount('');
     setCurrency('HTG');
     setDate(new Date().toISOString().split('T')[0]);
@@ -75,6 +76,22 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSubmit, 
     setPaymentMethod('cash');
     setErrors({});
   };
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (expense) {
+      setAmount(String(expense.amount));
+      setCurrency(expense.currency || 'HTG');
+      setDate(expense.date ? expense.date.slice(0, 10) : '');
+      setCategory(expense.category || 'Autre');
+      setDescription(expense.description || '');
+      setPaymentMethod(expense.paymentMethod || 'espèce');
+      setErrors({});
+    } else {
+      resetForm();
+    }
+  }, [expense, isOpen]);
 
   // Handle close
   const handleClose = () => {
@@ -124,11 +141,13 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSubmit, 
         category,
         date,
         paymentMethod,
-        description: expenseTitle + (description ? ` - ${description}` : ''),
+        description: description.trim(),
         churchId: churchId || ''
       };
 
-      const result = await createExpense(expenseData).unwrap();
+      const result = expense
+        ? await updateExpense({ id: expense.id, ...expenseData }).unwrap()
+        : await createExpense(expenseData).unwrap();
       
       if (onSubmit) {
         onSubmit(result);
@@ -136,7 +155,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSubmit, 
       
       handleClose();
     } catch (error) {
-      console.error('Error creating expense:', error);
+      console.error('Error saving expense:', error);
     }
   };
 

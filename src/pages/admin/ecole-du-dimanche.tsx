@@ -7,10 +7,11 @@ import {
   UserGroupIcon,
   MapPinIcon,
   BookOpenIcon,
+  PencilSquareIcon,
   TrashIcon,
 } from '@heroicons/react/24/outline';
 import { Dialog } from '@headlessui/react';
-import { useGetSundayClassesByChurchQuery, useDeleteSundayClassMutation } from '../../store/services/sundayClassApi';
+import { useGetSundayClassesByChurchQuery, useDeleteSundayClassMutation, type SundayClass } from '../../store/services/sundayClassApi';
 import { useGetUserByTokenQuery } from '../../store/services/authApi';
 import { toast } from 'react-toastify';
 import CreateSundayClassModal from '../../components/modals/CreateSundayClassModal';
@@ -253,6 +254,7 @@ export default function EcoleDuDimanche() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [classToEdit, setClassToEdit] = useState<SundayClass | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [classToDelete, setClassToDelete] = useState<{ id: string; name: string } | null>(null);
 
@@ -512,7 +514,14 @@ export default function EcoleDuDimanche() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end space-x-2">
-  
+                          <button
+                            onClick={() => setClassToEdit(sundayClass)}
+                            className="text-teal-600 hover:text-teal-900 p-1 rounded-md hover:bg-teal-50 transition-colors"
+                            title="Modifier la classe"
+                            aria-label={`Modifier ${sundayClass.nom}`}
+                          >
+                            <PencilSquareIcon className="h-5 w-5" />
+                          </button>
                           <button
                             onClick={() => handleDeleteClass(sundayClass.id, sundayClass.nom)}
                             className="text-red-600 hover:text-red-900 p-1 rounded-md hover:bg-red-50 transition-colors"
@@ -746,6 +755,16 @@ export default function EcoleDuDimanche() {
             onSuccess={() => {
               refetch();
               toast.success('Classe créée avec succès!');
+            }}
+          />
+
+          <CreateSundayClassModal
+            isOpen={Boolean(classToEdit)}
+            sundayClass={classToEdit}
+            onClose={() => setClassToEdit(null)}
+            onSuccess={() => {
+              refetch();
+              setClassToEdit(null);
             }}
           />
           

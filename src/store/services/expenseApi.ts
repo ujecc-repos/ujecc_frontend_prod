@@ -1,6 +1,6 @@
 import { authApi } from './authApi';
 
-interface Expense {
+export interface Expense {
     id: string;
     amount: number;
     quantity: number;

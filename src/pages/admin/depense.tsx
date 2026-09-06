@@ -8,7 +8,8 @@ import {
     useGetMonthlyExpenseSummaryQuery,
     useGetQuarterlyExpenseSummaryQuery,
     useGetExpensesByCategoryQuery,
-    useDeleteExpenseMutation
+    useDeleteExpenseMutation,
+    type Expense
 } from '../../store/services/expenseApi';
 import { FilterModal } from '../../components/FilterModal';
 import { ExpenseModal } from '../../components/ExpenseModal';
@@ -17,7 +18,7 @@ import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 import { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, TextRun } from 'docx';
-import { ArrowDownTrayIcon } from '@heroicons/react/24/outline';
+import { ArrowDownTrayIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
 
 interface ExportModalProps {
     isOpen: boolean;
@@ -77,6 +78,7 @@ const Depense = () => {
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
     const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+    const [expenseToEdit, setExpenseToEdit] = useState<Expense | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
     const [searchTerm, setSearchTerm] = useState('');
@@ -520,13 +522,23 @@ const Depense = () => {
                                                                 <div className="text-sm text-gray-500 max-w-xs truncate">{expense.description}</div>
                                                             </td>
                                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                                <button
-                                                                    onClick={() => handleDeleteExpense(expense.id)}
-                                                                    disabled={isDeleting}
-                                                                    className="text-red-600 hover:text-red-900 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                                >
-                                                                    {isDeleting ? 'Suppression...' : 'Supprimer'}
-                                                                </button>
+                                                                <div className="flex items-center justify-end gap-2">
+                                                                    <button
+                                                                        onClick={() => setExpenseToEdit(expense)}
+                                                                        className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-teal-600 transition-colors hover:bg-teal-50 hover:text-teal-900"
+                                                                        title="Modifier la dépense"
+                                                                    >
+                                                                        <PencilSquareIcon className="h-4 w-4" />
+                                                                        Modifier
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleDeleteExpense(expense.id)}
+                                                                        disabled={isDeleting}
+                                                                        className="rounded-md px-2 py-1 text-red-600 transition-colors hover:bg-red-50 hover:text-red-900 disabled:cursor-not-allowed disabled:opacity-50"
+                                                                    >
+                                                                        {isDeleting ? 'Suppression...' : 'Supprimer'}
+                                                                    </button>
+                                                                </div>
                                                             </td>
                                                         </tr>
                                                     ))}
@@ -717,6 +729,21 @@ const Depense = () => {
                     categories={categories}
                     churchId={churchId}
                     title="Ajouter une dépense"
+                />
+            )}
+
+            {expenseToEdit && (
+                <ExpenseModal
+                    isOpen={Boolean(expenseToEdit)}
+                    expense={expenseToEdit}
+                    onClose={() => setExpenseToEdit(null)}
+                    onSubmit={() => {
+                        setExpenseToEdit(null);
+                        refetchExpenses();
+                    }}
+                    categories={categories}
+                    churchId={churchId}
+                    title="Modifier la dépense"
                 />
             )}
         </div>

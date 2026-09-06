@@ -33,6 +33,7 @@ interface UpdateGroupRequest {
   maxAge?: string;
   minAge?: string;
   meetingDay?: string;
+  meetingDays?: string[] | string;
   metingTime?: string;
   meetingLocation?: string;
   meetingFrequency?: string;

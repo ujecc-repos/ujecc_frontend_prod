@@ -5,12 +5,13 @@ import DatePicker from 'react-datepicker';
 import { useGetMinistriesByChurchQuery } from '../store/services/ministryApi';
 import { useGetUserByTokenQuery } from '../store/services/authApi';
 import 'react-datepicker/dist/react-datepicker.css';
+import { meetingDayOptions } from '../utils/meetingDays';
 
 interface CreateGroupFormData {
   name: string;
   description: string;
   minister: string;
-  meetingDay: string;
+  meetingDays: string[];
   meetingTime: Date | null;
   meetingLocation: string;
   meetingFrequency: string;
@@ -31,7 +32,7 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ isOpen, onClose, on
     name: '',
     description: '',
     minister: '',
-    meetingDay: '',
+    meetingDays: [],
     meetingTime: null,
     meetingLocation: '',
     meetingFrequency: '',
@@ -68,17 +69,6 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ isOpen, onClose, on
     { value: 'Chaque Année', label: 'Chaque Année' },
   ];
 
-  // Meeting day options
-  const dayOptions = [
-    { value: 'Chaque Dimanche', label: 'Chaque Dimanche' },
-    { value: 'Chaque Lundi', label: 'Chaque Lundi' },
-    { value: 'Chaque Mardi', label: 'Chaque Mardi' },
-    { value: 'Chaque Mercredi', label: 'Chaque Mercredi' },
-    { value: 'Chaque Jeudi', label: 'Chaque Jeudi' },
-    { value: 'Chaque Vendredi', label: 'Chaque Vendredi' },
-    { value: 'Chaque Samedi', label: 'Chaque Samedi' },
-  ];
-
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -113,7 +103,7 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ isOpen, onClose, on
       name: '',
       description: '',
       minister: '',
-      meetingDay: '',
+      meetingDays: [],
       meetingTime: null,
       meetingLocation: '',
       meetingFrequency: '',
@@ -328,14 +318,19 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ isOpen, onClose, on
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Meeting Day */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Jour de réunion</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Jours de réunion</label>
                     <Select
-                      value={dayOptions.find(option => option.value === formData.meetingDay) || null}
-                      onChange={(selectedOption) => setFormData(prev => ({ ...prev, meetingDay: selectedOption?.value || '' }))}
-                      options={dayOptions}
-                      placeholder="Sélectionner le jour"
-                      isClearable
+                      isMulti
+                      value={meetingDayOptions.filter(option => formData.meetingDays.includes(option.value))}
+                      onChange={(selectedOptions) => setFormData(prev => ({
+                        ...prev,
+                        meetingDays: selectedOptions.map(option => option.value),
+                      }))}
+                      options={meetingDayOptions}
+                      placeholder="Sélectionner un ou plusieurs jours"
                       isSearchable
+                      menuPortalTarget={document.body}
+                      menuPosition="fixed"
                       className="react-select-container"
                       classNamePrefix="react-select"
                       styles={{
@@ -352,8 +347,11 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ isOpen, onClose, on
                         }),
                         menu: (provided) => ({
                           ...provided,
-                          zIndex: 9999,
-                          position: 'absolute'
+                          zIndex: 9999
+                        }),
+                        menuPortal: (provided) => ({
+                          ...provided,
+                          zIndex: 10000
                         })
                       }}
                     />
